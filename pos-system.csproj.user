@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Update="pos.UI\Forms\Common\ThemedMessageBoxYesNo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\BillDiscountForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\BillingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\BrandForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Dashboard\CashierForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\CategoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Controls\EmployeeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\ItemForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Auth\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Dashboard\OwnerDashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\SearchItemForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Common\ThemedMessageBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\DiscountForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\PaymentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\QuantityForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\ReturnsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+</Project>
