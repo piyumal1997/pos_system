@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace pos_system.pos.BLL.Utilities
 {
@@ -18,7 +16,7 @@ namespace pos_system.pos.BLL.Utilities
             {
                 byte[] hashBytes = sha256.ComputeHash(bytes);
                 return BitConverter.ToString(hashBytes)
-                    .Replace("-", "")
+                    .Replace("-", string.Empty)
                     .ToLower(); // Match SQL's lowercase hex
             }
         }

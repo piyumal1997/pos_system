@@ -2,8 +2,12 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class OwnerDashboard : Form
     {

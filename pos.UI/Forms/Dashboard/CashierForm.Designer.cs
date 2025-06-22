@@ -1,7 +1,11 @@
 ﻿using pos_system.pos.Models;
 using pos_system.pos.UI.Forms;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class CashierForm
     {

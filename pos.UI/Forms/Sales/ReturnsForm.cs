@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
+using pos_system.pos.BLL.Services;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
+using System;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing.Printing;
-using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Runtime.InteropServices;
-using pos_system.pos.BLL.Services;
+using System.Text;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -33,7 +28,7 @@ namespace pos_system.pos.UI.Forms.Sales
             InitializeComponent();
             _currentUser = currentUser;
             InitializeReturnReasons();
-            lblBillDate.Text = "";
+            lblBillDate.Text = string.Empty;
             lblCurrentDate.Text = DateTime.Now.ToString("yyyy-MM-dd");
         }
 
@@ -445,7 +440,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     }
                     PrintLeft(itemName, output);
 
-                    PrintLeftRight($"", $"{qty}   {refund:C}", output);
+                    PrintLeftRight(string.Empty, $"{qty}   {refund:C}", output);
                     output.AddRange(Encoding.ASCII.GetBytes("\n"));
                 }
 
@@ -544,7 +539,7 @@ namespace pos_system.pos.UI.Forms.Sales
             dgvBillItems.Columns.Clear();
             btnProcessReturn.Enabled = false;
             _billItems = null;
-            lblBillDate.Text = "";
+            lblBillDate.Text = string.Empty;
             _billExpired = false;
         }
 
@@ -631,7 +626,7 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             if (txtBillId.Text == "Enter Bill ID")
             {
-                txtBillId.Text = "";
+                txtBillId.Text = string.Empty;
                 txtBillId.ForeColor = DarkText;
             }
         }

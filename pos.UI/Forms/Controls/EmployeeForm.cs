@@ -1,24 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using pos_system.pos.Models;
-using pos_system.pos.BLL.Services;
-using pos_system.pos.DAL.Repositories;
+﻿using pos_system.pos.BLL.Services;
 using pos_system.pos.BLL.Utilities;
+using pos_system.pos.DAL.Repositories;
+using pos_system.pos.Models;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
-using System.Drawing.Imaging;
-using pos_system.pos.UI.Forms;
+using System.Data;
 using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.Linq;
+using System.Text.RegularExpressions;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Controls
 {
     public partial class EmployeeForm : Form
     {
@@ -80,7 +76,7 @@ namespace pos_system.pos.UI.Forms
             AddFormRow(mainTable, "Role:", cmbRole);
             AddFormRow(mainTable, "Status:", cmbStatus);
             AddFormRow(mainTable, "Photo:", pictureBox);
-            AddFormRow(mainTable, "", btnUpload);
+            AddFormRow(mainTable, string.Empty, btnUpload);
 
             // Style Upload Button
             btnUpload.FlatStyle = FlatStyle.Flat;
@@ -131,7 +127,7 @@ namespace pos_system.pos.UI.Forms
             txtLastName = new TextBox { Width = 300 };
             txtNIC = new TextBox { ReadOnly = _isEdit, Width = 300 };
             txtUsername = new TextBox { Width = 300 };
-            txtPassword = new TextBox { ReadOnly = _isEdit, Width = 300};
+            txtPassword = new TextBox { ReadOnly = _isEdit, Width = 300 };
             txtAddress = new TextBox { Width = 300 };
             txtContact = new TextBox { Width = 300 };
             cmbRole = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
@@ -183,18 +179,11 @@ namespace pos_system.pos.UI.Forms
                 pictureBox.Image = Image.FromStream(new MemoryStream(_employee.picture));
         }
 
-        //private void BtnUpload_Click(object sender, EventArgs e)
-        //{
-        //    using var dialog = new OpenFileDialog { Filter = "Images|*.jpg;*.png;*.bmp" };
-        //    if (dialog.ShowDialog() == DialogResult.OK)
-        //        pictureBox.Image = Image.FromFile(dialog.FileName);
-        //}
-
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (!ValidateEmployee(out var errors))
             {
-                ShowThemedMessage("Validation Errors : " + "\n" + string.Join("\n", errors) );
+                ShowThemedMessage("Validation Errors : " + "\n" + string.Join("\n", errors));
                 Debug.WriteLine($"Validation Errors : {string.Join(", ", errors)}");
                 return;
             }
@@ -203,7 +192,7 @@ namespace pos_system.pos.UI.Forms
             {
                 MapFormToModel();
                 var result = _service.SaveEmployee(_employee, _isEdit);
-                
+
                 if (result.success)
                 {
                     DialogResult = DialogResult.OK;
@@ -222,7 +211,7 @@ namespace pos_system.pos.UI.Forms
 
         public static void ShowThemedMessage(string message)
         {
-            using (var msgBox = new ThemedMessageBox(message))
+            using (var msgBox = new pos_system.pos.UI.Forms.Common.ThemedMessageBox(message))
             {
                 msgBox.ShowDialog();
             }

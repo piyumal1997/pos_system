@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using pos_system.pos.Models;
+﻿using pos_system.pos.BLL.Utilities;
 using pos_system.pos.DAL.Repositories;
-using pos_system.pos.BLL.Utilities;
+using pos_system.pos.Models;
+using System;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace pos_system.pos.BLL.Services
 {
@@ -18,7 +14,7 @@ namespace pos_system.pos.BLL.Services
         public Employee AuthenticateUser(string username, string password)
         {
             var hashedPassword = HashHelper.ComputeSqlCompatibleHash(password);
-            Debug.WriteLine("User Service " + username  + " / " + hashedPassword);
+            Debug.WriteLine("User Service " + username + " / " + hashedPassword);
             return _repository.ValidateLogin(username, hashedPassword);
         }
 

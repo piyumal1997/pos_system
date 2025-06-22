@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using pos_system.pos.Models;
+﻿using pos_system.pos.Models;
 using pos_system.pos.UI.Forms.Sales;
+using System;
+using System.Linq;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class CashierForm : Form
     {
@@ -24,7 +21,7 @@ namespace pos_system.pos.UI.Forms
         private Label lblWelcome;
         private Button btnClose;
 
-        public CashierForm (Employee user)
+        public CashierForm(Employee user)
         {
             InitializeComponent();
             _currentUser = user;
@@ -70,7 +67,7 @@ namespace pos_system.pos.UI.Forms
                 Size = new Size(35, 35),
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 16),
+                //Font = new Font("Segoe UI", 16),
                 BackColor = Color.Transparent,
                 UseVisualStyleBackColor = false,
                 Location = new Point(1151, 12),
@@ -106,7 +103,7 @@ namespace pos_system.pos.UI.Forms
             CreateSidebarButton("Returns", "🔄", 200);
             CreateSidebarButton("Logout", "🔒", 500);
 
-            OpenChildForm(new DashboardView(), _dashboardButton);
+            OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.CashierForm.DashboardView(), _dashboardButton);
         }
 
         private void CreateSidebarButton(string text, string icon, int yPos)
@@ -145,10 +142,10 @@ namespace pos_system.pos.UI.Forms
                 switch (text)
                 {
                     case "Dashboard":
-                        OpenChildForm(new DashboardView(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.CashierForm.DashboardView(), btn);
                         break;
                     case "Billing":
-                        OpenChildForm(new BillingForm(_currentUser), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Sales.BillingForm(_currentUser), btn);
                         break;
                     case "Returns":
                         OpenChildForm(new ReturnsForm(_currentUser), btn);
@@ -192,7 +189,7 @@ namespace pos_system.pos.UI.Forms
         private void Logout()
         {
             this.Hide();
-            LoginForm login = new LoginForm();
+            pos_system.pos.UI.Forms.Auth.LoginForm login = new pos_system.pos.UI.Forms.Auth.LoginForm();
             login.Show();
         }
 

@@ -1,10 +1,15 @@
-﻿using System.Drawing.Imaging;
-using System.Text.RegularExpressions;
-using pos_system.pos.BLL.Services;
-using pos_system.pos.Models;
+﻿using pos_system.pos.BLL.Services;
 using pos_system.pos.Core;
+using pos_system.pos.Models;
+using pos_system.pos.UI.Forms.Inventory;
+using System.Drawing.Imaging;
+using System.Text.RegularExpressions;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Inventory
 {
     public partial class ItemForm : Form
     {
@@ -79,10 +84,24 @@ namespace pos_system.pos.UI.Forms
 
                 if (_item.ItemImage != null)
                 {
-                    using var ms = new MemoryStream(_item.ItemImage);
-                    picItemImage.Image = Image.FromStream(ms);
+                    using (var ms = new MemoryStream(_item.ItemImage))
+                    {
+                        picItemImage.Image = CloneImage(Image.FromStream(ms));
+                    }
                 }
             }
+        }
+
+        private Image CloneImage(Image sourceImage)
+        {
+            if (sourceImage == null) return null;
+
+            var bitmap = new Bitmap(sourceImage.Width, sourceImage.Height);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.DrawImage(sourceImage, 0, 0, sourceImage.Width, sourceImage.Height);
+            }
+            return bitmap;
         }
 
         private void PopulateBrands()
@@ -129,7 +148,15 @@ namespace pos_system.pos.UI.Forms
                 if (success)
                 {
                     DialogResult = DialogResult.OK;
-                    Close();
+
+                    // Show barcode printing FIRST
+                    if (_item.Item_ID == 0 || _item.Item_ID > 0)
+                    {
+                        var printForm = new BarcodePrintForm(_item);
+                        printForm.ShowDialog();  // Show modal before closing
+                    }
+
+                    Close();  // Close AFTER showing print form
                 }
                 else
                 {
@@ -158,6 +185,14 @@ namespace pos_system.pos.UI.Forms
 
             _item.Brand_ID = (int)cmbBrand.SelectedValue;
             _item.Category_ID = (int)cmbCategory.SelectedValue;
+
+            _item.BrandName = (cmbBrand.SelectedItem as Brand)?.brandName;
+            _item.CategoryName = (cmbCategory.SelectedItem as Category)?.categoryName;
+
+            if (cmbSize.SelectedItem is CategorySize selectedSize && selectedSize.Size_ID != -1)
+            {
+                _item.SizeLabel = selectedSize.SizeLabel;
+            }
 
             if ((int)cmbSize.SelectedValue != -1)
                 _item.Size_ID = (int)cmbSize.SelectedValue;
@@ -262,6 +297,11 @@ namespace pos_system.pos.UI.Forms
 
             try
             {
+
+                var fileImage = Image.FromFile(openFileDialog.FileName);
+                picItemImage.Image = CloneImage(fileImage);
+                fileImage.Dispose();
+
                 var imageBytes = File.ReadAllBytes(openFileDialog.FileName);
                 if (!IsValidImage(imageBytes))
                 {

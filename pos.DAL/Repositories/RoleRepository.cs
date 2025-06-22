@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data.SqlClient;
-using pos_system.pos.DAL;
-using pos_system.pos.Models;
+﻿using pos_system.pos.Models;
+using System;
 using System.Data;
+using System.Linq;
 
 namespace pos_system.pos.DAL.Repositories
 {

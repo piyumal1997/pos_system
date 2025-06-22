@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -78,7 +72,7 @@ namespace pos_system.pos.UI.Forms.Sales
             var numDiscount = new NumericUpDown
             {
                 Minimum = 0,
-                Maximum = (decimal)maxDiscount,
+                Maximum = maxDiscount,
                 DecimalPlaces = 2,
                 Value = currentDiscount,
                 Dock = DockStyle.Fill,
@@ -138,7 +132,8 @@ namespace pos_system.pos.UI.Forms.Sales
                 Margin = new Padding(5, 0, 0, 0)
             };
             btnOK.FlatAppearance.BorderSize = 0;
-            btnOK.Click += (s, e) => {
+            btnOK.Click += (s, e) =>
+            {
                 SelectedDiscount = numDiscount.Value;
                 this.DialogResult = DialogResult.OK;
             };

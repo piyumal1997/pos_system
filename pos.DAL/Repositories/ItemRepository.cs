@@ -1,17 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using pos_system.pos.Models;
-using pos_system.pos.DAL;
+using System;
 using System.Data;
+using System.Linq;
 
 namespace pos_system.pos.DAL.Repositories
 {
     internal class ItemRepository
     {
+        public Item GetItem(int itemId)
+        {
+            const string query = @"
+        SELECT i.*, b.brandName, c.categoryName, s.SizeLabel
+        FROM Item i
+        INNER JOIN Brand b ON i.Brand_ID = b.Brand_ID
+        INNER JOIN Category c ON i.Category_ID = c.Category_ID
+        LEFT JOIN Size s ON i.Size_ID = s.Size_ID
+        WHERE i.Item_ID = @ItemId";
+
+            using (var conn = DbHelper.GetConnection())
+            {
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ItemId", itemId);
+                    conn.Open();
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new Item
+                            {
+                                Item_ID = reader.GetInt32(reader.GetOrdinal("Item_ID")),
+                                barcode = reader.GetString(reader.GetOrdinal("barcode")),
+                                description = reader.GetString(reader.GetOrdinal("description")),
+                                RetailPrice = reader.GetDecimal(reader.GetOrdinal("RetailPrice")),
+                                unitCost = reader.GetDecimal(reader.GetOrdinal("unitCost")),
+                                quantity = reader.GetInt32(reader.GetOrdinal("quantity")),
+                                BrandName = reader.GetString(reader.GetOrdinal("brandName")),
+                                CategoryName = reader.GetString(reader.GetOrdinal("categoryName")),
+                                SizeLabel = reader.IsDBNull(reader.GetOrdinal("SizeLabel")) ?
+                                            null : reader.GetString(reader.GetOrdinal("SizeLabel")),
+                                ItemImage = reader.IsDBNull(reader.GetOrdinal("ItemImage")) ?
+                                            null : (byte[])reader["ItemImage"]
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
         public IEnumerable<Item> GetAllItems()
         {
             var items = new List<Item>();
@@ -191,7 +229,7 @@ namespace pos_system.pos.DAL.Repositories
             const string query = @"
                 SELECT i.Item_ID, i.barcode, i.description, i.RetailPrice, i.quantity,
                        b.brandName AS BrandName, c.categoryName AS CategoryName, 
-                       s.SizeLabel AS SizeLabel, i.ItemImage
+                       s.SizeLabel AS SizeLabel, i.ItemImage, i.unitCost
                 FROM Item i
                 INNER JOIN Brand b ON i.Brand_ID = b.Brand_ID
                 INNER JOIN Category c ON i.Category_ID = c.Category_ID
@@ -207,7 +245,7 @@ namespace pos_system.pos.DAL.Repositories
             {
                 using var conn = DbHelper.GetConnection();
                 using var cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@SearchTerm", string.IsNullOrEmpty(searchTerm) ? "" : searchTerm);
+                cmd.Parameters.AddWithValue("@SearchTerm", string.IsNullOrEmpty(searchTerm) ? string.Empty : searchTerm);
                 cmd.Parameters.AddWithValue("@BrandId", brandId);
                 cmd.Parameters.AddWithValue("@CategoryId", categoryId);
 
@@ -222,6 +260,7 @@ namespace pos_system.pos.DAL.Repositories
                         barcode = reader.GetString(reader.GetOrdinal("barcode")),
                         description = reader.GetString(reader.GetOrdinal("description")),
                         RetailPrice = reader.GetDecimal(reader.GetOrdinal("RetailPrice")),
+                        unitCost = reader.GetDecimal(reader.GetOrdinal("unitCost")),
                         quantity = reader.GetInt32(reader.GetOrdinal("quantity")),
                         BrandName = reader.GetString(reader.GetOrdinal("BrandName")),
                         CategoryName = reader.GetString(reader.GetOrdinal("CategoryName")),

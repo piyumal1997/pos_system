@@ -1,4 +1,9 @@
-﻿namespace pos_system.pos.UI.Forms
+﻿using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
+
+namespace pos_system.pos.UI.Forms.Sales
 {
     partial class BillingForm
     {

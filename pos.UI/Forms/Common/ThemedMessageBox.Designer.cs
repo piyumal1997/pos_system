@@ -2,8 +2,12 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Common
 {
     public enum ThemedMessageBoxIcon
     {
@@ -176,7 +180,7 @@ namespace pos_system.pos.UI.Forms
 
         public static DialogResult Show(string text, string caption = "", ThemedMessageBoxIcon icon = ThemedMessageBoxIcon.None)
         {
-            using (var msgBox = new ThemedMessageBox(text, caption, icon))
+            using (var msgBox = new pos_system.pos.UI.Forms.Common.ThemedMessageBox(text, caption, icon))
             {
                 return msgBox.ShowDialog();
             }

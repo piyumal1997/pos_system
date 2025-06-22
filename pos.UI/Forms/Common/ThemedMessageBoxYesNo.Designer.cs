@@ -2,8 +2,12 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Common
 {
     partial class ThemedMessageBoxYesNo
     {
@@ -216,7 +220,7 @@ namespace pos_system.pos.UI.Forms
 
         public static DialogResult Show(string message, string title = "", MessageBoxIcon icon = MessageBoxIcon.None)
         {
-            using (var form = new ThemedMessageBoxYesNo(message, title, icon))
+            using (var form = new pos_system.pos.UI.Forms.Common.ThemedMessageBoxYesNo(message, title, icon))
             {
                 form.ShowDialog();
                 return form.Result;

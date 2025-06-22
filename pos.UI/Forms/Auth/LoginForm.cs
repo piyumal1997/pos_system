@@ -1,16 +1,12 @@
-using System;
-using System.Windows.Forms;
-using pos_system.pos.DAL;
-using pos_system.pos.DAL.Repositories;
-using pos_system.pos.BLL.Utilities;
 using pos_system.pos.BLL.Services;
 using pos_system.pos.Models;
 using pos_system.pos.UI.Forms;
+using System;
 using System.Diagnostics;
+using pos_system;
+using pos_system.pos.UI.Forms.Common;
 
-
-
-namespace pos_system
+namespace pos_system.pos.UI.Forms.Auth
 {
     public partial class LoginForm : Form
     {
@@ -47,12 +43,12 @@ namespace pos_system
 
             if (textBox == txtUsername && textBox.Text == "Username")
             {
-                textBox.Text = "";
+                textBox.Text = string.Empty;
                 textBox.ForeColor = SystemColors.WindowText;
             }
             else if (textBox == txtPassword && textBox.Text == "Password")
             {
-                textBox.Text = "";
+                textBox.Text = string.Empty;
                 textBox.ForeColor = SystemColors.WindowText;
                 textBox.UseSystemPasswordChar = true;
             }
@@ -99,12 +95,12 @@ namespace pos_system
                     // Determine role and open appropriate form
                     if (loggedInUser.Role_ID == 4) // Cashier role
                     {
-                        CashierForm cashierForm = new CashierForm(loggedInUser);
+                        pos_system.pos.UI.Forms.Dashboard.CashierForm cashierForm = new pos_system.pos.UI.Forms.Dashboard.CashierForm(loggedInUser);
                         cashierForm.Show();
                     }
                     else // Owner/Admin/Manager
                     {
-                        OwnerDashboard ownerForm = new OwnerDashboard(loggedInUser);
+                        pos_system.pos.UI.Forms.Dashboard.OwnerDashboard ownerForm = new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard(loggedInUser);
                         ownerForm.Show();
                     }
 
@@ -112,7 +108,7 @@ namespace pos_system
                 }
                 else
                 {
-                    ThemedMessageBox.Show("Invalid username or password", "Warning", ThemedMessageBoxIcon.Warning);
+                    pos_system.pos.UI.Forms.Common.ThemedMessageBox.Show("Invalid username or password", "Warning", ThemedMessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
@@ -125,7 +121,7 @@ namespace pos_system
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            DialogResult result = ThemedMessageBoxYesNo.Show("Are you sure you want to leave?", "Warning");
+            DialogResult result = pos_system.pos.UI.Forms.Common.ThemedMessageBoxYesNo.Show("Are you sure you want to leave?", "Warning");
 
             if (result == DialogResult.Yes)
             {
@@ -139,7 +135,7 @@ namespace pos_system
         {
             if (txtUsername.Text == "Username")
             {
-                txtUsername.Text = "";
+                txtUsername.Text = string.Empty;
                 txtUsername.ForeColor = Color.Black;
             }
         }
@@ -157,7 +153,7 @@ namespace pos_system
         {
             if (txtPassword.Text == "Password")
             {
-                txtPassword.Text = "";
+                txtPassword.Text = string.Empty;
                 txtPassword.ForeColor = System.Drawing.Color.Black;
                 txtPassword.UseSystemPasswordChar = true;
             }
@@ -175,12 +171,12 @@ namespace pos_system
 
         public void ShowThemedMessage(string message)
         {
-            using (var msgBox = new ThemedMessageBox(message))
+            using (var msgBox = new pos_system.pos.UI.Forms.Common.ThemedMessageBox(message))
             {
                 msgBox.ShowDialog();
             }
         }
 
-        
+
     }
 }

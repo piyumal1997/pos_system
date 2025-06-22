@@ -4,6 +4,9 @@
     <Compile Update="pos.UI\Forms\Common\ThemedMessageBoxYesNo.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\BarcodePrintForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Sales\BillDiscountForm.cs">
       <SubType>Form</SubType>
     </Compile>

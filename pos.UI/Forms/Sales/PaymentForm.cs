@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Data.SqlClient;
-using System.Drawing;
-using System.Globalization;
-using System.Windows.Forms;
 using System.ComponentModel;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Sales
 {
     public partial class PaymentForm : Form
     {
@@ -116,9 +116,9 @@ namespace pos_system.pos.UI.Forms
 
             // Set properties
             PaymentMethod = cmbPaymentMethod.Text;
-            AmountTendered = cmbPaymentMethod.Text == "Cash" ? 
+            AmountTendered = cmbPaymentMethod.Text == "Cash" ?
                 decimal.Parse(txtCashTendered.Text) : _amountDue;
-            
+
             // Clear card/bank details for cash payments
             if (PaymentMethod == "Cash")
             {
@@ -130,10 +130,10 @@ namespace pos_system.pos.UI.Forms
                 CardLastFour = PaymentMethod == "Card" ? txtCardDigits.Text : null;
                 BankLastFour = PaymentMethod == "Bank Transfer" ? txtBankDigits.Text : null;
             }
-            
-            Change = cmbPaymentMethod.Text == "Cash" ? 
-                decimal.Parse(lblChange.Text.Replace("$", "").Replace("(", "").Replace(")", "")) : 0;
-            
+
+            Change = cmbPaymentMethod.Text == "Cash" ?
+                decimal.Parse(lblChange.Text.Replace("$", string.Empty).Replace("(", string.Empty).Replace(")", string.Empty)) : 0;
+
             IsConfirmed = true;
             DialogResult = DialogResult.OK;
             Close();

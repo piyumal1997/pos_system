@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using pos_system.pos.DAL.Repositories;
+﻿using pos_system.pos.DAL.Repositories;
 using pos_system.pos.Models;
+using System;
+using System.Linq;
 
 namespace pos_system.pos.BLL.Services
 {
@@ -16,6 +13,10 @@ namespace pos_system.pos.BLL.Services
         public List<Item> SearchItems(string searchTerm, int brandId, int categoryId)
         {
             return _repository.SearchItems(searchTerm, brandId, categoryId);
+        }
+        public Item GetItemById(int itemId)
+        {
+            return _repository.GetItem(itemId);
         }
 
         public IEnumerable<Item> GetAllItems() => _repository.GetAllItems();

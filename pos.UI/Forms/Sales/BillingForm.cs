@@ -1,14 +1,18 @@
-﻿using System.Data;
-using System.Text;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using pos_system.pos.BLL.Utilities;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
 using pos_system.pos.UI.Forms.Sales;
+using System.Data;
 using System.Drawing.Printing;
+using System.Text;
 using System.Timers;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
 
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Sales
 {
     public partial class BillingForm : Form
     {
@@ -26,7 +30,7 @@ namespace pos_system.pos.UI.Forms
         private decimal _billDiscountPercentage = 0;
         private bool _isBillDiscountApplied = false;
         private bool _discountConflictWarningShown = false;
-        private ReturnToken _appliedToken;
+        private pos_system.pos.UI.Forms.Sales.BillingForm.ReturnToken _appliedToken;
         private bool _tokenApplied;
 
         #endregion
@@ -583,7 +587,7 @@ namespace pos_system.pos.UI.Forms
                                     return;
                                 }
 
-                                _appliedToken = new ReturnToken
+                                _appliedToken = new pos_system.pos.UI.Forms.Sales.BillingForm.ReturnToken
                                 {
                                     ReturnId = reader.GetInt32(0),
                                     TotalRefund = reader.GetDecimal(1)
@@ -620,7 +624,7 @@ namespace pos_system.pos.UI.Forms
                     return;
                 }
 
-                decimal totalAmount = Convert.ToDecimal(lblTotal.Text.Replace("$", "").Trim());
+                decimal totalAmount = Convert.ToDecimal(lblTotal.Text.Replace("$", string.Empty).Trim());
                 decimal tokenValue = _tokenApplied ? _appliedToken.TotalRefund : 0;
 
                 // Validate token coverage
@@ -630,7 +634,7 @@ namespace pos_system.pos.UI.Forms
                     return;
                 }
 
-                using (var paymentForm = new PaymentForm(totalAmount, tokenValue))
+                using (var paymentForm = new pos_system.pos.UI.Forms.Sales.PaymentForm(totalAmount, tokenValue))
                 {
                     if (paymentForm.ShowDialog() == DialogResult.OK && paymentForm.IsConfirmed)
                     {
@@ -976,10 +980,10 @@ namespace pos_system.pos.UI.Forms
             try
             {
                 // Prepare items for stored procedure
-                var items = new List<BillItem>();
+                var items = new List<pos_system.pos.UI.Forms.Sales.BillingForm.BillItem>();
                 foreach (DataRow row in _cartItems.Rows)
                 {
-                    items.Add(new BillItem
+                    items.Add(new pos_system.pos.UI.Forms.Sales.BillingForm.BillItem
                     {
                         Item_ID = row["Item_ID"] != DBNull.Value ? Convert.ToInt32(row["Item_ID"]) : 0,
                         Size_ID = GetSizeIdFromLabel(row["Size"]?.ToString()),
@@ -1068,7 +1072,7 @@ namespace pos_system.pos.UI.Forms
             }
             catch (SqlException ex) when (ex.Number == 50004)
             {
-                ShowError("Invalid cash payment: " + ex.Message.Replace("Cash payment should not have card/bank details.", ""));
+                ShowError("Invalid cash payment: " + ex.Message.Replace("Cash payment should not have card/bank details.", string.Empty));
             }
             catch (SqlException ex)
             {
@@ -1080,7 +1084,7 @@ namespace pos_system.pos.UI.Forms
             }
         }
 
-        private DataTable CreateItemsDataTable(List<BillItem> items)
+        private DataTable CreateItemsDataTable(List<pos_system.pos.UI.Forms.Sales.BillingForm.BillItem> items)
         {
             DataTable dt = new DataTable();
             dt.Columns.Add("Item_ID", typeof(int));
@@ -1157,9 +1161,9 @@ namespace pos_system.pos.UI.Forms
                 // Print items with proper formatting
                 foreach (DataRow row in _cartItems.Rows)
                 {
-                    string brand = row["Brand"]?.ToString() ?? "";
-                    string category = row["Category"]?.ToString() ?? "";
-                    string size = row["Size"]?.ToString() ?? "";
+                    string brand = row["Brand"]?.ToString() ?? string.Empty;
+                    string category = row["Category"]?.ToString() ?? string.Empty;
+                    string size = row["Size"]?.ToString() ?? string.Empty;
                     string itemDesc = $"{brand} {category}".Trim();
 
                     decimal retailPrice = row["Price"] != DBNull.Value ? Convert.ToDecimal(row["Price"]) : 0;
@@ -1172,7 +1176,7 @@ namespace pos_system.pos.UI.Forms
                     PrintLeft(itemDesc, output);
 
                     // Size and pricing details
-                    string sizeInfo = !string.IsNullOrEmpty(size) ? $"{size} " : "";
+                    string sizeInfo = !string.IsNullOrEmpty(size) ? $"{size} " : string.Empty;
                     string priceDetails = $"{qty} x {retailPrice:0.00} {lineTotal:0.00}";
                     PrintLeftRight(sizeInfo, priceDetails, output);
 
@@ -1181,12 +1185,12 @@ namespace pos_system.pos.UI.Forms
                     {
                         decimal discountAmount = lineTotal * (discount / 100);
                         string discountLine = $"Discount: {discount}% (-{discountAmount:0.00})";
-                        PrintLeftRight("", discountLine, output);
-                        PrintLeftRight("", $"Net: {netPrice:0.00}", output);
+                        PrintLeftRight(string.Empty, discountLine, output);
+                        PrintLeftRight(string.Empty, $"Net: {netPrice:0.00}", output);
                     }
                     else
                     {
-                        PrintLeftRight("", $"Total: {lineTotal:0.00}", output);
+                        PrintLeftRight(string.Empty, $"Total: {lineTotal:0.00}", output);
                     }
 
                     output.AddRange(Encoding.ASCII.GetBytes("\n"));
@@ -1325,7 +1329,7 @@ namespace pos_system.pos.UI.Forms
         {
             try
             {
-                if (string.IsNullOrEmpty(input)) return "";
+                if (string.IsNullOrEmpty(input)) return string.Empty;
                 return input.Length <= maxLength ? input : input.Substring(0, maxLength - 3) + "...";
             }
             catch (Exception ex)

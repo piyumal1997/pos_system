@@ -1,35 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Microsoft.EntityFrameworkCore;
-using pos_system.pos.Models;
-using System.Security.Cryptography;
-using System.IO;
-using pos_system.pos.BLL.Services;
-using pos_system.pos.BLL.Utilities;
+﻿using pos_system.pos.BLL.Services;
 using pos_system.pos.DAL.Repositories;
-using pos_system.pos.DAL;
-using static pos_system.pos.UI.Forms.OwnerDashboard;
-using pos_system.pos.UI.Forms;
-using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Neodynamic.Windows.ThermalLabelEditor;
+using pos_system.pos.Models;
+using System;
+using System.Data;
 using System.Drawing.Printing;
-using Neodynamic.SDK.Barcode;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
+using System.Linq;
+using ZXing;
+using ZXing.Common;
+using ZXing.Windows.Compatibility;
+using System.Runtime.InteropServices;
+using BarTender;
+using BTFormat = BarTender.Format;
+using BTApplication = BarTender.Application;
+using pos_system.pos.UI.Forms;
+using pos_system;
+using pos_system.pos;
+using pos_system.pos.UI;
+using ZXing.PDF417.Internal;
 
-
-namespace pos_system.pos.UI.Forms
+namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class OwnerDashboard : Form
     {
@@ -44,7 +33,7 @@ namespace pos_system.pos.UI.Forms
 
         public static void ShowThemedMessage(string message)
         {
-            using (var msgBox = new ThemedMessageBox(message))
+            using (var msgBox = new pos_system.pos.UI.Forms.Common.ThemedMessageBox(message))
             {
                 msgBox.ShowDialog();
             }
@@ -57,7 +46,7 @@ namespace pos_system.pos.UI.Forms
 
             // Set user-specific UI components
             lblWelcome.Text = $"Welcome, {_currentUser.firstName} {_currentUser.lastName}";
-            btnClose.Click += (s, e) => Application.Exit();
+            btnClose.Click += (s, e) => System.Windows.Forms.Application.Exit();
 
             // Create sidebar buttons
             CreateSidebarButton("Dashboard", "🏠", 80);
@@ -68,7 +57,7 @@ namespace pos_system.pos.UI.Forms
             CreateSidebarButton("Barcode Print", "🖨️", 380);
             CreateSidebarButton("Logout", "🔒", 500);
 
-            OpenChildForm(new DashboardView(), _dashboardButton);
+            OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.DashboardView(), _dashboardButton);
         }
 
         private void CreateSidebarButton(string text, string icon, int yPos)
@@ -104,22 +93,22 @@ namespace pos_system.pos.UI.Forms
                 switch (text)
                 {
                     case "Dashboard":
-                        OpenChildForm(new DashboardView(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.DashboardView(), btn);
                         break;
                     case "Items":
-                        OpenChildForm(new ItemsManagement(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ItemsManagement(), btn);
                         break;
                     case "Brand && Category":
-                        OpenChildForm(new BrandAndCategory(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BrandAndCategory(), btn);
                         break;
                     case "Employees":
-                        OpenChildForm(new EmployeesManagement(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.EmployeesManagement(), btn);
                         break;
                     case "Reports":
-                        OpenChildForm(new ReportsView(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ReportsView(), btn);
                         break;
                     case "Barcode Print":
-                        OpenChildForm(new BarcodePrint(), btn);
+                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BarcodePrint(), btn);
                         break;
                     case "Logout":
                         Logout();
@@ -160,7 +149,7 @@ namespace pos_system.pos.UI.Forms
         private void Logout()
         {
             this.Hide();
-            LoginForm login = new LoginForm();
+            pos_system.pos.UI.Forms.Auth.LoginForm login = new pos_system.pos.UI.Forms.Auth.LoginForm();
             login.Show();
         }
 
@@ -414,14 +403,14 @@ namespace pos_system.pos.UI.Forms
 
             private void LoadSearchItem()
             {
-                using var form = new SearchItemForm();
+                using var form = new pos_system.pos.UI.Forms.Inventory.SearchItemForm();
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadItems();
             }
 
             private void ShowItemForm(Item item = null)
             {
-                using var form = new ItemForm(item);
+                using var form = new pos_system.pos.UI.Forms.Inventory.ItemForm(item);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadItems();
             }
@@ -700,7 +689,7 @@ namespace pos_system.pos.UI.Forms
 
             private void ShowEmployeeForm(Employee employee = null)
             {
-                using var form = new EmployeeForm(employee);
+                using var form = new pos_system.pos.UI.Forms.Controls.EmployeeForm(employee);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadEmployees();
             }
@@ -750,7 +739,7 @@ namespace pos_system.pos.UI.Forms
                 }
 
                 string name = $"{row.Cells["firstName"].Value} {row.Cells["lastName"].Value}";
-                string currentStatus = row.Cells["status"].Value?.ToString() ?? "";
+                string currentStatus = row.Cells["status"].Value?.ToString() ?? string.Empty;
                 string newStatus = currentStatus == "Active" ? "Inactive" : "Active";
 
                 if (ConfirmAction($"Change status of {name} to {newStatus}?"))
@@ -1050,7 +1039,7 @@ namespace pos_system.pos.UI.Forms
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor,
                     Padding = new Padding(10, 5, 10, 5),
-                    
+
                 };
 
 
@@ -1117,7 +1106,7 @@ namespace pos_system.pos.UI.Forms
 
             private void ShowBrandForm(Brand brand = null)
             {
-                using var form = new BrandForm(brand);
+                using var form = new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BrandForm(brand);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadBrands();
             }
@@ -1148,7 +1137,7 @@ namespace pos_system.pos.UI.Forms
 
                 var row = dgvBrands.SelectedRows[0];
                 int id = (int)row.Cells["Brand_ID"].Value;
-                string name = row.Cells["brandName"].Value?.ToString() ?? "";
+                string name = row.Cells["brandName"].Value?.ToString() ?? string.Empty;
 
                 if (ConfirmAction($"Delete brand '{name}'?"))
                 {
@@ -1161,7 +1150,7 @@ namespace pos_system.pos.UI.Forms
 
             private void ShowCategoryForm(Category category = null)
             {
-                using var form = new CategoryForm(category);
+                using var form = new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.CategoryForm(category);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadCategories();
             }
@@ -1192,7 +1181,7 @@ namespace pos_system.pos.UI.Forms
 
                 var row = dgvCategories.SelectedRows[0];
                 int id = (int)row.Cells["Category_ID"].Value;
-                string name = row.Cells["categoryName"].Value?.ToString() ?? "";
+                string name = row.Cells["categoryName"].Value?.ToString() ?? string.Empty;
 
                 if (ConfirmAction($"Delete category '{name}'?"))
                 {
@@ -1253,7 +1242,7 @@ namespace pos_system.pos.UI.Forms
                     Text = "Brand Name:",
                     Location = new Point(20, 30),
                     AutoSize = true,
-                    ForeColor = OwnerDashboard.ForegroundColor
+                    ForeColor = pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ForegroundColor
                 };
 
                 txtName = new TextBox
@@ -1262,7 +1251,7 @@ namespace pos_system.pos.UI.Forms
                     Size = new Size(200, 30),
                     Text = _brand.brandName,
                     BackColor = Color.FromArgb(70, 70, 70),
-                    ForeColor = OwnerDashboard.ForegroundColor,
+                    ForeColor = pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ForegroundColor,
                     BorderStyle = BorderStyle.FixedSingle
                 };
 
@@ -1327,13 +1316,13 @@ namespace pos_system.pos.UI.Forms
             {
                 if (string.IsNullOrWhiteSpace(txtName.Text))
                 {
-                    OwnerDashboard.ShowThemedMessage("Brand name cannot be empty");
+                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Brand name cannot be empty");
                     return false;
                 }
 
                 if (_service.CheckBrandExists(txtName.Text, _brand.Brand_ID > 0 ? _brand.Brand_ID : (int?)null))
                 {
-                    OwnerDashboard.ShowThemedMessage("Brand name already exists");
+                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Brand name already exists");
                     return false;
                 }
 
@@ -1345,7 +1334,7 @@ namespace pos_system.pos.UI.Forms
 
                 if (!success)
                 {
-                    OwnerDashboard.ShowThemedMessage("Error saving brand");
+                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Error saving brand");
                     return false;
                 }
                 return true;
@@ -1605,46 +1594,66 @@ namespace pos_system.pos.UI.Forms
                 }
             }
         }
-        public class BarcodePrint : Form
+        public partial class BarcodePrint : Form
         {
-            // Theme colors based on EmployeesManagement
+            // Theme colors
             private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
             private static readonly Color BackgroundColor = Color.White;
             private static readonly Color HeaderColor = Color.FromArgb(230, 244, 253);
             private static readonly Color ForegroundColor = Color.Black;
             private static readonly Color SecondaryColor = Color.Gray;
-            private static readonly Color DeleteColor = Color.FromArgb(231, 76, 60);
-            private static readonly Color WarningColor = Color.FromArgb(241, 196, 15);
             private static readonly Color SelectionColor = Color.FromArgb(200, 230, 255);
 
+            // UI Controls
             private DataGridView dgvItems;
-            private PictureBox picBarcodePreview;
             private Button btnPreview;
             private Button btnPrint;
             private ComboBox cboPrinters;
+            private ComboBox cboTemplates;
             private Label lblPrinter;
+            private Label lblTemplate;
+            private NumericUpDown nudPrintCount;
+            private PictureBox picPreview;
+            private TextBox txtSearch;
+            private ComboBox cboBrand;
+            private ComboBox cboCategory;
+            private Button btnSearch;
+            private Button btnClear;
+            private TextBox txtBarcode;
+            private TextBox txtPrice;
+            private TextBox txtBrand;
+            private TextBox txtCategory;
+            private TextBox txtSize;
+            private TextBox txtQuantity;
+
+            // Data
             private List<Item> items = new List<Item>();
             private Item selectedItem;
-            private NumericUpDown nudPrintCount;
-            private const int LABEL_WIDTH_MM = 30;
-            private const int LABEL_HEIGHT_MM = 20;
+            private List<TemplateItem> templateItems = new List<TemplateItem>();
+
+            // State
+            private volatile bool _isClosing = false;
 
             public BarcodePrint()
             {
                 InitializeForm();
+                LoadTemplates();
                 LoadPrinters();
-                LoadItems(); // Auto-load items on initialization
+                LoadBrands();
+                LoadCategories();
+                LoadItems();
+
+                this.FormClosing += (s, e) => _isClosing = true;
             }
 
             private void InitializeForm()
             {
                 // Form setup
                 this.Text = "BARCODE LABEL PRINTING";
-                this.Size = new Size(1100, 700);
+                this.Size = new Size(980, 700);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.Dock = DockStyle.Fill;
                 this.BackColor = BackgroundColor;
-                this.Padding = new Padding(20);
 
                 // Main container
                 var container = new Panel
@@ -1671,6 +1680,75 @@ namespace pos_system.pos.UI.Forms
                     ForeColor = Color.White,
                     Padding = new Padding(20, 0, 0, 0)
                 };
+                titlePanel.Controls.Add(lblTitle);
+
+                // Search panel
+                var searchPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 50,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(10)
+                };
+
+                // Build search controls
+                txtSearch = new TextBox
+                {
+                    PlaceholderText = "Search by description or barcode...",
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 10),
+                    Margin = new Padding(0, 0, 10, 0)
+                };
+                txtSearch.KeyPress += (s, e) =>
+                {
+                    if (e.KeyChar == (char)Keys.Enter) PerformSearch();
+                };
+
+                cboBrand = new ComboBox
+                {
+                    Dock = DockStyle.Right,
+                    Width = 150,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 10),
+                    Margin = new Padding(0, 0, 10, 0)
+                };
+
+                cboCategory = new ComboBox
+                {
+                    Dock = DockStyle.Right,
+                    Width = 150,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 10),
+                    Margin = new Padding(0, 0, 10, 0)
+                };
+
+                btnSearch = CreateButton("SEARCH", PrimaryColor, 90, 30);
+                btnSearch.Click += (s, e) => PerformSearch();
+
+                btnClear = CreateButton("CLEAR", SecondaryColor, 80, 30);
+                btnClear.Click += (s, e) => ClearSearch();
+
+                // Search container layout
+                var searchContainer = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 6,
+                    RowCount = 1,
+                    Padding = new Padding(0)
+                };
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); // Search box
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150)); // Category
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150)); // Brand
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // Clear
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90)); // Search
+                searchContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 10));  // Spacer
+
+                searchContainer.Controls.Add(txtSearch, 0, 0);
+                searchContainer.Controls.Add(cboCategory, 1, 0);
+                searchContainer.Controls.Add(cboBrand, 2, 0);
+                searchContainer.Controls.Add(btnClear, 3, 0);
+                searchContainer.Controls.Add(btnSearch, 4, 0);
+                searchPanel.Controls.Add(searchContainer);
 
                 // Main content panel
                 var contentPanel = new Panel
@@ -1724,54 +1802,119 @@ namespace pos_system.pos.UI.Forms
                     BackColor = Color.FromArgb(245, 249, 255)
                 };
 
-                // Right panel - Preview and controls
+                // Right panel - Details and controls
                 var rightPanel = new Panel
                 {
                     Dock = DockStyle.Fill,
                     Padding = new Padding(20, 0, 0, 0)
                 };
 
-                // Preview section
-                var previewPanel = new Panel
+                // Details section
+                var detailsGroup = new GroupBox
                 {
+                    Text = "ITEM DETAILS",
                     Dock = DockStyle.Top,
-                    Height = 350,
-                    BackColor = BackgroundColor
+                    Height = 190,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = PrimaryColor
                 };
 
-                var previewLabel = new Label
-                {
-                    Text = "BARCODE PREVIEW",
-                    Dock = DockStyle.Top,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                    ForeColor = PrimaryColor,
-                    Height = 30,
-                    TextAlign = ContentAlignment.MiddleLeft
-                };
-
-                picBarcodePreview = new PictureBox
+                var detailsLayout = new TableLayoutPanel
                 {
                     Dock = DockStyle.Fill,
-                    BorderStyle = BorderStyle.FixedSingle,
-                    BackColor = Color.White,
-                    SizeMode = PictureBoxSizeMode.Zoom,
-                    Margin = new Padding(0, 5, 0, 0)
+                    ColumnCount = 2,
+                    RowCount = 6,
+                    Padding = new Padding(10, 0, 10, 10)
                 };
+
+                // Create detail labels and text boxes
+                detailsLayout.Controls.Add(CreateDetailLabel("Barcode:"), 0, 0);
+                txtBarcode = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtBarcode, 1, 0);
+
+                detailsLayout.Controls.Add(CreateDetailLabel("Price:"), 0, 1);
+                txtPrice = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtPrice, 1, 1);
+
+                detailsLayout.Controls.Add(CreateDetailLabel("Brand:"), 0, 2);
+                txtBrand = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtBrand, 1, 2);
+
+                detailsLayout.Controls.Add(CreateDetailLabel("Category:"), 0, 3);
+                txtCategory = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtCategory, 1, 3);
+
+                detailsLayout.Controls.Add(CreateDetailLabel("Size:"), 0, 4);
+                txtSize = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtSize, 1, 4);
+
+                detailsLayout.Controls.Add(CreateDetailLabel("Quantity:"), 0, 5);
+                txtQuantity = CreateDetailTextBox();
+                detailsLayout.Controls.Add(txtQuantity, 1, 5);
+
+                detailsGroup.Controls.Add(detailsLayout);
+
+                // Preview section
+                var previewGroup = new GroupBox
+                {
+                    Text = "LABEL PREVIEW",
+                    Dock = DockStyle.Top,
+                    Height = 160,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = PrimaryColor
+                };
+
+                var previewPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(10),
+                    BackColor = Color.White
+                };
+
+                picPreview = new PictureBox
+                {
+                    Dock = DockStyle.Fill,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+
+                previewPanel.Controls.Add(picPreview);
+                previewGroup.Controls.Add(previewPanel);
 
                 // Controls section
                 var controlsPanel = new TableLayoutPanel
                 {
                     Dock = DockStyle.Fill,
-                    RowCount = 3,
-                    ColumnCount = 2,
+                    RowCount = 4,
+                    ColumnCount = 3,
                     AutoSize = true,
-                    Padding = new Padding(0, 20, 0, 0)
+                    Padding = new Padding(0, 10, 0, 0)
                 };
                 controlsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
-                controlsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
+                controlsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+                controlsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // Template
+                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // Printer
+                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // Print Count
+                controlsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40)); // Buttons
+
+                // Template selection
+                lblTemplate = new Label
+                {
+                    Text = "Template:",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+
+                cboTemplates = new ComboBox
+                {
+                    Dock = DockStyle.Fill,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 10)
+                };
+                cboTemplates.SelectedIndexChanged += (s, e) => RegeneratePreview();
 
                 // Printer selection
                 lblPrinter = new Label
@@ -1807,45 +1950,71 @@ namespace pos_system.pos.UI.Forms
                     Font = new Font("Segoe UI", 10)
                 };
 
-                // Buttons
-                btnPreview = CreateButton("PREVIEW", PrimaryColor, 150, 40);
-                btnPrint = CreateButton("PRINT LABELS", PrimaryColor, 150, 40);
+                // Create Preview and Print buttons
+                btnPreview = CreateButton("PREVIEW", Color.SteelBlue, 140, 35);
                 btnPreview.Enabled = false;
+                btnPreview.Click += BtnPreview_Click;
+
+                btnPrint = CreateButton("PRINT LABELS", PrimaryColor, 140, 35);
                 btnPrint.Enabled = false;
+                btnPrint.Click += BtnPrint_Click;
 
                 // Layout controls
-                controlsPanel.Controls.Add(lblPrinter, 0, 0);
-                controlsPanel.Controls.Add(cboPrinters, 1, 0);
-                controlsPanel.Controls.Add(lblPrintCount, 0, 1);
-                controlsPanel.Controls.Add(nudPrintCount, 1, 1);
-                controlsPanel.Controls.Add(btnPreview, 0, 2);
-                controlsPanel.Controls.Add(btnPrint, 1, 2);
+                controlsPanel.Controls.Add(lblTemplate, 0, 0);
+                controlsPanel.Controls.Add(cboTemplates, 1, 0);
+                controlsPanel.SetColumnSpan(cboTemplates, 2);
+
+                controlsPanel.Controls.Add(lblPrinter, 0, 1);
+                controlsPanel.Controls.Add(cboPrinters, 1, 1);
+                controlsPanel.SetColumnSpan(cboPrinters, 2);
+
+                controlsPanel.Controls.Add(lblPrintCount, 0, 2);
+                controlsPanel.Controls.Add(nudPrintCount, 1, 2);
+                controlsPanel.SetColumnSpan(nudPrintCount, 2);
+
+                controlsPanel.Controls.Add(btnPreview, 1, 3);
+                controlsPanel.Controls.Add(btnPrint, 2, 3);
 
                 // Events
                 dgvItems.SelectionChanged += DgvItems_SelectionChanged;
-                btnPreview.Click += BtnPreview_Click;
-                btnPrint.Click += BtnPrint_Click;
 
                 // Build panels
-                previewPanel.Controls.Add(picBarcodePreview);
-                previewPanel.Controls.Add(previewLabel);
+                leftPanel.Controls.Add(dgvItems);
 
                 rightPanel.Controls.Add(controlsPanel);
-                rightPanel.Controls.Add(previewPanel);
+                rightPanel.Controls.Add(previewGroup);
+                rightPanel.Controls.Add(detailsGroup);
 
-                leftPanel.Controls.Add(dgvItems);
+                titlePanel.Controls.Add(lblTitle);
 
                 contentPanel.Controls.Add(rightPanel);
                 contentPanel.Controls.Add(leftPanel);
 
-                titlePanel.Controls.Add(lblTitle);
-
                 container.Controls.Add(contentPanel);
+                container.Controls.Add(searchPanel);
                 container.Controls.Add(titlePanel);
 
                 this.Controls.Add(container);
                 ConfigureGridColumns();
             }
+
+            private Label CreateDetailLabel(string text) => new Label
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font("Segoe UI", 10)
+            };
+
+            private TextBox CreateDetailTextBox() => new TextBox
+            {
+                ReadOnly = true,
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
+                BackColor = HeaderColor,
+                Font = new Font("Segoe UI", 10),
+                Margin = new Padding(3, 5, 3, 5)
+            };
 
             private Button CreateButton(string text, Color backColor, int width, int height)
             {
@@ -1857,8 +2026,8 @@ namespace pos_system.pos.UI.Forms
                     FlatAppearance = { BorderSize = 0 },
                     BackColor = backColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    Margin = new Padding(5),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                    Margin = new Padding(5, 0, 5, 0),
                     Cursor = Cursors.Hand,
                     Anchor = AnchorStyles.Top | AnchorStyles.Right
                 };
@@ -1892,13 +2061,103 @@ namespace pos_system.pos.UI.Forms
                 );
             }
 
+            private void LoadTemplates()
+            {
+                try
+                {
+                    string templateDir = Path.Combine(System.Windows.Forms.Application.StartupPath, "Barcode");
+
+                    if (!Directory.Exists(templateDir))
+                    {
+                        MessageBox.Show($"Template directory not found:\n{templateDir}",
+                                        "Missing Templates", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var templateFiles = Directory.GetFiles(templateDir, "*.btw");
+
+                    if (templateFiles.Length == 0)
+                    {
+                        MessageBox.Show("No template files found in the template directory",
+                                        "Missing Templates", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    templateItems.Clear();
+                    cboTemplates.Items.Clear();
+
+                    foreach (string file in templateFiles)
+                    {
+                        string fileName = Path.GetFileName(file);
+                        int labelsPerRow = GetLabelsPerRowFromFileName(fileName);
+
+                        templateItems.Add(new TemplateItem
+                        {
+                            FileName = fileName,
+                            FilePath = file,
+                            LabelsPerRow = labelsPerRow
+                        });
+                    }
+
+                    // Sort templates alphabetically
+                    templateItems = templateItems.OrderBy(t => t.FileName).ToList();
+
+                    foreach (var template in templateItems)
+                    {
+                        cboTemplates.Items.Add(template);
+                    }
+
+                    if (cboTemplates.Items.Count > 0)
+                    {
+                        cboTemplates.SelectedIndex = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading templates: {ex.Message}", "Template Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private int GetLabelsPerRowFromFileName(string fileName)
+            {
+                // Default to 1 label per row
+                int labelsPerRow = 1;
+
+                if (fileName.Contains("2up")) return 2;
+                if (fileName.Contains("3up")) return 3;
+                if (fileName.Contains("4up")) return 4;
+
+                return labelsPerRow;
+            }
+
+            private void RegeneratePreview()
+            {
+                if (selectedItem != null && btnPreview.Enabled)
+                {
+                    GenerateBarTenderPreview();
+                }
+            }
+
             private void LoadPrinters()
             {
                 try
                 {
-                    cboPrinters.DataSource = System.Drawing.Printing.PrinterSettings.InstalledPrinters.Cast<string>().ToList();
-                    if (cboPrinters.Items.Count > 0)
-                        cboPrinters.SelectedIndex = 0;
+                    var printers = PrinterSettings.InstalledPrinters.Cast<string>().ToList();
+                    cboPrinters.DataSource = printers;
+
+                    // Set default printer if available
+                    using (PrintDocument doc = new PrintDocument())
+                    {
+                        if (printers.Contains(doc.PrinterSettings.PrinterName))
+                        {
+                            cboPrinters.SelectedItem = doc.PrinterSettings.PrinterName;
+                        }
+                        else if (cboPrinters.Items.Count > 0)
+                        {
+                            cboPrinters.SelectedIndex = 0;
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1907,11 +2166,67 @@ namespace pos_system.pos.UI.Forms
                 }
             }
 
-            private void LoadItems()
+            private void LoadBrands()
             {
                 try
                 {
-                    items = GetItemsFromDatabase();
+                    var brandService = new BrandService();
+                    var brands = brandService.GetAllBrands();
+
+                    cboBrand.Items.Clear();
+                    cboBrand.Items.Add(new ComboBoxItem("All Brands", 0));
+
+                    foreach (var brand in brands)
+                    {
+                        cboBrand.Items.Add(new ComboBoxItem(brand.brandName, brand.Brand_ID));
+                    }
+                    cboBrand.SelectedIndex = 0;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading brands: {ex.Message}", "Data Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void LoadCategories()
+            {
+                try
+                {
+                    var categoryService = new CategoryService();
+                    var categories = categoryService.GetAllCategorie();
+
+                    cboCategory.Items.Clear();
+                    cboCategory.Items.Add(new ComboBoxItem("All Categories", 0));
+
+                    if (categories != null)
+                    {
+                        foreach (var category in categories)
+                        {
+                            if (category != null)
+                            {
+                                cboCategory.Items.Add(new ComboBoxItem(
+                                    category.categoryName ?? "Unnamed Category",
+                                    category.Category_ID
+                                ));
+                            }
+                        }
+                    }
+                    cboCategory.SelectedIndex = 0;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading categories: {ex.Message}", "Data Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void LoadItems(string searchTerm = "", int brandId = 0, int categoryId = 0)
+            {
+                try
+                {
+                    var repository = new ItemRepository();
+                    items = repository.SearchItems(searchTerm, brandId, categoryId);
 
                     dgvItems.Rows.Clear();
                     foreach (var item in items)
@@ -1927,6 +2242,14 @@ namespace pos_system.pos.UI.Forms
                             item.quantity
                         );
                     }
+
+                    // Clear selection
+                    dgvItems.ClearSelection();
+                    selectedItem = null;
+                    ClearDetails();
+                    btnPrint.Enabled = false;
+                    btnPreview.Enabled = false;
+                    ClearPreviewImage();
                 }
                 catch (Exception ex)
                 {
@@ -1935,19 +2258,54 @@ namespace pos_system.pos.UI.Forms
                 }
             }
 
-            private List<Item> GetItemsFromDatabase()
+            private void ClearDetails()
             {
-                try
+                txtBarcode.Clear();
+                txtPrice.Clear();
+                txtBrand.Clear();
+                txtCategory.Clear();
+                txtSize.Clear();
+                txtQuantity.Clear();
+            }
+
+            private void ClearPreviewImage()
+            {
+                if (picPreview.InvokeRequired)
                 {
-                    ItemRepository repository = new ItemRepository();
-                    return repository.SearchItems("", 0, 0);  // Empty search returns all items
+                    picPreview.Invoke((MethodInvoker)delegate
+                    {
+                        if (!picPreview.IsDisposed)
+                        {
+                            picPreview.Image?.Dispose();
+                            picPreview.Image = null;
+                        }
+                    });
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show($"Database Error: {ex.Message}", "Database Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return new List<Item>();
+                    if (!picPreview.IsDisposed)
+                    {
+                        picPreview.Image?.Dispose();
+                        picPreview.Image = null;
+                    }
                 }
+            }
+
+            private void PerformSearch()
+            {
+                string searchTerm = txtSearch.Text.Trim();
+                int brandId = (cboBrand.SelectedItem as ComboBoxItem)?.Value ?? 0;
+                int categoryId = (cboCategory.SelectedItem as ComboBoxItem)?.Value ?? 0;
+
+                LoadItems(searchTerm, brandId, categoryId);
+            }
+
+            private void ClearSearch()
+            {
+                txtSearch.Clear();
+                cboBrand.SelectedIndex = 0;
+                cboCategory.SelectedIndex = 0;
+                LoadItems();
             }
 
             private void DgvItems_SelectionChanged(object sender, EventArgs e)
@@ -1957,166 +2315,359 @@ namespace pos_system.pos.UI.Forms
                     int selectedId = Convert.ToInt32(dgvItems.SelectedRows[0].Cells["Item_ID"].Value);
                     selectedItem = items.FirstOrDefault(i => i.Item_ID == selectedId);
 
-                    btnPreview.Enabled = true;
-                    btnPrint.Enabled = true;
+                    if (selectedItem != null)
+                    {
+                        // Populate details
+                        txtBarcode.Text = selectedItem.barcode;
+                        txtPrice.Text = selectedItem.RetailPrice.ToString("C2");
+                        txtBrand.Text = selectedItem.BrandName;
+                        txtCategory.Text = selectedItem.CategoryName;
+                        txtSize.Text = selectedItem.SizeLabel ?? "N/A";
+                        txtQuantity.Text = selectedItem.quantity.ToString();
 
-                    // Set default print count to item quantity
-                    nudPrintCount.Value = Math.Max(1, Math.Min(selectedItem.quantity, nudPrintCount.Maximum));
+                        // Set reasonable print count
+                        nudPrintCount.Value = Math.Max(1, Math.Min(selectedItem.quantity, 100));
+
+                        // Enable printing and preview
+                        btnPrint.Enabled = true;
+                        btnPreview.Enabled = true;
+
+                        // Generate preview immediately
+                        GenerateBarTenderPreview();
+                    }
                 }
                 else
                 {
-                    btnPreview.Enabled = false;
                     btnPrint.Enabled = false;
+                    btnPreview.Enabled = false;
+                    ClearDetails();
+                    ClearPreviewImage();
                 }
+            }
+
+            private void GenerateBarTenderPreview()
+            {
+                // Capture current item to avoid race conditions
+                Item currentItem = selectedItem;
+
+                if (cboTemplates.SelectedItem == null)
+                {
+                    return;
+                }
+
+                TemplateItem template = (TemplateItem)cboTemplates.SelectedItem;
+
+                if (currentItem == null || !File.Exists(template.FilePath))
+                {
+                    ClearPreviewImage();
+                    return;
+                }
+
+                Thread staThread = new Thread(() =>
+                {
+                    // Check if form is closing before processing
+                    if (_isClosing) return;
+
+                    string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                    Directory.CreateDirectory(tempDir);
+
+                    string outputFile = null;
+                    BTApplication btApp = null;
+                    BTFormat btFormat = null;
+
+                    try
+                    {
+                        // Double-check if form is closing
+                        if (_isClosing) return;
+
+                        btApp = new BTApplication();
+                        btApp.Visible = false;
+
+                        btFormat = btApp.Formats.Open(template.FilePath, false, "");
+
+                        // Use captured currentItem reference
+                        SetFormatData(btFormat, currentItem);
+
+                        // Set labels per row
+                        btFormat.PrintSetup.NumberSerializedLabels = template.LabelsPerRow;
+
+                        string fileNameTemplate = "preview_" + Guid.NewGuid().ToString("N") + ".png";
+                        ExportLabelToImage(btFormat, tempDir, fileNameTemplate, out outputFile);
+
+                        if (!string.IsNullOrEmpty(outputFile) && File.Exists(outputFile))
+                        {
+                            using (FileStream fs = new FileStream(outputFile, FileMode.Open, FileAccess.Read))
+                            {
+                                Image previewImage = Image.FromStream(fs);
+
+                                this.Invoke((MethodInvoker)delegate
+                                {
+                                    // Only update if the current item is still selected
+                                    if (!_isClosing && !picPreview.IsDisposed && selectedItem == currentItem)
+                                    {
+                                        picPreview.Image?.Dispose();
+                                        picPreview.Image = new Bitmap(previewImage);
+                                    }
+                                    else
+                                    {
+                                        previewImage.Dispose();
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!_isClosing)
+                        {
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                MessageBox.Show($"Preview Error: {ex.Message}");
+                            });
+                        }
+                    }
+                    finally
+                    {
+                        CleanupBarTender(ref btFormat, ref btApp);
+
+                        try
+                        {
+                            if (Directory.Exists(tempDir))
+                                Directory.Delete(tempDir, true);
+                        }
+                        catch { }
+                    }
+                });
+
+                staThread.SetApartmentState(ApartmentState.STA);
+                staThread.IsBackground = true;
+                staThread.Start();
             }
 
             private void BtnPreview_Click(object sender, EventArgs e)
             {
                 if (selectedItem == null) return;
-
-                try
-                {
-                    Bitmap labelImage = GenerateBarcodeLabel(selectedItem);
-                    picBarcodePreview.Image = labelImage;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Preview error: {ex.Message}", "Preview Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                GenerateBarTenderPreview();
             }
 
             private void BtnPrint_Click(object sender, EventArgs e)
             {
-                if (selectedItem == null || cboPrinters.SelectedItem == null) return;
+                if (selectedItem == null)
+                {
+                    MessageBox.Show("Please select an item first", "No Selection",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (cboTemplates.SelectedItem == null)
+                {
+                    MessageBox.Show("Please select a template", "Template Required",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string printerName = cboPrinters.SelectedItem?.ToString();
+                if (string.IsNullOrEmpty(printerName))
+                {
+                    MessageBox.Show("Please select a printer", "Printer Required",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Capture UI values on the main thread before starting background thread
+                TemplateItem template = (TemplateItem)cboTemplates.SelectedItem;
+                int copies = (int)nudPrintCount.Value;
+                Item itemToPrint = selectedItem;  // Capture current item
+
+                Thread staThread = new Thread(() => PrintWithBarTender(template, printerName, copies, itemToPrint));
+                staThread.SetApartmentState(ApartmentState.STA);
+                staThread.IsBackground = true;
+                staThread.Start();
+            }
+
+            private void PrintWithBarTender(TemplateItem template, string printerName, int copies, Item item)
+            {
+                if (!File.Exists(template.FilePath))
+                {
+                    this.Invoke((MethodInvoker)delegate {
+                        MessageBox.Show($"Template file not found:\n{template.FilePath}",
+                                        "Template Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    });
+                    return;
+                }
+
+                BTApplication btApp = null;
+                BTFormat btFormat = null;
 
                 try
                 {
-                    int printCount = (int)nudPrintCount.Value;
-                    Bitmap labelImage = GenerateBarcodeLabel(selectedItem);
+                    btApp = new BTApplication();
+                    btApp.Visible = false;
+                    btApp.Save(true);  // Prevent save prompts
 
-                    for (int i = 0; i < printCount; i++)
-                    {
-                        PrintLabel(labelImage);
-                    }
+                    btFormat = btApp.Formats.Open(template.FilePath, true, "");
+                    SetFormatData(btFormat, item);  // Use captured item
 
-                    MessageBox.Show($"{printCount} label(s) sent to printer successfully!", "Print Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Configure printer
+                    btFormat.PrintSetup.Printer = printerName;
+                    btFormat.PrintSetup.IdenticalCopiesOfLabel = copies;
+                    btFormat.PrintSetup.NumberSerializedLabels = template.LabelsPerRow;
+
+                    // Print
+                    btFormat.PrintOut(false, true);  // (ShowStatusWindow, WaitUntilFinished)
+
+                    this.Invoke((MethodInvoker)delegate {
+                        MessageBox.Show($"{copies} label(s) sent to printer", "Print Successful",
+                                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    });
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Print error: {ex.Message}", "Print Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    this.Invoke((MethodInvoker)delegate {
+                        MessageBox.Show($"Print Error: {ex.Message}\n\n{ex.StackTrace}",
+                                        "Print Failure",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Error);
+                    });
+                }
+                finally
+                {
+                    CleanupBarTender(ref btFormat, ref btApp);
                 }
             }
 
-            private Bitmap GenerateBarcodeLabel(Item item)
+            private void SetFormatData(BTFormat format, Item item)
             {
-                // Convert mm to pixels at 300 DPI
-                int widthPixels = (int)(LABEL_WIDTH_MM * 300 / 25.4);  // ~354 pixels
-                int heightPixels = (int)(LABEL_HEIGHT_MM * 300 / 25.4); // ~236 pixels
+                if (item == null) return;
 
-                Bitmap bmp = new Bitmap(widthPixels, heightPixels);
-                bmp.SetResolution(300, 300);
-
-                using (Graphics g = Graphics.FromImage(bmp))
+                try
                 {
-                    g.Clear(Color.White);
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    format.SetNamedSubStringValue("Barcode", item.barcode ?? "");
+                    format.SetNamedSubStringValue("RetailPrice", $"Rs.{item.RetailPrice.ToString() ?? ""}");
+                    format.SetNamedSubStringValue("Category", item.CategoryName ?? "");
+                    format.SetNamedSubStringValue("Size", $"({ItemSize(item.SizeLabel ?? "N/A")})");
+                    format.SetNamedSubStringValue("Sex", $"({GetGenderCode(item.Gender_ID)})");
+                    format.SetNamedSubStringValue("CostCode", $"Rs.{item.unitCost.ToString() ?? ""}");
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Error setting template data: {ex.Message}");
+                }
+            }
 
-                    // Define fonts
-                    Font titleFont = new Font("Arial", 9, FontStyle.Bold);
-                    Font verticalFont = new Font("Arial", 6, FontStyle.Bold);
-                    Font barcodeTextFont = new Font("Arial", 6, FontStyle.Bold);
-                    Font bottomFont = new Font("Arial", 6, FontStyle.Bold);
+            private string ItemSize(string size)
+            {
+                return size switch
+                {
+                    "One Size" => "One",  // One Size
+                    _ => size,  // Other Any Sizes
+                };
+            }
 
-                    StringFormat centerFormat = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            private string GetGenderCode(int genderId)
+            {
+                return genderId switch
+                {
+                    1 => "M",  // Male
+                    2 => "F",  // Female
+                    3 => "U",  // Unisex
+                    4 => "N",  // None
+                    _ => "N"   // Default to None
+                };
+            }
 
-                    float margin = 25f; // A small margin
+            private void ExportLabelToImage(BTFormat format, string directory,
+                                           string fileNameTemplate, out string outputFilePath)
+            {
+                outputFilePath = null;
 
-                    // 1. Top Section: Style NewAge
-                    RectangleF titleRect = new RectangleF(0, 5, widthPixels, 40);
-                    g.DrawString("Style NewAge", titleFont, Brushes.Black, titleRect, centerFormat);
+                try
+                {
+                    BarTender.Messages messages;
+                    _ = format.ExportPrintPreviewToImage(
+                        directory,
+                        fileNameTemplate,
+                        "PNG",
+                        BtColors.btColors24Bit,
+                        203,
+                        0,
+                        BtSaveOptions.btDoNotSaveChanges,
+                        false,
+                        true,
+                        out messages
+                    );
 
-                    // 2. Bottom Section: Brand + Category (Size)
-                    string sizePart = !string.IsNullOrEmpty(item.SizeLabel) ? $" ({item.SizeLabel})" : "";
-                    string bottomText = $"{item.BrandName}  {item.CategoryName}{sizePart}";
-                    RectangleF bottomRect = new RectangleF(0, heightPixels - 35, widthPixels, 30);
-                    g.DrawString(bottomText, bottomFont, Brushes.Black, bottomRect, centerFormat);
+                    outputFilePath = FindGeneratedFile(directory, fileNameTemplate);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Export failed: " + ex.Message);
+                }
+            }
 
-                    // 3. Retail Price (Left side, rotated)
-                    g.TranslateTransform(margin + 15, heightPixels / 2f);
-                    g.RotateTransform(-90);
-                    g.DrawString($"Rs.{item.RetailPrice}", verticalFont, Brushes.Black, new RectangleF(-heightPixels / 2f, -15, heightPixels, 30), centerFormat);
-                    g.ResetTransform();
+            private string FindGeneratedFile(string directory, string fileNameTemplate)
+            {
+                string searchPattern = Path.GetFileNameWithoutExtension(fileNameTemplate) + "*" +
+                                       Path.GetExtension(fileNameTemplate);
 
-                    // 4. Unit Cost (Right side, rotated)
-                    g.TranslateTransform(widthPixels - margin - 20, heightPixels / 2f);
-                    g.RotateTransform(90);
-                    g.DrawString($"Rs.{item.unitCost}", verticalFont, Brushes.Black, new RectangleF(-heightPixels / 2f, -15, heightPixels, 30), centerFormat);
-                    g.ResetTransform();
+                var files = Directory.GetFiles(directory, searchPattern);
+                if (files.Length > 0) return files[0];
 
-                    // 5. Central Rectangle for Barcode
-                    float centralRectX = 50;
-                    float centralRectY = 50;
-                    float centralRectWidth = widthPixels - 100;
-                    float centralRectHeight = heightPixels - 85;
+                string exactPath = Path.Combine(directory, fileNameTemplate);
+                return File.Exists(exactPath) ? exactPath : null;
+            }
 
-                    // 6. Barcode Image
-                    using (var barcode = new BarcodeProfessional())
+            private void CleanupBarTender(ref BTFormat format, ref BTApplication app)
+            {
+                try
+                {
+                    if (format != null)
                     {
-                        barcode.Symbology = Symbology.Code128;
-                        barcode.Code = item.barcode;
-                        barcode.BarHeight = 0.35f;
-                        barcode.BarWidth = 0.005f;
-                        barcode.DisplayCode = false;
-
-                        Image barcodeImg = barcode.GetBarcodeImage(centralRectWidth + 50, centralRectHeight - 30);
-
-                        float barcodeX = centralRectX + (centralRectWidth - barcodeImg.Width) / 2;
-                        float barcodeY = centralRectY + 10;
-                        g.DrawImage(barcodeImg, barcodeX, barcodeY);
+                        format.Close(BtSaveOptions.btDoNotSaveChanges);
+                        while (Marshal.ReleaseComObject(format) > 0) { }
+                        format = null;
                     }
 
-                    // 7. Barcode Code Text
-                    RectangleF barcodeTextRect = new RectangleF(
-                        centralRectX,
-                        centralRectY + centralRectHeight - 35,
-                        centralRectWidth,
-                        25
-                    );
-                    g.DrawString(item.barcode, barcodeTextFont, Brushes.Black, barcodeTextRect, centerFormat);
+                    if (app != null)
+                    {
+                        app.Quit(BtSaveOptions.btDoNotSaveChanges);
+                        while (Marshal.ReleaseComObject(app) > 0) { }
+                        app = null;
+                    }
                 }
-
-                return bmp;
+                catch { }
+                finally
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
             }
 
-            private void PrintLabel(Bitmap labelImage)
+            // Helper classes
+            private class ComboBoxItem
             {
-                PrintDocument pd = new PrintDocument();
-                pd.PrinterSettings.PrinterName = cboPrinters.SelectedItem.ToString();
+                public string Text { get; }
+                public int Value { get; }
 
-                // Configure label size
-                PaperSize customSize = new PaperSize("Custom",
-                    (int)(LABEL_WIDTH_MM * 100 / 25.4),
-                    (int)(LABEL_HEIGHT_MM * 100 / 25.4));
-
-                pd.DefaultPageSettings.PaperSize = customSize;
-                pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
-
-                pd.PrintPage += (sender, e) =>
+                public ComboBoxItem(string text, int value)
                 {
-                    e.Graphics.DrawImage(
-                        labelImage,
-                        e.PageBounds,
-                        new Rectangle(0, 0, labelImage.Width, labelImage.Height),
-                        GraphicsUnit.Pixel
-                    );
-                    e.HasMorePages = false;
-                };
+                    Text = text;
+                    Value = value;
+                }
 
-                pd.Print();
+                public override string ToString() => Text;
+            }
+
+            private class TemplateItem
+            {
+                public string FileName { get; set; }
+                public string FilePath { get; set; }
+                public int LabelsPerRow { get; set; }
+
+                public override string ToString()
+                {
+                    return $"{FileName} ({LabelsPerRow} per row)";
+                }
             }
         }
         public class ReportsView : Form { }

@@ -1,7 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using pos_system.pos.BLL.Services;
-using pos_system.pos.DAL.Repositories;
-using pos_system.pos.UI.Forms;
 
 namespace pos_system
 {
@@ -19,14 +16,14 @@ namespace pos_system
 
             ApplicationConfiguration.Initialize();
             var services = new ServiceCollection();
-            services.AddTransient<LoginForm>();
+            services.AddTransient<pos_system.pos.UI.Forms.Auth.LoginForm>();
             ServiceProvider = services.BuildServiceProvider();
 
 
-            Application.Run(ServiceProvider.GetRequiredService<LoginForm>());
+            Application.Run(ServiceProvider.GetRequiredService<pos_system.pos.UI.Forms.Auth.LoginForm>());
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
         }
-      
+
     }
 }

@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
+using System;
+using System.Data;
 
 namespace pos_system.pos.BLL.Services
 {

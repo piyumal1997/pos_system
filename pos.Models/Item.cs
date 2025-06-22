@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace pos_system.pos.Models
 {
@@ -24,6 +18,7 @@ namespace pos_system.pos.Models
         public int Category_ID { get; set; }
         public int? Size_ID { get; set; }  // Nullable for items without size
         public byte[] ItemImage { get; set; }
+        public int Gender_ID { get; set; }
 
         // Navigation properties
         public string BrandName { get; set; }
@@ -31,3 +26,6 @@ namespace pos_system.pos.Models
         public string SizeLabel { get; set; }  // For display purposes
     }
 }
+
+
+

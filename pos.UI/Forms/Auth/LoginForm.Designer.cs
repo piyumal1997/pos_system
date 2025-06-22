@@ -1,4 +1,6 @@
-﻿namespace pos_system
+﻿using pos_system;
+
+namespace pos_system.pos.UI.Forms.Auth
 {
     partial class LoginForm
     {
