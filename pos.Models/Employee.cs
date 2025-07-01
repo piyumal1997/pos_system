@@ -19,5 +19,6 @@ namespace pos_system.pos.Models
         public int Role_ID { get; set; }
         public string RoleName { get; set; } // For display
         public byte[] picture { get; set; }
+        public string email { get; set; } // Added email property
     }
 }

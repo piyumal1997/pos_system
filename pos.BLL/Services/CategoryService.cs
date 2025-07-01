@@ -47,5 +47,11 @@ namespace pos_system.pos.BLL.Services
         {
             return _repository.CategoryExists(categoryId);
         }
+
+        public string GetCategoryName(int categoryId)
+        {
+            if (categoryId <= 0) return string.Empty;
+            return _repository.GetCategoryNameById(categoryId);
+        }
     }
 }

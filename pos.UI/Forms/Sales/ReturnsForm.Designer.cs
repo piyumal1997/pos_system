@@ -77,7 +77,6 @@
             this.txtBillId.Text = "Enter Bill ID";
             this.txtBillId.Enter += new System.EventHandler(this.txtBillId_Enter);
             this.txtBillId.Leave += new System.EventHandler(this.txtBillId_Leave);
-            this.txtBillId.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtBillId_KeyPress);
 
             // txtBillIdUnderline
             this.txtBillIdUnderline.BackColor = System.Drawing.Color.Gray;
@@ -231,7 +230,7 @@
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "ReturnsForm";
-            this.Padding = new System.Windows.Forms.Padding(10);
+            this.Padding = new System.Windows.Forms.Padding(12);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Returns Management";
             ((System.ComponentModel.ISupportInitialize)(this.dgvBillItems)).EndInit();

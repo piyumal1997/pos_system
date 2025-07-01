@@ -16,17 +16,22 @@ namespace pos_system.pos.BLL.Services
 
         public (bool success, string message) SaveEmployee(Employee employee, bool isUpdate)
         {
-            if (!isUpdate && _repo.CheckExisting(employee.nic, employee.userName, employee.contactNo))
-                return (false, "NIC, Username or Contact already exists");
+            if (!isUpdate && _repo.CheckExisting(
+                employee.nic,
+                employee.userName,
+                employee.contactNo,
+                employee.email))
+            {
+                return (false, "NIC, Username, Contact or Email already exists");
+            }
 
             try
             {
                 int result = _repo.AddUpdateEmployee(employee, isUpdate);
                 return (result > 0, result > 0 ? "Saved successfully" : "Save failed");
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                Debug.WriteLine($"Database error: {ex.Message}");
                 return (false, $"Database error: {ex.Message}");
             }
         }

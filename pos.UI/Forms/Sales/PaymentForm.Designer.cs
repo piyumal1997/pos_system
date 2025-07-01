@@ -1,9 +1,4 @@
-﻿using pos_system.pos.UI.Forms;
-using pos_system;
-using pos_system.pos;
-using pos_system.pos.UI;
-
-namespace pos_system.pos.UI.Forms.Sales
+﻿namespace pos_system.pos.UI.Forms.Sales
 {
     partial class PaymentForm
     {
@@ -27,6 +22,10 @@ namespace pos_system.pos.UI.Forms.Sales
         private MaskedTextBox txtBankDigits;
         private Button btnComplete;
         private Button btnCancel;
+        private Panel pnlContact;
+        private MaskedTextBox txtCustomerContact;
+        private Label lblContact;
+        private Label lblContactError;
 
         protected override void Dispose(bool disposing)
         {
@@ -57,9 +56,14 @@ namespace pos_system.pos.UI.Forms.Sales
             this.txtBankDigits = new System.Windows.Forms.MaskedTextBox();
             this.btnComplete = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.pnlContact = new System.Windows.Forms.Panel();
+            this.lblContactError = new System.Windows.Forms.Label();
+            this.txtCustomerContact = new System.Windows.Forms.MaskedTextBox();
+            this.lblContact = new System.Windows.Forms.Label();
             this.pnlCash.SuspendLayout();
             this.pnlCard.SuspendLayout();
             this.pnlBank.SuspendLayout();
+            this.pnlContact.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblTitle
@@ -153,7 +157,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.pnlCash.Controls.Add(this.lblChange);
             this.pnlCash.Controls.Add(this.lblChangeLabel);
             this.pnlCash.Controls.Add(this.txtCashTendered);
-            this.pnlCash.Location = new System.Drawing.Point(17, 160);
+            this.pnlCash.Location = new System.Drawing.Point(17, 220);
             this.pnlCash.Name = "pnlCash";
             this.pnlCash.Size = new System.Drawing.Size(300, 100);
             this.pnlCash.TabIndex = 8;
@@ -191,7 +195,7 @@ namespace pos_system.pos.UI.Forms.Sales
             // pnlCard
             // 
             this.pnlCard.Controls.Add(this.txtCardDigits);
-            this.pnlCard.Location = new System.Drawing.Point(17, 160);
+            this.pnlCard.Location = new System.Drawing.Point(17, 220);
             this.pnlCard.Name = "pnlCard";
             this.pnlCard.Size = new System.Drawing.Size(300, 60);
             this.pnlCard.TabIndex = 9;
@@ -210,7 +214,7 @@ namespace pos_system.pos.UI.Forms.Sales
             // pnlBank
             // 
             this.pnlBank.Controls.Add(this.txtBankDigits);
-            this.pnlBank.Location = new System.Drawing.Point(17, 160);
+            this.pnlBank.Location = new System.Drawing.Point(17, 220);
             this.pnlBank.Name = "pnlBank";
             this.pnlBank.Size = new System.Drawing.Size(300, 60);
             this.pnlBank.TabIndex = 10;
@@ -233,7 +237,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnComplete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnComplete.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnComplete.ForeColor = System.Drawing.Color.White;
-            this.btnComplete.Location = new System.Drawing.Point(17, 270);
+            this.btnComplete.Location = new System.Drawing.Point(17, 300);
             this.btnComplete.Name = "btnComplete";
             this.btnComplete.Size = new System.Drawing.Size(140, 40);
             this.btnComplete.TabIndex = 11;
@@ -245,7 +249,7 @@ namespace pos_system.pos.UI.Forms.Sales
             // 
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCancel.Location = new System.Drawing.Point(177, 270);
+            this.btnCancel.Location = new System.Drawing.Point(177, 300);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(140, 40);
             this.btnCancel.TabIndex = 12;
@@ -253,9 +257,50 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
+            // pnlContact
+            // 
+            this.pnlContact.Controls.Add(this.lblContactError);
+            this.pnlContact.Controls.Add(this.txtCustomerContact);
+            this.pnlContact.Controls.Add(this.lblContact);
+            this.pnlContact.Location = new System.Drawing.Point(17, 160);
+            this.pnlContact.Name = "pnlContact";
+            this.pnlContact.Size = new System.Drawing.Size(300, 60);
+            this.pnlContact.TabIndex = 13;
+            // 
+            // lblContactError
+            // 
+            this.lblContactError.AutoSize = true;
+            this.lblContactError.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblContactError.ForeColor = System.Drawing.Color.Red;
+            this.lblContactError.Location = new System.Drawing.Point(10, 40);
+            this.lblContactError.Name = "lblContactError";
+            this.lblContactError.Size = new System.Drawing.Size(0, 13);
+            this.lblContactError.TabIndex = 2;
+            // 
+            // txtCustomerContact
+            // 
+            this.txtCustomerContact.Font = new System.Drawing.Font("Segoe UI", 9.75F);
+            this.txtCustomerContact.Location = new System.Drawing.Point(10, 25);
+            this.txtCustomerContact.Mask = "0000 000 000";
+            this.txtCustomerContact.Name = "txtCustomerContact";
+            this.txtCustomerContact.Size = new System.Drawing.Size(280, 25);
+            this.txtCustomerContact.TabIndex = 1;
+            this.txtCustomerContact.TextChanged += new System.EventHandler(this.txtCustomerContact_TextChanged);
+            // 
+            // lblContact
+            // 
+            this.lblContact.AutoSize = true;
+            this.lblContact.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblContact.Location = new System.Drawing.Point(7, 7);
+            this.lblContact.Name = "lblContact";
+            this.lblContact.Size = new System.Drawing.Size(146, 15);
+            this.lblContact.TabIndex = 0;
+            this.lblContact.Text = "Customer Contact (optional):";
+            // 
             // PaymentForm
             // 
-            this.ClientSize = new System.Drawing.Size(334, 321);
+            this.ClientSize = new System.Drawing.Size(334, 351);
+            this.Controls.Add(this.pnlContact);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnComplete);
             this.Controls.Add(this.pnlBank);
@@ -282,23 +327,11 @@ namespace pos_system.pos.UI.Forms.Sales
             this.pnlCard.PerformLayout();
             this.pnlBank.ResumeLayout(false);
             this.pnlBank.PerformLayout();
+            this.pnlContact.ResumeLayout(false);
+            this.pnlContact.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
-        }
-
-        private void txtCashTendered_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '.'))
-            {
-                e.Handled = true;
-            }
-
-            // Only allow one decimal point
-            if ((e.KeyChar == '.') && ((sender as TextBox).Text.IndexOf('.') > -1))
-            {
-                e.Handled = true;
-            }
         }
     }
 }

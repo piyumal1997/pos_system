@@ -1,39 +1,50 @@
 ﻿using pos_system.pos.BLL.Services;
 using pos_system.pos.DAL.Repositories;
 using pos_system.pos.Models;
-using System;
 using System.Data;
 using System.Drawing.Printing;
-using System.Linq;
-using ZXing;
-using ZXing.Common;
-using ZXing.Windows.Compatibility;
 using System.Runtime.InteropServices;
 using BarTender;
 using BTFormat = BarTender.Format;
 using BTApplication = BarTender.Application;
-using pos_system.pos.UI.Forms;
-using pos_system;
-using pos_system.pos;
-using pos_system.pos.UI;
-using ZXing.PDF417.Internal;
+using System.Diagnostics;
+using pos_system.pos.Core;
+using RetailPOS.BLL.Services;
+using LiveCharts;
+using LiveCharts.WinForms;
+using System.Drawing.Drawing2D;
+using FontAwesome.Sharp;
+using LiveCharts.Wpf;
+using Microsoft.Data.SqlClient;
+using pos_system.pos.DAL;
+using static pos_system.pos.UI.Forms.Dashboard.CashierForm;
+using pos_system.pos.UI.Forms.Inventory;
+using LiveCharts.Wpf.Charts.Base;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
+using System.Text;
 
 namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class OwnerDashboard : Form
     {
         public Employee _currentUser;
+        private bool _dragging = false;
+        private Point _startPoint = new Point(0, 0);
 
-
-        public static Color BackgroundColor => Color.FromArgb(214, 208, 208); // Dark background
+        public static Color BackgroundColor => Color.FromArgb(214, 208, 208);
         public static Color ForegroundColor => Color.WhiteSmoke;
         public static Color HeaderColor => Color.FromArgb(170, 170, 170);
         public static Color GridLineColor => Color.FromArgb(70, 70, 70);
-        public static Color SelectionColor => Color.FromArgb(0, 120, 215); // Accent color
+        public static Color SelectionColor => Color.FromArgb(0, 120, 215);
 
         public static void ShowThemedMessage(string message)
         {
-            using (var msgBox = new pos_system.pos.UI.Forms.Common.ThemedMessageBox(message))
+            using (var msgBox = new Common.ThemedMessageBox(message))
             {
                 msgBox.ShowDialog();
             }
@@ -41,23 +52,61 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
         public OwnerDashboard(Employee user)
         {
-            InitializeComponent(); // Designer initialization
+            InitializeComponent();
             _currentUser = user;
 
-            // Set user-specific UI components
             lblWelcome.Text = $"Welcome, {_currentUser.firstName} {_currentUser.lastName}";
             btnClose.Click += (s, e) => System.Windows.Forms.Application.Exit();
+            btnMinimize.Click += (s, e) => this.WindowState = FormWindowState.Minimized;
 
-            // Create sidebar buttons
+            // Setup form dragging
+            headerPanel.MouseDown += (s, e) =>
+            {
+                _dragging = true;
+                _startPoint = new Point(e.X, e.Y);
+            };
+
+            headerPanel.MouseMove += (s, e) =>
+            {
+                if (_dragging)
+                {
+                    Point p = PointToScreen(new Point(e.X, e.Y));
+                    Location = new Point(p.X - _startPoint.X, p.Y - _startPoint.Y);
+                }
+            };
+
+            headerPanel.MouseUp += (s, e) => { _dragging = false; };
+
+            // Also allow dragging via the welcome label
+            lblWelcome.MouseDown += (s, e) =>
+            {
+                _dragging = true;
+                _startPoint = new Point(e.X, e.Y);
+            };
+
+            lblWelcome.MouseMove += headerPanel_MouseMove;
+            lblWelcome.MouseUp += (s, e) => { _dragging = false; };
+
             CreateSidebarButton("Dashboard", "🏠", 80);
             CreateSidebarButton("Items", "📦", 140);
             CreateSidebarButton("Employees", "👥", 200);
             CreateSidebarButton("Reports", "📊", 260);
             CreateSidebarButton("Brand && Category", "🏷️", 320);
             CreateSidebarButton("Barcode Print", "🖨️", 380);
-            CreateSidebarButton("Logout", "🔒", 500);
+            CreateSidebarButton("Sales", "💲", 440);
+            CreateSidebarButton("Bills", "📄", 500);
+            CreateSidebarButton("Logout", "🔒", 580);
 
-            OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.DashboardView(), _dashboardButton);
+            OpenChildForm(new DashboardForm(), _dashboardButton);
+        }
+
+        private void headerPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                Point p = PointToScreen(new Point(e.X, e.Y));
+                Location = new Point(p.X - _startPoint.X, p.Y - _startPoint.Y);
+            }
         }
 
         private void CreateSidebarButton(string text, string icon, int yPos)
@@ -77,11 +126,11 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             if (text == "Dashboard") _dashboardButton = btn;
 
-            // Hover Effects
             btn.MouseEnter += (s, e) =>
             {
                 if (btn != _currentButton) btn.BackColor = Color.FromArgb(225, 225, 225);
             };
+
             btn.MouseLeave += (s, e) =>
             {
                 if (btn != _currentButton) btn.BackColor = Color.Transparent;
@@ -93,22 +142,28 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 switch (text)
                 {
                     case "Dashboard":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.DashboardView(), btn);
+                        OpenChildForm(new DashboardForm(), btn);
                         break;
                     case "Items":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ItemsManagement(), btn);
+                        OpenChildForm(new ItemsManagement(), btn);
                         break;
                     case "Brand && Category":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BrandAndCategory(), btn);
+                        OpenChildForm(new BrandAndCategory(), btn);
                         break;
                     case "Employees":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.EmployeesManagement(), btn);
+                        OpenChildForm(new EmployeesManagement(), btn);
                         break;
                     case "Reports":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ReportsView(), btn);
+                        OpenChildForm(new ReportsView(), btn);
                         break;
                     case "Barcode Print":
-                        OpenChildForm(new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BarcodePrint(), btn);
+                        OpenChildForm(new BarcodePrint(), btn);
+                        break;
+                    case "Sales":
+                        OpenChildForm(new Sales(), btn);
+                        break;
+                    case "Bills":
+                        OpenChildForm(new Bills(), btn);
                         break;
                     case "Logout":
                         Logout();
@@ -127,7 +182,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 _currentButton.BackColor = Color.Transparent;
                 _currentButton.ForeColor = Color.Gray;
             }
-            btn.BackColor = Color.FromArgb(41, 128, 185); ;
+            btn.BackColor = Color.FromArgb(41, 128, 185);
             btn.ForeColor = Color.White;
             _currentButton = btn;
         }
@@ -154,19 +209,419 @@ namespace pos_system.pos.UI.Forms.Dashboard
         }
 
 
-        // Nested view classes
-        public class DashboardView : Form { }
+
+        public partial class DashboardForm : Form
+        {
+        // Theme colors based on EmployeeManagement
+            private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
+            private static readonly Color BackgroundColor = Color.White;
+            private static readonly Color DeleteColor = Color.FromArgb(231, 76, 60);
+            private static readonly Color WarningColor = Color.FromArgb(241, 196, 15);
+            private static readonly Color SuccessColor = Color.FromArgb(46, 204, 113);
+
+            private readonly DashboardService _dashboardService = new DashboardService();
+            private DashboardMetrics _metrics;
+
+            // UI Components
+            private FlowLayoutPanel panelCards;
+            private LiveCharts.WinForms.CartesianChart dailyChart;
+            private Button btnRefresh;
+            private Panel titlePanel;
+            private TableLayoutPanel mainContainer;
+
+            // Card Labels
+            private Label lblTotalItems;
+            private Label lblActiveEmployees;
+            private Label lblTotalBills;
+            private Label lblTotalReturns;
+            private Label lblTotalCategories;
+            private Label lblTotalBrands;
+            private Label lblTodaysSales;
+            private Label lblTodaysCOGS;
+            private Label lblTodaysQuantity;
+
+            public DashboardForm()
+            {
+                    InitializeComponent();
+                    LoadDashboardData();
+                    this.Resize += (s, e) => AdjustLayout();
+                    AdjustLayout(); // Initial layout adjustment
+                }
+
+            private void InitializeComponent()
+            {
+                // Form Setup
+                Text = "Retail POS Dashboard";
+                Size = new Size(950, 700);
+                BackColor = BackgroundColor;
+                AutoScroll = true;  // Fixed: Enable scrolling
+                Padding = new Padding(0);
+                FormBorderStyle = FormBorderStyle.None;
+                ShowIcon = false;   // Remove form icon
+
+                // Main container using TableLayoutPanel for responsive design
+                mainContainer = new TableLayoutPanel
+                {
+                    //Dock = DockStyle.Fill,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(16),
+                    AutoSize = true,
+                    //AutoSizeMode = AutoSizeMode.GrowAndShrink
+                };
+                mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 90F));
+
+                // Title Panel
+                titlePanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Height = 70,
+                    BackColor = PrimaryColor,
+                    Padding = new Padding(10, 0, 10, 0)
+                };
+
+                var lblTitle = new Label
+                {
+                    Text = "RETAIL POS DASHBOARD",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                    ForeColor = Color.White,
+                };
+
+                // Refresh Button
+                btnRefresh = new Button
+                {
+                    Text = "REFRESH",
+                    Size = new Size(120, 40),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    FlatStyle = FlatStyle.Flat,
+                    FlatAppearance = {
+                    BorderSize = 0,
+                    MouseOverBackColor = ControlPaint.Light(PrimaryColor, 0.2f)
+                },
+                    BackColor = PrimaryColor,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnRefresh.Click += btnRefresh_Click;
+
+                titlePanel.Controls.Add(btnRefresh);
+                titlePanel.Controls.Add(lblTitle);
+
+                // Card Panel - Responsive flow layout
+                panelCards = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Padding = new Padding(0, 10, 0, 20),
+                    WrapContents = true,
+                    BackColor = BackgroundColor,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                };
+
+                // Create Enhanced Cards with Icons
+                CreateModernCard("Total Items", "0", IconChar.Box, PrimaryColor, out lblTotalItems);
+                CreateModernCard("Active Employees", "0", IconChar.UserFriends, PrimaryColor, out lblActiveEmployees);
+                CreateModernCard("Total Bills", "0", IconChar.Receipt, PrimaryColor, out lblTotalBills);
+                CreateModernCard("Total Returns", "0", IconChar.ExchangeAlt, DeleteColor, out lblTotalReturns);
+                CreateModernCard("Categories", "0", IconChar.List, PrimaryColor, out lblTotalCategories);
+                CreateModernCard("Brands", "0", IconChar.Tags, PrimaryColor, out lblTotalBrands);
+                CreateModernCard("Today's Sales", "0.00", IconChar.DollarSign, SuccessColor, out lblTodaysSales);
+                CreateModernCard("Today's COS", "0.00", IconChar.MoneyBillWave, WarningColor, out lblTodaysCOGS);
+                CreateModernCard("Today's Quantity", "0", IconChar.ShoppingCart, PrimaryColor, out lblTodaysQuantity);
+
+                // LiveCharts CartesianChart
+                dailyChart = new LiveCharts.WinForms.CartesianChart
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = BackgroundColor,
+                    Margin = new Padding(0, 20, 0, 0),
+                    MinimumSize = new Size(950, 300),
+                    MaximumSize = new Size(950, 500),
+                    Location = new Point(0, 0),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    LegendLocation = LegendLocation.None,
+                };
+                    dailyChart.Update(true, true);
+                    // Configure chart appearance
+                    dailyChart.AxisX.Add(new LiveCharts.Wpf.Axis
+                {
+                    Labels = new string[0],
+                    Separator = new Separator { StrokeThickness = 0 },
+                    LabelsRotation = 30,
+                    FontSize = 11
+                });
+
+                dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
+                {
+                    LabelFormatter = value => value.ToString("0.00"),
+                    Separator = new Separator
+                    {
+                        Stroke = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(200, 200, 200))
+                    }
+                });
+
+                // Add rows to main container
+                mainContainer.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F)); // Title
+                mainContainer.RowStyles.Add(new RowStyle(SizeType.AutoSize));       // Cards
+                mainContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));  // Chart
+
+                // Add controls to container
+                mainContainer.Controls.Add(titlePanel, 0, 0);
+                mainContainer.Controls.Add(panelCards, 0, 1);
+                mainContainer.Controls.Add(dailyChart, 0, 2);
+
+                // Add main container to form
+                AutoScroll = true;
+                Controls.Add(mainContainer);
+             }
+
+            private void AdjustLayout()
+            {
+                mainContainer.Width = 1000;
+
+                    // Position refresh button dynamically
+                btnRefresh.Location = new Point(
+                    titlePanel.Width - btnRefresh.Width - 20,
+                    (titlePanel.Height - btnRefresh.Height) / 2
+                );
+
+                    // Adjust card sizes based on available width
+                int cardWidth = CalculateCardWidth();
+                foreach (Control card in panelCards.Controls)
+                {
+                    card.Width = cardWidth;
+                }
+                //UpdateChart();
+            }
+
+            private int CalculateCardWidth()
+            {
+                const int minCardWidth = 200;
+                const int maxCardWidth = 210;
+                const int margin = 15;
+                const int minCardsPerRow = 3;
+
+                int containerWidth = panelCards.ClientSize.Width - margin;
+
+                if (containerWidth < minCardWidth * minCardsPerRow + margin * minCardsPerRow)
+                {
+                    // For narrow screens, use 2 columns
+                    return Math.Min(maxCardWidth, (containerWidth / 2) - margin * 2);
+                }
+
+                // Calculate optimal cards per row
+                int cardsPerRow = Math.Max(minCardsPerRow, containerWidth / minCardWidth);
+
+                // Calculate card width
+                int calculatedWidth = (containerWidth / cardsPerRow) - margin * 2;
+
+                // Apply constraints
+                return Math.Min(maxCardWidth, Math.Max(minCardWidth, calculatedWidth));
+            }
+
+            private void CreateModernCard(string title, string initialValue, IconChar icon, Color accentColor, out Label valueLabel)
+            {
+                int cardWidth = CalculateCardWidth();
+
+                var card = new Panel
+                {
+                    Size = new Size(cardWidth, 110),
+                    Margin = new Padding(10),
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.None,
+                    Padding = new Padding(0),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left
+                };
+
+                // Add rounded corners and shadow
+                card.Paint += (sender, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    var rect = new Rectangle(0, 0, card.Width - 1, card.Height - 1);
+                    using (var path = GetRoundedRect(rect, 8))
+                    {
+                        // Shadow
+                        using (var shadow = new SolidBrush(Color.FromArgb(20, 0, 0, 0)))
+                        {
+                            for (int i = 0; i < 3; i++)
+                            {
+                                var shadowRect = new Rectangle(i, i + 2, card.Width - 1, card.Height - 1);
+                                using (var shadowPath = GetRoundedRect(shadowRect, 8))
+                                {
+                                    e.Graphics.FillPath(shadow, shadowPath);
+                                }
+                            }
+                        }
+
+                        // Card background
+                        using (var brush = new SolidBrush(Color.White))
+                        {
+                            e.Graphics.FillPath(brush, path);
+                        }
+
+                        // Accent bar
+                        using (var accentBrush = new SolidBrush(accentColor))
+                        {
+                            e.Graphics.FillRectangle(accentBrush, 0, 0, card.Width, 4);
+                        }
+
+                        // Border
+                        using (var pen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                        {
+                            e.Graphics.DrawPath(pen, path);
+                        }
+                    }
+                };
+
+                // Icon
+                var iconControl = new IconPictureBox
+                {
+                    IconChar = icon,
+                    IconColor = accentColor,
+                    IconSize = 32,
+                    Location = new Point(15, 20),
+                    Size = new Size(32, 32),
+                    BackColor = Color.Transparent
+                };
+
+                // Title label
+                var titleLabel = new Label
+                {
+                    Text = title,
+                    Location = new Point(55, 20),
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(120, 120, 120),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoSize = true
+                };
+
+                // Value label
+                valueLabel = new Label
+                {
+                    Text = initialValue,
+                    Location = new Point(55, 45),
+                    Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(60, 60, 60),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoSize = true
+                };
+
+                card.Controls.Add(iconControl);
+                card.Controls.Add(titleLabel);
+                card.Controls.Add(valueLabel);
+                panelCards.Controls.Add(card);
+            }
+
+            private GraphicsPath GetRoundedRect(Rectangle bounds, int radius)
+            {
+                GraphicsPath path = new GraphicsPath();
+                path.AddArc(bounds.X, bounds.Y, radius, radius, 180, 90);
+                path.AddArc(bounds.X + bounds.Width - radius, bounds.Y, radius, radius, 270, 90);
+                path.AddArc(bounds.X + bounds.Width - radius, bounds.Y + bounds.Height - radius, radius, radius, 0, 90);
+                path.AddArc(bounds.X, bounds.Y + bounds.Height - radius, radius, radius, 90, 90);
+                path.CloseFigure();
+                return path;
+            }
+
+            private void UpdateChart()
+            {
+                // Clear existing axes and series
+                dailyChart.AxisX.Clear();
+                dailyChart.AxisY.Clear();
+                dailyChart.Series.Clear();
+
+                if (_metrics?.DailySales == null || _metrics.DailySales.Count == 0)
+                    return;
+
+                // Create series with data binding
+                var series = new LineSeries
+                {
+                    Title = "Daily Sales",
+                    Values = new ChartValues<decimal>(_metrics.DailySales.Select(d => d.TotalSales)),
+                    PointGeometry = DefaultGeometries.Circle,
+                    PointGeometrySize = 10,
+                    Stroke = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(PrimaryColor.R, PrimaryColor.G, PrimaryColor.B)),
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    StrokeThickness = 3
+                };
+                dailyChart.Series.Add(series);
+
+                // X-Axis Configuration
+                dailyChart.AxisX.Add(new LiveCharts.Wpf.Axis
+                {
+                    Labels = _metrics.DailySales.Select(d => d.Period).ToArray(),
+                    Separator = new Separator { StrokeThickness = 0 },
+                    LabelsRotation = 30,
+                    FontSize = 11
+                });
+
+                // Y-Axis Configuration (Fixed)
+                dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
+                {
+                    // Remove hardcoded min/max to auto-scale
+                    LabelFormatter = value => value.ToString("N2"),
+                    Separator = new Separator
+                    {
+                        Stroke = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(200, 200, 200))
+                    }
+                });
+            }
+
+            private void LoadDashboardData()
+            {
+                try
+                {
+                    Cursor = Cursors.WaitCursor;
+                    _metrics = _dashboardService.GetDashboardMetrics();
+
+                    // Update cards - fixed to ensure values are set
+                    lblTotalItems.Text = _metrics.TotalItems.ToString("N0");
+                    lblActiveEmployees.Text = _metrics.ActiveEmployees.ToString("N0");
+                    lblTotalBills.Text = _metrics.TotalBills.ToString("N0");
+                    lblTotalReturns.Text = _metrics.TotalReturns.ToString("N0");
+                    lblTotalCategories.Text = _metrics.TotalCategories.ToString("N0");
+                    lblTotalBrands.Text = _metrics.TotalBrands.ToString("N0");
+                    lblTodaysCOGS.Text = _metrics.TodaysCOGS.ToString("N2");
+                    lblTodaysCOGS.Text = _metrics.TodaysCOGS.ToString("N2");
+                    lblTodaysQuantity.Text = _metrics.TodaysQuantity.ToString("N2");
+
+                    // Update chart with LiveCharts
+                    UpdateChart();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading dashboard data: {ex.Message}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    Cursor = Cursors.Default;
+                }
+            }
+
+            private void btnRefresh_Click(object sender, EventArgs e)
+            {
+                LoadDashboardData();
+            }
+        }
         public partial class ItemsManagement : Form
         {
             private readonly ItemService _itemService = new ItemService();
-            private DataGridView dgvItems = null!;
-            private Button btnAdd = null!;
-            private Button btnEdit = null!;
-            private Button btnDelete = null!;
-            private Button btnRefresh = null!;
-            private Button btnSearch = null!;
+            private DataGridView dgvItems;
+            private Button btnAdd;
+            private Button btnEdit;
+            private Button btnDelete;
+            private Button btnRefresh;
+            private Button btnSearch;
 
-            // Theme colors based on LoginForm
+            // Theme colors
             private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
             private static readonly Color BackgroundColor = Color.White;
             private static readonly Color HeaderColor = Color.FromArgb(230, 244, 253);
@@ -184,7 +639,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private void InitializeComponent()
             {
                 // Form setup
-                this.Size = new Size(980, 656);
+                this.Size = new Size(1200, 700);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.Dock = DockStyle.Fill;
                 this.BackColor = BackgroundColor;
@@ -197,7 +652,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Padding = new Padding(20)
                 };
 
-                // Title panel (matches login form's blue)
+                // Title panel
                 var titlePanel = new Panel
                 {
                     Dock = DockStyle.Top,
@@ -207,7 +662,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 var lblTitle = new Label
                 {
-                    Text = "ITEM MANAGEMENT",
+                    Text = "PRODUCT MANAGEMENT",
                     Dock = DockStyle.Fill,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Font = new Font("Segoe UI", 18, FontStyle.Bold),
@@ -215,7 +670,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Padding = new Padding(20, 0, 0, 0)
                 };
 
-                // Toolbar (light blue background)
+                // Toolbar
                 var toolbar = new FlowLayoutPanel
                 {
                     Dock = DockStyle.Top,
@@ -256,20 +711,21 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = PrimaryColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
                     Padding = new Padding(10, 5, 10, 5)
                 };
-                dgvItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+                //dgvItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+                dgvItems.ColumnHeadersHeight = 50;
 
-                dgvItems.RowTemplate.Height = 80;
+                dgvItems.RowTemplate.Height = 50;
                 dgvItems.RowTemplate.DefaultCellStyle.Padding = new Padding(10, 5, 10, 5);
 
                 dgvItems.DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = BackgroundColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 10),
+                    Font = new Font("Segoe UI", 12),
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor
                 };
@@ -278,10 +734,6 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = Color.FromArgb(245, 249, 255)
                 };
-
-                // Grid scrollbar styling
-                dgvItems.AdvancedRowHeadersBorderStyle.All = DataGridViewAdvancedCellBorderStyle.None;
-                dgvItems.AdvancedColumnHeadersBorderStyle.All = DataGridViewAdvancedCellBorderStyle.None;
 
                 // Events
                 btnAdd.Click += (s, e) => ShowItemForm();
@@ -300,6 +752,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 this.Controls.Add(container);
                 ConfigureGridColumns();
+
+                // Handle form closing to clean up images
+                this.FormClosing += (s, e) => CleanupImages();
             }
 
             private Button CreateToolbarButton(string text, Color backColor)
@@ -310,12 +765,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Size = new Size(120, 45),
                     FlatStyle = FlatStyle.Flat,
                     FlatAppearance = {
-                    BorderSize = 0,
-                    MouseOverBackColor = ControlPaint.Light(backColor, 0.2f)
-                },
+                BorderSize = 0,
+                MouseOverBackColor = ControlPaint.Light(backColor, 0.2f)
+            },
                     BackColor = backColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Margin = new Padding(10, 0, 10, 0),
                     Cursor = Cursors.Hand,
                     TextImageRelation = TextImageRelation.ImageBeforeText
@@ -329,19 +784,19 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgvItems.Columns.AddRange(
                     new DataGridViewTextBoxColumn
                     {
-                        DataPropertyName = "Item_ID",
+                        DataPropertyName = "Product_ID",
                         HeaderText = "ID",
                         Visible = false
                     },
                     new DataGridViewTextBoxColumn
                     {
-                        DataPropertyName = "barcode",
+                        DataPropertyName = "Barcode",
                         HeaderText = "BARCODE",
-                        Width = 150
+                        Width = 120
                     },
                     new DataGridViewTextBoxColumn
                     {
-                        DataPropertyName = "description",
+                        DataPropertyName = "Description",
                         HeaderText = "DESCRIPTION",
                         AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                     },
@@ -355,51 +810,113 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         DataPropertyName = "CategoryName",
                         HeaderText = "CATEGORY",
-                        Width = 150
+                        Width = 120
                     },
                     new DataGridViewTextBoxColumn
                     {
-                        DataPropertyName = "SizeLabel", // New size column
-                        HeaderText = "SIZE",
-                        Width = 80
+                        DataPropertyName = "GenderName",
+                        HeaderText = "GENDER",
+                        Width = 60
                     },
                     new DataGridViewTextBoxColumn
                     {
-                        DataPropertyName = "RetailPrice",
-                        HeaderText = "PRICE",
+                        DataPropertyName = "SizesSummary",
+                        HeaderText = "SIZES/STOCK",
+                        Width = 280,
                         DefaultCellStyle = new DataGridViewCellStyle
                         {
-                            Format = "C2",
-                            Alignment = DataGridViewContentAlignment.MiddleRight
-                        },
-                        Width = 100
-                    },
-                    new DataGridViewTextBoxColumn
-                    {
-                        DataPropertyName = "quantity",
-                        HeaderText = "STOCK",
-                        Width = 80,
-                        DefaultCellStyle = new DataGridViewCellStyle
-                        {
-                            Alignment = DataGridViewContentAlignment.MiddleRight
+                            Alignment = DataGridViewContentAlignment.MiddleLeft
                         }
                     },
                     new DataGridViewImageColumn
                     {
-                        DataPropertyName = "ItemImage",
+                        Name = "ImageColumn",
+                        DataPropertyName = "ImageObject",
                         HeaderText = "IMAGE",
+                        Width = 100,
                         ImageLayout = DataGridViewImageCellLayout.Zoom,
-                        Width = 80,
                         DefaultCellStyle = new DataGridViewCellStyle
                         {
+                            Alignment = DataGridViewContentAlignment.MiddleCenter,
+                            NullValue = null,
                             Padding = new Padding(5),
-                            Alignment = DataGridViewContentAlignment.MiddleCenter
                         }
                     }
                 );
             }
 
-            private void LoadItems() => dgvItems.DataSource = _itemService.GetAllItems();
+            private void LoadItems()
+            {
+                // Clean up previous images
+                CleanupImages();
+
+                dgvItems.DataSource = null;
+                var items = _itemService.GetAllItems();
+
+                // Process items
+                foreach (var item in items)
+                {
+                    item.SizesSummary = GetSizesSummary(item.Sizes);
+
+                    // Convert byte[] to Image
+                    if (item.ItemImage != null && item.ItemImage.Length > 0)
+                    {
+                        try
+                        {
+                            byte[] imageData = item.ItemImage as byte[];
+                            if (imageData != null && imageData.Length > 0)
+                            {
+                                using (var ms = new MemoryStream(imageData))
+                                {
+                                    item.ImageObject = Image.FromStream(ms);
+                                }
+                            }
+                            else
+                            {
+                                item.ImageObject = null;
+                            }
+                        }
+                        catch
+                        {
+                            item.ImageObject = null;
+                        }
+                    }
+                    else
+                    {
+                        item.ImageObject = null;
+                    }
+                }
+
+                dgvItems.DataSource = items;
+            }
+
+            private void CleanupImages()
+            {
+                if (dgvItems.DataSource is IEnumerable<Item> items)
+                {
+                    foreach (var item in items)
+                    {
+                        if (item.ImageObject != null)
+                        {
+                            item.ImageObject.Dispose();
+                            item.ImageObject = null;
+                        }
+                    }
+                }
+            }
+
+            private string GetSizesSummary(List<ProductSize> sizes)
+            {
+                if (sizes == null || sizes.Count == 0)
+                    return "No Sizes";
+
+                var summary = new List<string>();
+                foreach (var size in sizes)
+                {
+                    summary.Add($"{size.SizeLabel}: {size.Quantity}");
+                }
+                return string.Join(", ", summary);
+            }
 
             private void LoadSearchItem()
             {
@@ -410,7 +927,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             private void ShowItemForm(Item item = null)
             {
-                using var form = new pos_system.pos.UI.Forms.Inventory.ItemForm(item);
+                using var form = new ItemForm(item);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadItems();
             }
@@ -419,39 +936,40 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 if (dgvItems.SelectedRows.Count == 0)
                 {
-                    ShowMessage("Please select an item to edit");
+                    ShowMessage("Please select a product to edit");
                     return;
                 }
 
                 var item = dgvItems.SelectedRows[0].DataBoundItem as Item;
                 if (item == null) return;
 
-                ShowItemForm(item);
+                var fullItem = _itemService.GetItemById(item.Product_ID);
+                ShowItemForm(fullItem);
             }
 
             private void DeleteItem()
             {
                 if (dgvItems.SelectedRows.Count == 0)
                 {
-                    ShowMessage("Please select an item to delete");
+                    ShowMessage("Please select a product to delete");
                     return;
                 }
 
                 var item = dgvItems.SelectedRows[0].DataBoundItem as Item;
                 if (item == null) return;
 
-                if (ConfirmDelete($"Are you sure you want to delete '{item.description}'?"))
+                if (ConfirmDelete($"Are you sure you want to delete '{item.Description}'?"))
                 {
-                    if (_itemService.DeleteItem(item.Item_ID))
+                    if (_itemService.DeleteItem(item.Product_ID))
                         LoadItems();
                     else
-                        ShowMessage("Error deleting item");
+                        ShowMessage("Error deleting product");
                 }
             }
 
             private void ShowMessage(string text)
             {
-                MessageBox.Show(text, "Item Management",
+                MessageBox.Show(text, "Product Management",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
@@ -560,7 +1078,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = PrimaryColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
                     Padding = new Padding(10, 5, 10, 5)
                 };
@@ -573,7 +1091,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = BackgroundColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 10),
+                    Font = new Font("Segoe UI", 11),
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor
                 };
@@ -614,7 +1132,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             },
                     BackColor = backColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Margin = new Padding(10, 0, 10, 0),
                     Cursor = Cursors.Hand,
                     TextImageRelation = TextImageRelation.ImageBeforeText
@@ -651,6 +1169,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         DataPropertyName = "nic",
                         HeaderText = "NIC",
+                        Width = 150
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "contactno",
+                        HeaderText = "CONTACT",
                         Width = 150
                     },
                     new DataGridViewTextBoxColumn
@@ -715,6 +1239,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     status = row["status"].ToString(),
                     Role_ID = (int)row["Role_ID"],
                     address = row["address"].ToString(),
+                    email = row["email"].ToString(),
                     picture = row["picture"] as byte[]
                 };
 
@@ -778,11 +1303,179 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private static readonly Color DeleteColor = Color.FromArgb(231, 76, 60);
             private static readonly Color SelectionColor = Color.FromArgb(200, 230, 255);
 
+            private DataGridView dgvSizes;
+            private readonly SizeService _sizeService = new SizeService();
+
             public BrandAndCategory()
             {
                 InitializeComponent();
                 LoadBrands();
                 LoadCategories();
+                LoadSizes();
+            }
+
+            private Panel CreateSizeManagementLayout()
+            {
+                var panel = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
+
+                // Title panel
+                var titlePanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 70,
+                    BackColor = PrimaryColor
+                };
+
+                var lblTitle = new Label
+                {
+                    Text = "SIZE MANAGEMENT",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    Padding = new Padding(20, 0, 0, 0)
+                };
+
+                // Toolbar
+                var toolbar = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 80,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    Padding = new Padding(0, 15, 0, 15),
+                    BackColor = HeaderColor,
+                    WrapContents = false
+                };
+
+                // Toolbar buttons
+                var btnAdd = CreateToolbarButton("ADD", PrimaryColor);
+                var btnEdit = CreateToolbarButton("EDIT", PrimaryColor);
+                var btnDelete = CreateToolbarButton("DELETE", DeleteColor);
+                var btnRefresh = CreateToolbarButton("REFRESH", PrimaryColor);
+
+                // DataGrid
+                dgvSizes = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AllowUserToAddRows = false,
+                    ReadOnly = true,
+                    BackgroundColor = BackgroundColor,
+                    ForeColor = ForegroundColor,
+                    AutoGenerateColumns = false,
+                    BorderStyle = BorderStyle.None,
+                    EnableHeadersVisualStyles = false,
+                    RowHeadersVisible = false,
+                    CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+                };
+
+                // Grid styling
+                dgvSizes.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = PrimaryColor,
+                    ForeColor = ForegroundColor,
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(10, 5, 10, 5)
+                };
+
+                dgvSizes.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+
+                dgvSizes.DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = BackgroundColor,
+                    ForeColor = ForegroundColor,
+                    Font = new Font("Segoe UI", 11),
+                    SelectionBackColor = SelectionColor,
+                    SelectionForeColor = ForegroundColor,
+                    Padding = new Padding(10, 5, 10, 5),
+                };
+
+                dgvSizes.RowTemplate.Height = 32;
+                dgvSizes.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(245, 249, 255)
+                };
+
+                // Events
+                btnAdd.Click += (s, e) => ShowSizeForm();
+                btnEdit.Click += (s, e) => EditSize();
+                btnDelete.Click += (s, e) => DeleteSize();
+                btnRefresh.Click += (s, e) => LoadSizes();
+
+                // Layout
+                titlePanel.Controls.Add(lblTitle);
+                toolbar.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnDelete, btnRefresh });
+                panel.Controls.Add(dgvSizes);
+                panel.Controls.Add(toolbar);
+                panel.Controls.Add(titlePanel);
+
+                // Configure columns
+                dgvSizes.Columns.AddRange(
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "Size_ID",
+                        HeaderText = "ID",
+                        Visible = false
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "SizeLabel",
+                        HeaderText = "SIZE LABEL",
+                        AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "SizeType",
+                        HeaderText = "SIZE TYPE",
+                        AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                    }
+                );
+
+                LoadSizes();
+
+                return panel;
+            }
+
+            private void LoadSizes()
+            {
+                dgvSizes.DataSource = null;
+                dgvSizes.DataSource = _sizeService.GetAllSize();
+                dgvSizes.ClearSelection();
+            }
+
+            private void ShowSizeForm(Sizes size = null)
+            {
+                using var form = new SizeForm(size);
+                if (form.ShowDialog() == DialogResult.OK)
+                    LoadSizes();
+            }
+
+            private void EditSize()
+            {
+                if (dgvSizes.SelectedRows.Count == 0) return;
+                dynamic size = dgvSizes.SelectedRows[0].DataBoundItem;
+                ShowSizeForm(new Sizes
+                {
+                    Size_ID = size.Size_ID,
+                    SizeLabel = size.SizeLabel,
+                    SizeType = size.SizeType
+                });
+            }
+
+            private void DeleteSize()
+            {
+                if (dgvSizes.SelectedRows.Count == 0) return;
+                dynamic size = dgvSizes.SelectedRows[0].DataBoundItem;
+
+                if (ConfirmAction($"Delete size '{size.SizeLabel}' ({size.SizeType})?"))
+                {
+                    if (_sizeService.DeleteSize(size.Size_ID))
+                        LoadSizes();
+                    else
+                        ShowMessage("Error deleting size");
+                }
             }
 
             private void InitializeComponent()
@@ -826,12 +1519,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     TextRenderer.DrawText(
                         e.Graphics,
                         tabPage.Text,
-                        new Font("Segoe UI", 12, isSelected ? FontStyle.Bold : FontStyle.Regular),
+                        new Font("Segoe UI", 13, isSelected ? FontStyle.Bold : FontStyle.Regular),
                         tabRect,
                         isSelected ? Color.White : Color.Black,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
                     );
                 };
+
+                tabControl.SelectedIndexChanged += tabControl_SelectedIndexChanged;
 
                 // Brands tab
                 var tabBrands = new TabPage { Text = "BRANDS" };
@@ -847,6 +1542,19 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 tabControl.TabPages.Add(tabCategories);
                 container.Controls.Add(tabControl);
                 this.Controls.Add(container);
+
+                var tabSizes = new TabPage { Text = "SIZES" };
+                tabSizes.BackColor = BackgroundColor;
+                tabSizes.Controls.Add(CreateSizeManagementLayout());
+                tabControl.TabPages.Add(tabSizes);
+            }
+
+            private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
+            {
+                if (tabControl.SelectedTab?.Text == "SIZES")
+                {
+                    LoadSizes();
+                }
             }
 
             private Panel CreateBrandManagementLayout()
@@ -892,24 +1600,26 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgvBrands = new DataGridView
                 {
                     Dock = DockStyle.Fill,
-                    ReadOnly = true,
-                    AutoGenerateColumns = false,
-                    AllowUserToAddRows = false,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                     SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AllowUserToAddRows = false,
+                    ReadOnly = true,
                     BackgroundColor = BackgroundColor,
-                    RowHeadersVisible = false,
+                    ForeColor = ForegroundColor,
+                    AutoGenerateColumns = false,
                     BorderStyle = BorderStyle.None,
                     EnableHeadersVisualStyles = false,
-                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    RowHeadersVisible = false,
                     CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
                 };
 
+                dgvBrands.RowTemplate.Height = 32;
                 // Grid styling
                 dgvBrands.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = PrimaryColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
                     Padding = new Padding(10, 5, 10, 5)
                 };
@@ -920,11 +1630,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = BackgroundColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 10),
+                    Font = new Font("Segoe UI", 11),
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor,
-                    Padding = new Padding(10, 5, 10, 5)
+                    Padding = new Padding(10, 5, 10, 5),
                 };
+             
 
                 dgvBrands.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -949,12 +1660,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "Brand_ID",
+                        Name = "Brand_ID",
                         HeaderText = "ID",
                         Visible = false
                     },
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "brandName",
+                        Name = "brandName",
                         HeaderText = "BRAND NAME",
                         AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                     }
@@ -1024,7 +1737,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = PrimaryColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
                     Padding = new Padding(10, 5, 10, 5)
                 };
@@ -1035,14 +1748,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     BackColor = BackgroundColor,
                     ForeColor = ForegroundColor,
-                    Font = new Font("Segoe UI", 10),
+                    Font = new Font("Segoe UI", 11),
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor,
                     Padding = new Padding(10, 5, 10, 5),
 
                 };
 
-
+                dgvCategories.RowTemplate.Height = 32;
                 dgvCategories.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Color.FromArgb(245, 249, 255)
@@ -1093,7 +1806,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             },
                     BackColor = backColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     Margin = new Padding(10, 0, 10, 0),
                     Cursor = Cursors.Hand,
                     TextImageRelation = TextImageRelation.ImageBeforeText
@@ -1104,44 +1817,35 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             private void LoadCategories() => dgvCategories.DataSource = _categoryService.GetAllCategories();
 
-            private void ShowBrandForm(Brand brand = null)
-            {
-                using var form = new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.BrandForm(brand);
-                if (form.ShowDialog() == DialogResult.OK)
-                    LoadBrands();
-            }
-
             private void EditBrand()
             {
                 if (dgvBrands.SelectedRows.Count == 0) return;
 
-                var row = (dgvBrands.SelectedRows[0].DataBoundItem as DataRowView)?.Row;
-                if (row == null) return;
-
-                var brand = new Brand
-                {
-                    Brand_ID = (int)row["Brand_ID"],
-                    brandName = row["brandName"].ToString()
-                };
+                // Cast directly to your Brand object
+                var brand = dgvBrands.SelectedRows[0].DataBoundItem as Brand;
+                Debug.WriteLine($"Data {brand}");
+                if (brand == null) return;
 
                 ShowBrandForm(brand);
             }
 
+            private void ShowBrandForm(Brand brand = null)
+            {
+                using var form = new BrandForm(brand);
+                if (form.ShowDialog() == DialogResult.OK)
+                    LoadBrands();
+            }
+
             private void DeleteBrand()
             {
-                if (dgvBrands.SelectedRows.Count == 0)
-                {
-                    ShowMessage("Please select a brand to delete");
-                    return;
-                }
+                if (dgvBrands.SelectedRows.Count == 0) return;
 
-                var row = dgvBrands.SelectedRows[0];
-                int id = (int)row.Cells["Brand_ID"].Value;
-                string name = row.Cells["brandName"].Value?.ToString() ?? string.Empty;
+                var brand = dgvBrands.SelectedRows[0].DataBoundItem as Brand;
+                if (brand == null) return;
 
-                if (ConfirmAction($"Delete brand '{name}'?"))
+                if (ConfirmAction($"Delete brand '{brand.brandName}'?"))
                 {
-                    if (_brandService.DeleteBrand(id))
+                    if (_brandService.DeleteBrand(brand.Brand_ID))
                         LoadBrands();
                     else
                         ShowMessage("Error deleting brand");
@@ -1150,7 +1854,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             private void ShowCategoryForm(Category category = null)
             {
-                using var form = new pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.CategoryForm(category);
+                using var form = new CategoryForm(category);
                 if (form.ShowDialog() == DialogResult.OK)
                     LoadCategories();
             }
@@ -1204,94 +1908,142 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
             }
         }
-        public class BrandForm : Form
+        public partial class BrandForm : Form
         {
             private readonly Brand _brand;
             private readonly BrandService _service = new BrandService();
             private TextBox txtName;
+            private Button btnClose;
+            private Button btnSave;
+            private Button btnCancel;
+            private Label lblTitle;
+
+            private Color PrimaryColor = Color.FromArgb(41, 128, 185);
+            private Color ButtonHoverColor = Color.FromArgb(31, 97, 141);
+            private Color ButtonGray = Color.FromArgb(120, 120, 120);
 
             public BrandForm(Brand brand = null)
             {
                 _brand = brand ?? new Brand();
                 InitializeComponent();
+                new DropShadow().ApplyShadows(this);
             }
 
             private void InitializeComponent()
             {
+                this.SuspendLayout();
                 this.Size = new Size(400, 220);
-                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.FormBorderStyle = FormBorderStyle.None;
                 this.StartPosition = FormStartPosition.CenterParent;
-                this.Text = _brand.Brand_ID > 0 ? "Edit Brand" : "Add Brand";
                 this.BackColor = Color.White;
                 this.Font = new Font("Segoe UI", 10);
-                this.MaximizeBox = false;    // Disable maximize button
-                this.MinimizeBox = false;    // Disable minimize button
-                this.ControlBox = false;     // Ensure close button is visible
+                this.Text = _brand.Brand_ID > 0 ? "Edit Brand" : "Add Brand";
+                this.Padding = new Padding(1);
 
-                // Container panel
-                var container = new Panel
-                {
-                    Dock = DockStyle.Fill,
-                    BackColor = Color.FromArgb(60, 60, 60),
-                    Padding = new Padding(20)
-                };
+                // Main container panel - holds everything
+                Panel mainContainer = new Panel();
+                mainContainer.Dock = DockStyle.Fill;
+                mainContainer.BackColor = Color.White;
+                this.Controls.Add(mainContainer);
 
-                // Brand Name
-                var lblName = new Label
-                {
-                    Text = "Brand Name:",
-                    Location = new Point(20, 30),
-                    AutoSize = true,
-                    ForeColor = pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ForegroundColor
-                };
+                // TOP PANEL (header)
+                Panel topPanel = new Panel();
+                topPanel.Dock = DockStyle.Top;
+                topPanel.Height = 40;
+                topPanel.BackColor = PrimaryColor;
+                topPanel.Padding = new Padding(0, 0, 10, 0);
+                mainContainer.Controls.Add(topPanel);
 
-                txtName = new TextBox
-                {
-                    Location = new Point(150, 30),
-                    Size = new Size(200, 30),
-                    Text = _brand.brandName,
-                    BackColor = Color.FromArgb(70, 70, 70),
-                    ForeColor = pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ForegroundColor,
-                    BorderStyle = BorderStyle.FixedSingle
-                };
+                // Title label
+                lblTitle = new Label();
+                lblTitle.Dock = DockStyle.Left;
+                lblTitle.Text = _brand.Brand_ID > 0 ? "Edit Brand" : "Add Brand";
+                lblTitle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+                lblTitle.ForeColor = Color.White;
+                lblTitle.Padding = new Padding(10, 10, 0, 0);
+                lblTitle.AutoSize = true;
+                topPanel.Controls.Add(lblTitle);
 
-                // Buttons panel
-                var buttonPanel = new Panel
-                {
-                    Dock = DockStyle.Bottom,
-                    Height = 60,
-                    BackColor = Color.Transparent
-                };
+                // Close button
+                btnClose = new Button();
+                btnClose.FlatAppearance.BorderSize = 0;
+                btnClose.FlatStyle = FlatStyle.Flat;
+                btnClose.Font = new Font("Segoe UI", 12F);
+                btnClose.ForeColor = Color.White;
+                btnClose.Text = "✕";
+                btnClose.Dock = DockStyle.Right;
+                btnClose.Size = new Size(40, 40);
+                btnClose.Cursor = Cursors.Hand;
+                btnClose.Click += (s, e) => this.Close();
+                topPanel.Controls.Add(btnClose);
 
-                var btnSave = new Button
-                {
-                    Text = "Save",
-                    Size = new Size(100, 40),
-                    BackColor = Color.SeaGreen,
-                    ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = { BorderSize = 0 },
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    DialogResult = DialogResult.OK,
-                    Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-                };
+                // CONTENT PANEL - holds form elements
+                Panel contentPanel = new Panel();
+                contentPanel.Dock = DockStyle.Fill;
+                contentPanel.BackColor = Color.White;
+                contentPanel.Padding = new Padding(20, 40, 20, 20);
+                mainContainer.Controls.Add(contentPanel);
 
-                var btnCancel = new Button
-                {
-                    Text = "Cancel",
-                    Size = new Size(100, 40),
-                    BackColor = Color.IndianRed,
-                    ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = { BorderSize = 0 },
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    DialogResult = DialogResult.Cancel,
-                    Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-                };
+                // Create a container for the form elements
+                Panel formContainer = new Panel();
+                formContainer.Dock = DockStyle.Fill;
+                formContainer.BackColor = Color.White;
+                contentPanel.Controls.Add(formContainer);
 
-                btnSave.Location = new Point(container.Width - btnSave.Width - btnCancel.Width - 20, 10);
-                btnCancel.Location = new Point(container.Width - btnCancel.Width - 10, 10);
+                // Brand Name Label
+                Label lblName = new Label();
+                lblName.Text = "Brand Name:";
+                lblName.Location = new Point(20, 30);
+                lblName.AutoSize = true;
+                lblName.ForeColor = Color.Black;
+                formContainer.Controls.Add(lblName);
 
+                // Brand Name TextBox
+                txtName = new TextBox();
+                txtName.Location = new Point(150, 30);
+                txtName.Size = new Size(200, 30);
+                txtName.Text = _brand.brandName;
+                txtName.BorderStyle = BorderStyle.FixedSingle;
+                formContainer.Controls.Add(txtName);
+
+                // BUTTON PANEL - at bottom of content panel
+                Panel buttonPanel = new Panel();
+                buttonPanel.Dock = DockStyle.Bottom;
+                buttonPanel.Height = 60;
+                buttonPanel.BackColor = Color.White;
+                contentPanel.Controls.Add(buttonPanel);
+
+                FlowLayoutPanel buttonFlow = new FlowLayoutPanel();
+                buttonFlow.FlowDirection = FlowDirection.RightToLeft;
+                buttonFlow.Dock = DockStyle.Fill;
+                buttonFlow.Padding = new Padding(0, 10, 10, 0);
+                buttonPanel.Controls.Add(buttonFlow);
+
+                // Cancel button
+                btnCancel = new Button();
+                btnCancel.Text = "Cancel";
+                btnCancel.Size = new Size(100, 40);
+                btnCancel.BackColor = ButtonGray;
+                btnCancel.FlatStyle = FlatStyle.Flat;
+                btnCancel.FlatAppearance.BorderSize = 0;
+                btnCancel.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                btnCancel.ForeColor = Color.White;
+                btnCancel.Cursor = Cursors.Hand;
+                btnCancel.Margin = new Padding(0);
+                btnCancel.Click += (s, e) => this.Close();
+                buttonFlow.Controls.Add(btnCancel);
+
+                // Save button
+                btnSave = new Button();
+                btnSave.Text = "Save";
+                btnSave.Size = new Size(100, 40);
+                btnSave.BackColor = PrimaryColor;
+                btnSave.FlatStyle = FlatStyle.Flat;
+                btnSave.FlatAppearance.BorderSize = 0;
+                btnSave.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                btnSave.ForeColor = Color.White;
+                btnSave.Margin = new Padding(0, 0, 10, 0);
+                btnSave.Cursor = Cursors.Hand;
                 btnSave.Click += (s, e) =>
                 {
                     if (ValidateAndSave())
@@ -1300,29 +2052,31 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         this.Close();
                     }
                 };
+                buttonFlow.Controls.Add(btnSave);
 
-                btnCancel.Click += (s, e) => this.Close();
+                // Add button hover effects
+                btnSave.MouseEnter += (s, e) => btnSave.BackColor = ButtonHoverColor;
+                btnSave.MouseLeave += (s, e) => btnSave.BackColor = PrimaryColor;
+                btnCancel.MouseEnter += (s, e) => btnCancel.BackColor = Color.Gray;
+                btnCancel.MouseLeave += (s, e) => btnCancel.BackColor = ButtonGray;
+                btnClose.MouseEnter += (s, e) => btnClose.BackColor = Color.FromArgb(200, 50, 50);
+                btnClose.MouseLeave += (s, e) => btnClose.BackColor = Color.Transparent;
 
-                // Add controls
-                buttonPanel.Controls.Add(btnSave);
-                buttonPanel.Controls.Add(btnCancel);
-                container.Controls.Add(lblName);
-                container.Controls.Add(txtName);
-                container.Controls.Add(buttonPanel);
-                this.Controls.Add(container);
+                this.ResumeLayout(true);
             }
 
             private bool ValidateAndSave()
             {
                 if (string.IsNullOrWhiteSpace(txtName.Text))
                 {
-                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Brand name cannot be empty");
+                    ShowThemedMessage("Brand name cannot be empty");
                     return false;
                 }
 
-                if (_service.CheckBrandExists(txtName.Text, _brand.Brand_ID > 0 ? _brand.Brand_ID : (int?)null))
+                if (_service.CheckBrandExists(txtName.Text,
+                    _brand.Brand_ID > 0 ? _brand.Brand_ID : (int?)null))
                 {
-                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Brand name already exists");
+                    ShowThemedMessage("Brand name already exists");
                     return false;
                 }
 
@@ -1334,10 +2088,46 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 if (!success)
                 {
-                    pos_system.pos.UI.Forms.Dashboard.OwnerDashboard.ShowThemedMessage("Error saving brand");
+                    ShowThemedMessage("Error saving brand");
                     return false;
                 }
                 return true;
+            }
+
+            private void ShowThemedMessage(string message)
+            {
+                MessageBox.Show(this, message, "Brand",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            // Enable form dragging
+            private bool _dragging;
+            private Point _startPoint = new Point(0, 0);
+
+            protected override void OnMouseDown(MouseEventArgs e)
+            {
+                base.OnMouseDown(e);
+                if (e.Button == MouseButtons.Left && e.Y < 40) // Only drag from header area
+                {
+                    _dragging = true;
+                    _startPoint = new Point(e.X, e.Y);
+                }
+            }
+
+            protected override void OnMouseMove(MouseEventArgs e)
+            {
+                base.OnMouseMove(e);
+                if (_dragging)
+                {
+                    Point p = PointToScreen(e.Location);
+                    Location = new Point(p.X - this._startPoint.X, p.Y - this._startPoint.Y);
+                }
+            }
+
+            protected override void OnMouseUp(MouseEventArgs e)
+            {
+                base.OnMouseUp(e);
+                _dragging = false;
             }
         }
         public partial class CategoryForm : Form
@@ -1348,12 +2138,21 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private List<CategorySize> _allSizes;
             private CheckedListBox clbSizes;
             private TextBox txtName;
+            private Button btnClose;
+            private Button btnSave;
+            private Button btnCancel;
+            private Label lblTitle;
+
+            private Color PrimaryColor = Color.FromArgb(41, 128, 185);
+            private Color ButtonHoverColor = Color.FromArgb(31, 97, 141);
+            private Color ButtonGray = Color.FromArgb(120, 120, 120);
 
             public CategoryForm(Category category = null)
             {
                 _category = category ?? new Category();
                 InitializeComponent();
                 this.Load += CategoryForm_Load;
+                new DropShadow().ApplyShadows(this);
             }
 
             private void CategoryForm_Load(object sender, EventArgs e)
@@ -1365,36 +2164,41 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 try
                 {
-                    // Get all available sizes
                     _allSizes = _sizeService.GetAllSizes();
                     clbSizes.Items.Clear();
 
-                    // Add sizes grouped by type
                     foreach (var group in _allSizes.GroupBy(s => s.SizeType))
                     {
-                        clbSizes.Items.Add($"--- {group.Key} ---", false);
+                        // Add header with null Size_ID
+                        clbSizes.Items.Add(new SizeItem
+                        {
+                            Text = $"--- {group.Key} ---",
+                            Size_ID = null
+                        }, false);
+
                         foreach (var size in group)
                         {
-                            clbSizes.Items.Add($"{size.SizeLabel}", false);
+                            // Store both text and Size_ID
+                            clbSizes.Items.Add(new SizeItem
+                            {
+                                Text = size.SizeLabel,
+                                Size_ID = size.Size_ID
+                            }, false);
                         }
                     }
 
-                    // Check sizes already assigned to category
                     if (_category.Category_ID > 0)
                     {
                         var assignedSizes = _categoryService.GetSizesByCategoryId(_category.Category_ID);
-                        var assignedSizeLabels = assignedSizes.Select(s => s.SizeLabel).ToList();
+                        var assignedSizeIds = assignedSizes.Select(s => s.Size_ID).ToList();
 
                         for (int i = 0; i < clbSizes.Items.Count; i++)
                         {
-                            var item = clbSizes.Items[i].ToString();
-                            if (assignedSizeLabels.Contains(item))
+                            var item = (SizeItem)clbSizes.Items[i];
+                            // Check if item is a valid size and assigned to category
+                            if (item.Size_ID.HasValue && assignedSizeIds.Contains(item.Size_ID.Value))
                             {
                                 clbSizes.SetItemChecked(i, true);
-                            }
-                            else if (item.StartsWith("---")) // Header items
-                            {
-                                clbSizes.SetItemChecked(i, false);
                             }
                         }
                     }
@@ -1405,113 +2209,175 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 }
             }
 
+            private class SizeItem
+            {
+                public string Text { get; set; }
+                public int? Size_ID { get; set; }
+                public override string ToString() => Text;
+            }
+
             private void InitializeComponent()
             {
-                this.Size = new Size(500, 450);
-                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.SuspendLayout();
+                this.Size = new Size(500, 550);
+                this.FormBorderStyle = FormBorderStyle.None;
                 this.StartPosition = FormStartPosition.CenterParent;
-                this.Text = _category.Category_ID > 0 ? "Edit Category" : "Add Category";
                 this.BackColor = Color.White;
                 this.Font = new Font("Segoe UI", 10);
-                this.MaximizeBox = false;
-                this.MinimizeBox = false;
-                this.ControlBox = false;
+                this.Text = _category.Category_ID > 0 ? "Edit Category" : "Add Category";
+                this.Padding = new Padding(1);
 
-                // Container panel
-                var container = new Panel
-                {
-                    Dock = DockStyle.Fill,
-                    BackColor = Color.FromArgb(60, 60, 60),
-                    Padding = new Padding(20)
-                };
+                // Main container panel - holds everything
+                Panel mainContainer = new Panel();
+                mainContainer.Dock = DockStyle.Fill;
+                mainContainer.BackColor = Color.White;
+                this.Controls.Add(mainContainer);
+
+                // TOP PANEL (header)
+                Panel topPanel = new Panel();
+                topPanel.Dock = DockStyle.Top;
+                topPanel.Height = 40;
+                topPanel.BackColor = PrimaryColor;
+                topPanel.Padding = new Padding(0, 0, 10, 0);
+                mainContainer.Controls.Add(topPanel);
+
+                // Title label
+                lblTitle = new Label();
+                lblTitle.Dock = DockStyle.Left;
+                lblTitle.Text = _category.Category_ID > 0 ? "Edit Category" : "Add Category";
+                lblTitle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+                lblTitle.ForeColor = Color.White;
+                lblTitle.Padding = new Padding(10, 10, 0, 0);
+                lblTitle.AutoSize = true;
+                topPanel.Controls.Add(lblTitle);
+
+                // Close button
+                btnClose = new Button();
+                btnClose.FlatAppearance.BorderSize = 0;
+                btnClose.FlatStyle = FlatStyle.Flat;
+                btnClose.Font = new Font("Segoe UI", 12F);
+                btnClose.ForeColor = Color.White;
+                btnClose.Text = "✕";
+                btnClose.Dock = DockStyle.Right;
+                btnClose.Size = new Size(40, 40);
+                btnClose.Cursor = Cursors.Hand;
+                btnClose.Click += (s, e) => this.Close();
+                topPanel.Controls.Add(btnClose);
+
+                // CONTENT CONTAINER - holds form elements and buttons
+                Panel contentPanel = new Panel();
+                contentPanel.Dock = DockStyle.Fill;
+                contentPanel.BackColor = Color.White;
+                contentPanel.Padding = new Padding(20, 40, 20, 20);
+                mainContainer.Controls.Add(contentPanel);
+
+                // Main table layout for form fields
+                TableLayoutPanel tableLayout = new TableLayoutPanel();
+                tableLayout.Dock = DockStyle.Fill;
+                tableLayout.ColumnCount = 2;
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+                tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+                tableLayout.Padding = new Padding(10);
+                tableLayout.AutoScroll = true;
+                contentPanel.Controls.Add(tableLayout);
+
+                // Row definitions
+                tableLayout.RowCount = 3;
+                tableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F)); // Category name row
+                tableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F)); // Sizes label row
+                tableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Sizes list row
 
                 // Category Name
-                var lblName = new Label
+                tableLayout.Controls.Add(new Label()
                 {
                     Text = "Category Name:",
-                    Location = new Point(20, 30),
+                    Anchor = AnchorStyles.Left,
                     AutoSize = true,
-                    ForeColor = ForegroundColor
-                };
+                    ForeColor = Color.Black
+                }, 0, 0);
 
-                txtName = new TextBox
-                {
-                    Location = new Point(150, 30),
-                    Size = new Size(300, 30),
-                    Text = _category.categoryName,
-                    BackColor = Color.FromArgb(70, 70, 70),
-                    ForeColor = ForegroundColor,
-                    BorderStyle = BorderStyle.FixedSingle
-                };
+                txtName = new TextBox();
+                txtName.Dock = DockStyle.Fill;
+                txtName.BorderStyle = BorderStyle.FixedSingle;
+                txtName.Text = _category.categoryName;
+                tableLayout.Controls.Add(txtName, 1, 0);
 
                 // Sizes Label
-                var lblSizes = new Label
+                tableLayout.Controls.Add(new Label()
                 {
                     Text = "Applicable Sizes:",
-                    Location = new Point(20, 70),
+                    Anchor = AnchorStyles.Left | AnchorStyles.Top,
                     AutoSize = true,
-                    ForeColor = ForegroundColor
-                };
+                    ForeColor = Color.Black,
+                    Margin = new Padding(0, 8, 0, 0)
+                }, 0, 1);
 
-                // Sizes CheckedListBox
-                clbSizes = new CheckedListBox
-                {
-                    Location = new Point(150, 70),
-                    Size = new Size(300, 250),
-                    BackColor = Color.FromArgb(70, 70, 70),
-                    ForeColor = ForegroundColor,
-                    BorderStyle = BorderStyle.FixedSingle,
-                    CheckOnClick = true,
-                    IntegralHeight = false
-                };
+                // Sizes CheckedListBox - spans both columns
+                Panel sizesContainer = new Panel();
+                sizesContainer.Dock = DockStyle.Fill;
+                sizesContainer.BackColor = Color.White;
+                tableLayout.SetColumnSpan(sizesContainer, 2);
+                tableLayout.SetRow(sizesContainer, 2);
 
-                // Buttons panel
-                var buttonPanel = new Panel
-                {
-                    Dock = DockStyle.Bottom,
-                    Height = 60,
-                    BackColor = Color.Transparent
-                };
+                clbSizes = new CheckedListBox();
+                clbSizes.Dock = DockStyle.Fill;
+                clbSizes.BorderStyle = BorderStyle.FixedSingle;
+                clbSizes.CheckOnClick = true;
+                clbSizes.BackColor = Color.White;
+                clbSizes.Margin = new Padding(10);
+                sizesContainer.Controls.Add(clbSizes);
+                tableLayout.Controls.Add(sizesContainer, 0, 2);
 
-                var btnSave = new Button
-                {
-                    Text = "Save",
-                    Size = new Size(100, 40),
-                    BackColor = Color.SeaGreen,
-                    ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = { BorderSize = 0 },
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-                };
+                // BUTTON PANEL (at bottom of content area)
+                Panel buttonPanel = new Panel();
+                buttonPanel.Dock = DockStyle.Bottom;
+                buttonPanel.Height = 60;
+                buttonPanel.BackColor = Color.White;
+                contentPanel.Controls.Add(buttonPanel);
 
-                var btnCancel = new Button
-                {
-                    Text = "Cancel",
-                    Size = new Size(100, 40),
-                    BackColor = Color.IndianRed,
-                    ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = { BorderSize = 0 },
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-                };
+                FlowLayoutPanel buttonFlow = new FlowLayoutPanel();
+                buttonFlow.FlowDirection = FlowDirection.RightToLeft;
+                buttonFlow.Dock = DockStyle.Fill;
+                buttonFlow.Padding = new Padding(0, 10, 0, 0);
+                buttonPanel.Controls.Add(buttonFlow);
 
-                btnSave.Location = new Point(container.Width - btnSave.Width - btnCancel.Width - 20, 10);
-                btnCancel.Location = new Point(container.Width - btnCancel.Width - 10, 10);
-
-                btnSave.Click += (s, e) => SaveCategory();
+                // Cancel button
+                btnCancel = new Button();
+                btnCancel.Text = "Cancel";
+                btnCancel.Size = new Size(100, 40);
+                btnCancel.BackColor = ButtonGray;
+                btnCancel.FlatStyle = FlatStyle.Flat;
+                btnCancel.FlatAppearance.BorderSize = 0;
+                btnCancel.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                btnCancel.ForeColor = Color.White;
+                btnCancel.Cursor = Cursors.Hand;
+                btnCancel.Margin = new Padding(0);
                 btnCancel.Click += (s, e) => this.Close();
+                buttonFlow.Controls.Add(btnCancel);
 
-                // Add controls
-                buttonPanel.Controls.Add(btnSave);
-                buttonPanel.Controls.Add(btnCancel);
-                container.Controls.Add(lblName);
-                container.Controls.Add(txtName);
-                container.Controls.Add(lblSizes);
-                container.Controls.Add(clbSizes);
-                container.Controls.Add(buttonPanel);
-                this.Controls.Add(container);
+                // Save button
+                btnSave = new Button();
+                btnSave.Text = "Save";
+                btnSave.Size = new Size(100, 40);
+                btnSave.BackColor = PrimaryColor;
+                btnSave.FlatStyle = FlatStyle.Flat;
+                btnSave.FlatAppearance.BorderSize = 0;
+                btnSave.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                btnSave.ForeColor = Color.White;
+                btnSave.Margin = new Padding(0, 0, 10, 0);
+                btnSave.Cursor = Cursors.Hand;
+                btnSave.Click += (s, e) => SaveCategory();
+                buttonFlow.Controls.Add(btnSave);
+
+                // Add button hover effects
+                btnSave.MouseEnter += (s, e) => btnSave.BackColor = ButtonHoverColor;
+                btnSave.MouseLeave += (s, e) => btnSave.BackColor = PrimaryColor;
+                btnCancel.MouseEnter += (s, e) => btnCancel.BackColor = Color.Gray;
+                btnCancel.MouseLeave += (s, e) => btnCancel.BackColor = ButtonGray;
+                btnClose.MouseEnter += (s, e) => btnClose.BackColor = Color.FromArgb(200, 50, 50);
+                btnClose.MouseLeave += (s, e) => btnClose.BackColor = Color.Transparent;
+
+                this.ResumeLayout(true);
             }
 
             private void SaveCategory()
@@ -1573,25 +2439,56 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 var selectedSizeIds = new List<int>();
 
-                // Get selected size IDs
                 for (int i = 0; i < clbSizes.Items.Count; i++)
                 {
-                    if (clbSizes.GetItemChecked(i) && !clbSizes.Items[i].ToString().StartsWith("---"))
-                    {
-                        var sizeLabel = clbSizes.Items[i].ToString();
-                        var size = _allSizes.FirstOrDefault(s => s.SizeLabel == sizeLabel);
-                        if (size != null)
-                        {
-                            selectedSizeIds.Add(size.Size_ID);
-                        }
-                    }
+                    var item = (SizeItem)clbSizes.Items[i];
+                    // Skip headers and unchecked items
+                    if (item.Size_ID == null || !clbSizes.GetItemChecked(i))
+                        continue;
+
+                    selectedSizeIds.Add(item.Size_ID.Value);
                 }
 
-                // Update sizes in database
                 if (!_categoryService.UpdateCategorySizes(categoryId, selectedSizeIds))
                 {
                     ShowThemedMessage("Error updating sizes for category");
                 }
+            }
+
+            private void ShowThemedMessage(string message)
+            {
+                MessageBox.Show(this, message, "Category",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            // Enable form dragging
+            private bool _dragging;
+            private Point _startPoint = new Point(0, 0);
+
+            protected override void OnMouseDown(MouseEventArgs e)
+            {
+                base.OnMouseDown(e);
+                if (e.Button == MouseButtons.Left)
+                {
+                    _dragging = true;
+                    _startPoint = new Point(e.X, e.Y);
+                }
+            }
+
+            protected override void OnMouseMove(MouseEventArgs e)
+            {
+                base.OnMouseMove(e);
+                if (_dragging)
+                {
+                    Point p = PointToScreen(e.Location);
+                    Location = new Point(p.X - this._startPoint.X, p.Y - this._startPoint.Y);
+                }
+            }
+
+            protected override void OnMouseUp(MouseEventArgs e)
+            {
+                base.OnMouseUp(e);
+                _dragging = false;
             }
         }
         public partial class BarcodePrint : Form
@@ -2038,9 +2935,25 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgvItems.Columns.Clear();
 
                 dgvItems.Columns.AddRange(
-                    new DataGridViewTextBoxColumn { DataPropertyName = "Item_ID", HeaderText = "ID", Width = 40, Name = "Item_ID" },
-                    new DataGridViewTextBoxColumn { DataPropertyName = "Barcode", HeaderText = "BARCODE", Width = 120 },
-                    new DataGridViewTextBoxColumn { DataPropertyName = "Description", HeaderText = "DESCRIPTION", Width = 200 },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "ProductSize_ID",
+                        HeaderText = "ID",
+                        Width = 40,
+                        Name = "Item_ID"
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "Barcode",
+                        HeaderText = "BARCODE",
+                        Width = 120
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "Description",
+                        HeaderText = "DESCRIPTION",
+                        Width = 200
+                    },
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "RetailPrice",
@@ -2048,15 +2961,33 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         Width = 80,
                         DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
                     },
-                    new DataGridViewTextBoxColumn { DataPropertyName = "BrandName", HeaderText = "BRAND", Width = 100 },
-                    new DataGridViewTextBoxColumn { DataPropertyName = "CategoryName", HeaderText = "CATEGORY", Width = 100 },
-                    new DataGridViewTextBoxColumn { DataPropertyName = "SizeLabel", HeaderText = "SIZE", Width = 70 },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "BrandName",
+                        HeaderText = "BRAND",
+                        Width = 100
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "CategoryName",
+                        HeaderText = "CATEGORY",
+                        Width = 100
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "SizeLabel",
+                        HeaderText = "SIZE",
+                        Width = 70
+                    },
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "Quantity",
                         HeaderText = "QTY",
                         Width = 60,
-                        DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
+                        DefaultCellStyle = new DataGridViewCellStyle
+                        {
+                            Alignment = DataGridViewContentAlignment.MiddleRight
+                        }
                     }
                 );
             }
@@ -2226,20 +3157,20 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 try
                 {
                     var repository = new ItemRepository();
-                    items = repository.SearchItems(searchTerm, brandId, categoryId);
+                    items = repository.SearchItemsWithVariants(searchTerm, brandId, categoryId);
 
                     dgvItems.Rows.Clear();
                     foreach (var item in items)
                     {
                         dgvItems.Rows.Add(
-                            item.Item_ID,
-                            item.barcode,
-                            item.description,
+                            item.ProductSize_ID,
+                            item.Barcode,
+                            item.Description,
                             item.RetailPrice,
                             item.BrandName,
                             item.CategoryName,
                             item.SizeLabel ?? "N/A",
-                            item.quantity
+                            item.Quantity
                         );
                     }
 
@@ -2313,20 +3244,20 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 if (dgvItems.SelectedRows.Count > 0)
                 {
                     int selectedId = Convert.ToInt32(dgvItems.SelectedRows[0].Cells["Item_ID"].Value);
-                    selectedItem = items.FirstOrDefault(i => i.Item_ID == selectedId);
+                    selectedItem = items.FirstOrDefault(i => i.ProductSize_ID == selectedId);
 
                     if (selectedItem != null)
                     {
                         // Populate details
-                        txtBarcode.Text = selectedItem.barcode;
+                        txtBarcode.Text = selectedItem.Barcode;
                         txtPrice.Text = selectedItem.RetailPrice.ToString("C2");
                         txtBrand.Text = selectedItem.BrandName;
                         txtCategory.Text = selectedItem.CategoryName;
                         txtSize.Text = selectedItem.SizeLabel ?? "N/A";
-                        txtQuantity.Text = selectedItem.quantity.ToString();
+                        txtQuantity.Text = selectedItem.Quantity.ToString();
 
                         // Set reasonable print count
-                        nudPrintCount.Value = Math.Max(1, Math.Min(selectedItem.quantity, 100));
+                        nudPrintCount.Value = Math.Max(1, Math.Min(selectedItem.Quantity, 100));
 
                         // Enable printing and preview
                         btnPrint.Enabled = true;
@@ -2542,12 +3473,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 try
                 {
-                    format.SetNamedSubStringValue("Barcode", item.barcode ?? "");
-                    format.SetNamedSubStringValue("RetailPrice", $"Rs.{item.RetailPrice.ToString() ?? ""}");
+                    format.SetNamedSubStringValue("Barcode", item.Barcode ?? "");
+                    format.SetNamedSubStringValue("RetailPrice", $"Rs.{item.RetailPrice.ToString("N2")}");
                     format.SetNamedSubStringValue("Category", item.CategoryName ?? "");
                     format.SetNamedSubStringValue("Size", $"({ItemSize(item.SizeLabel ?? "N/A")})");
                     format.SetNamedSubStringValue("Sex", $"({GetGenderCode(item.Gender_ID)})");
-                    format.SetNamedSubStringValue("CostCode", $"Rs.{item.unitCost.ToString() ?? ""}");
+                    format.SetNamedSubStringValue("CostCode", $"{ConvertNumberToCode(Convert.ToInt32(item.UnitCost).ToString())}");
                 }
                 catch (Exception ex)
                 {
@@ -2555,11 +3486,38 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 }
             }
 
+            public static string ConvertNumberToCode(string number)
+            {
+                if (string.IsNullOrEmpty(number))
+                    return "XXXX";
+
+                StringBuilder result = new StringBuilder();
+                foreach (char digit in number)
+                {
+                    switch (digit)
+                    {
+                        case '0': result.Append('X'); break;
+                        case '1': result.Append('A'); break;
+                        case '2': result.Append('B'); break;
+                        case '3': result.Append('C'); break;
+                        case '4': result.Append('D'); break;
+                        case '5': result.Append('E'); break;
+                        case '6': result.Append('F'); break;
+                        case '7': result.Append('G'); break;
+                        case '8': result.Append('H'); break;
+                        case '9': result.Append('I'); break;
+                        default: result.Append('?'); break;
+                    }
+                }
+                return result.ToString();
+            }
             private string ItemSize(string size)
             {
                 return size switch
                 {
                     "One Size" => "One",  // One Size
+                    "XXXL" => "3XL",
+                    "XXXXl" => "4XL",
                     _ => size,  // Other Any Sizes
                 };
             }
@@ -2667,6 +3625,1278 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 public override string ToString()
                 {
                     return $"{FileName} ({LabelsPerRow} per row)";
+                }
+            }
+        }
+        public partial class Sales : Form
+        {
+            private readonly SalesService _salesService;
+            private SalesReport _currentReport;
+
+            // Theme colors
+            private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
+            private static readonly Color BackgroundColor = Color.White;
+            private static readonly Color HeaderColor = Color.FromArgb(230, 244, 253);
+            private static readonly Color ForegroundColor = Color.Black;
+            private static readonly Color SecondaryColor = Color.Gray;
+            private static readonly Color SelectionColor = Color.FromArgb(200, 230, 255);
+
+            // Controls
+            private DateTimePicker dtpStartDate;
+            private DateTimePicker dtpEndDate;
+            private ComboBox cmbBrand;
+            private ComboBox cmbCategory;
+            private Button btnFilter;
+            private Button btnClear;
+            private Button btnExport;
+            private Label[] summaryLabels = new Label[10];
+            private TabControl tabControl;
+            private DataGridView dgvSalesItems;
+            private DataGridView dgvReturnItems;
+            private System.Windows.Forms.DataVisualization.Charting.Chart chartSalesTrend;
+
+            public Sales()
+            {
+                InitializeComponent();
+                _salesService = new SalesService(new SalesRepository());
+                LoadBrands();
+                LoadCategories();
+                InitializeSummaryControls();
+            }
+
+            private void InitializeComponent()
+            {
+                // Form setup
+                this.Text = "Sales Analytics Dashboard";
+                this.Size = new Size(1200, 850);  // Increased height
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.BackColor = BackgroundColor;
+                this.Font = new Font("Segoe UI", 9);
+                this.Padding = new Padding(20);
+
+                // Header panel
+                var headerPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 70,
+                    BackColor = PrimaryColor,
+                    Padding = new Padding(20, 0, 20, 0)
+                };
+
+                var lblTitle = new Label
+                {
+                    Text = "SALES ANALYTICS DASHBOARD",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                    ForeColor = Color.White
+                };
+                headerPanel.Controls.Add(lblTitle);
+
+                // Filter panel - increased height
+                var filterPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 100,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(15)
+                };
+
+                // Date controls
+                var lblStartDate = new Label
+                {
+                    Text = "Start Date:",
+                    Location = new Point(20, 15),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+
+                dtpStartDate = new DateTimePicker
+                {
+                    Format = DateTimePickerFormat.Short,
+                    Location = new Point(105, 12),
+                    Width = 120,
+                    Value = DateTime.Today.AddMonths(-1)
+                };
+
+                var lblEndDate = new Label
+                {
+                    Text = "End Date:",
+                    Location = new Point(240, 15),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+
+                dtpEndDate = new DateTimePicker
+                {
+                    Format = DateTimePickerFormat.Short,
+                    Location = new Point(315, 12),
+                    Width = 120,
+                    Value = DateTime.Today
+                };
+
+                // Brand/Category filters
+                var lblBrand = new Label
+                {
+                    Text = "Brand:",
+                    Location = new Point(450, 15),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+
+                cmbBrand = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Width = 150,
+                    Location = new Point(505, 12)
+                };
+
+                var lblCategory = new Label
+                {
+                    Text = "Category:",
+                    Location = new Point(670, 15),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+
+                cmbCategory = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Width = 150,
+                    Location = new Point(745, 12)
+                };
+
+                // Buttons - repositioned vertically
+                btnFilter = CreateButton("Apply Filters", PrimaryColor, 450, 55);
+                btnFilter.Click += BtnFilter_Click;
+
+                btnClear = CreateButton("Clear Filters", SecondaryColor, 600, 55);
+                btnClear.Click += BtnClear_Click;
+
+                btnExport = CreateButton("Export Report", Color.DarkGreen, 750, 55);
+                btnExport.Click += BtnExport_Click;
+
+                // Add controls to filter panel
+                filterPanel.Controls.AddRange(new Control[] {
+                    lblStartDate, dtpStartDate, lblEndDate, dtpEndDate,
+                    lblBrand, cmbBrand, lblCategory, cmbCategory,
+                    btnFilter, btnClear, btnExport
+                });
+
+                // Summary panel - increased height for two rows
+                var summaryPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 140,
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding = new Padding(15),
+                    Tag = "summary"
+                };
+
+                // Main content panel
+                var mainPanel = new Panel { Dock = DockStyle.Fill };
+
+                // Tab control
+                tabControl = new TabControl
+                {
+                    Dock = DockStyle.Fill,
+                    Appearance = TabAppearance.FlatButtons,
+                    ItemSize = new Size(120, 30),
+                    SizeMode = TabSizeMode.Fixed
+                };
+
+                // Sales items tab
+                var tabSales = new TabPage("Sales Items")
+                {
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(5)
+                };
+                dgvSalesItems = CreateDataGridView();
+                dgvSalesItems.Dock = DockStyle.Fill;
+                dgvSalesItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+                tabSales.Controls.Add(dgvSalesItems);
+
+                // Return items tab
+                var tabReturns = new TabPage("Return Items")
+                {
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(5)
+                };
+                dgvReturnItems = CreateDataGridView();
+                dgvReturnItems.Dock = DockStyle.Fill;
+                dgvReturnItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+                tabReturns.Controls.Add(dgvReturnItems);
+
+                // Charts tab
+                var tabCharts = new TabPage("Visualizations")
+                {
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(5)
+                };
+                chartSalesTrend = new System.Windows.Forms.DataVisualization.Charting.Chart
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.White
+                };
+                InitializeChart();
+                tabCharts.Controls.Add(chartSalesTrend);
+
+                tabControl.TabPages.AddRange(new TabPage[] { tabSales, tabReturns, tabCharts });
+                mainPanel.Controls.Add(tabControl);
+
+                // Add panels to form
+                this.Controls.Add(mainPanel);
+                this.Controls.Add(summaryPanel);
+                this.Controls.Add(filterPanel);
+                this.Controls.Add(headerPanel);
+            }
+
+            private void InitializeSummaryControls()
+            {
+                string[] labels = {
+                    "Total Sales", "Total Cost", "Gross Profit", "Items Sold",
+                    "Bills Processed", "Avg. Bill Value", "Cash Sales",
+                    "Card Sales", "Bank Transfers", "Returns"
+                };
+
+                // Find summary panel
+                var summaryPanel = this.Controls.OfType<Panel>()
+                    .FirstOrDefault(p => p.Tag?.ToString() == "summary");
+
+                if (summaryPanel == null) return;
+
+                // First row (top 5 items)
+                int x = 20;
+                for (int i = 0; i < 5; i++)
+                {
+                    var lblCaption = new Label
+                    {
+                        Text = labels[i],
+                        Location = new Point(x, 15),
+                        AutoSize = true,
+                        Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                        ForeColor = Color.Black
+                    };
+
+                    summaryLabels[i] = new Label
+                    {
+                        Text = "0.00",
+                        Location = new Point(x, 40),
+                        AutoSize = true,
+                        Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                        ForeColor = PrimaryColor,
+                        Tag = labels[i]
+                    };
+
+                    summaryPanel.Controls.Add(lblCaption);
+                    summaryPanel.Controls.Add(summaryLabels[i]);
+                    x += 190;  // Increased spacing for better visibility
+                }
+
+                // Second row (remaining 5 items)
+                x = 20;
+                for (int i = 5; i < 10; i++)
+                {
+                    var lblCaption = new Label
+                    {
+                        Text = labels[i],
+                        Location = new Point(x, 80),  // Lower position
+                        AutoSize = true,
+                        Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                        ForeColor = Color.Black
+                    };
+
+                    summaryLabels[i] = new Label
+                    {
+                        Text = "0.00",
+                        Location = new Point(x, 105),  // Lower position
+                        AutoSize = true,
+                        Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                        ForeColor = PrimaryColor,
+                        Tag = labels[i]
+                    };
+
+                    summaryPanel.Controls.Add(lblCaption);
+                    summaryPanel.Controls.Add(summaryLabels[i]);
+                    x += 190;  // Increased spacing for better visibility
+                }
+            }
+
+            private void InitializeChart()
+            {
+                chartSalesTrend.Series.Add("Sales");
+                chartSalesTrend.Series["Sales"].ChartType = SeriesChartType.Column;
+                chartSalesTrend.Series["Sales"].Color = PrimaryColor;
+
+                chartSalesTrend.Series.Add("Returns");
+                chartSalesTrend.Series["Returns"].ChartType = SeriesChartType.Column;
+                chartSalesTrend.Series["Returns"].Color = Color.IndianRed;
+
+                var chartArea = new ChartArea("MainArea");
+                chartArea.AxisX.MajorGrid.Enabled = false;
+                chartArea.AxisY.MajorGrid.LineColor = Color.LightGray;
+                chartSalesTrend.ChartAreas.Add(chartArea);
+            }
+
+            private Button CreateButton(string text, Color color, int x, int y)
+            {
+                return new Button
+                {
+                    Text = text,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = color,
+                    ForeColor = Color.White,
+                    Size = new Size(120, 34),
+                    Location = new Point(x, y),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                };
+            }
+
+            private DataGridView CreateDataGridView()
+            {
+                var dgv = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = BackgroundColor,
+                    BorderStyle = BorderStyle.None,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    ReadOnly = true,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    RowHeadersVisible = false,
+                    AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = Color.FromArgb(245, 249, 255)
+                    },
+                    ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        BackColor = PrimaryColor,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                        Padding = new Padding(5),
+                        Alignment = DataGridViewContentAlignment.MiddleLeft
+                    }
+                };
+                return dgv;
+            }
+
+            private void LoadBrands()
+            {
+                try
+                {
+                    cmbBrand.DataSource = _salesService.GetBrands();
+                    cmbBrand.DisplayMember = "brandName";
+                    cmbBrand.ValueMember = "Brand_ID";
+                    cmbBrand.SelectedIndex = -1;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading brands: {ex.Message}");
+                }
+            }
+
+            private void LoadCategories()
+            {
+                try
+                {
+                    cmbCategory.DataSource = _salesService.GetCategories();
+                    cmbCategory.DisplayMember = "categoryName";
+                    cmbCategory.ValueMember = "Category_ID";
+                    cmbCategory.SelectedIndex = -1;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading categories: {ex.Message}");
+                }
+            }
+
+            private void BtnFilter_Click(object sender, EventArgs e)
+            {
+                try
+                {
+                    var filter = new SalesFilter
+                    {
+                        StartDate = dtpStartDate.Value.Date,
+                        EndDate = dtpEndDate.Value.Date.AddDays(1).AddSeconds(-1),
+                        BrandId = cmbBrand.SelectedValue as int?,
+                        CategoryId = cmbCategory.SelectedValue as int?
+                    };
+
+                    _currentReport = _salesService.GetSalesReport(filter);
+                    UpdateUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error generating report: {ex.Message}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void UpdateUI()
+            {
+                // Update summary labels
+                summaryLabels[0].Text = _currentReport.TotalSales.ToString("N2");
+                summaryLabels[1].Text = _currentReport.TotalCost.ToString("N2");
+                summaryLabels[2].Text = (_currentReport.TotalSales - _currentReport.TotalCost).ToString("N2");
+                summaryLabels[3].Text = _currentReport.TotalItemsSold.ToString("N0");
+                summaryLabels[4].Text = _currentReport.BillCount.ToString("N0");
+
+                decimal avgBillValue = _currentReport.BillCount > 0 ?
+                    _currentReport.TotalSales / _currentReport.BillCount : 0;
+                summaryLabels[5].Text = avgBillValue.ToString("N2");
+
+                summaryLabels[6].Text = _currentReport.CashSales.ToString("N2");
+                summaryLabels[7].Text = _currentReport.CardSales.ToString("N2");
+                summaryLabels[8].Text = _currentReport.BankTransferSales.ToString("N2");
+                summaryLabels[9].Text = _currentReport.ReturnCount.ToString("N0");
+
+                // Bind data grids
+                dgvSalesItems.DataSource = _currentReport.SalesItems;
+                FormatDataGridColumns(dgvSalesItems, true);
+
+                dgvReturnItems.DataSource = _currentReport.ReturnItems;
+                FormatDataGridColumns(dgvReturnItems, false);
+
+                // Update chart
+                UpdateSalesChart();
+            }
+
+            private void FormatDataGridColumns(DataGridView dgv, bool isSales)
+            {
+                foreach (DataGridViewColumn col in dgv.Columns)
+                {
+                    // Format currency columns
+                    if (col.Name.Contains("Price") || col.Name.Contains("Amount") ||
+                        col.Name.Contains("Value") || col.Name.Contains("Discount"))
+                    {
+                        col.DefaultCellStyle.Format = "N2";
+                        col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                    }
+
+                    // Format date columns
+                    if (col.Name.Contains("Date"))
+                    {
+                        col.DefaultCellStyle.Format = "d";
+                    }
+
+                    // Set header text
+                    col.HeaderText = col.HeaderText.Replace("_", " ");
+                }
+
+                // Auto-size after data bind
+                dgv.AutoResizeColumns();
+            }
+
+            private void UpdateSalesChart()
+            {
+                if (_currentReport?.SalesItems == null) return;
+
+                chartSalesTrend.Series["Sales"].Points.Clear();
+                chartSalesTrend.Series["Returns"].Points.Clear();
+
+                // Group sales by date
+                var salesByDate = _currentReport.SalesItems
+                    .GroupBy(s => s.SaleDate.Date)
+                    .Select(g => new {
+                        Date = g.Key,
+                        Sales = g.Sum(i => i.NetAmount),
+                        Returns = _currentReport.ReturnItems
+                            .Where(r => r.ReturnDate.Date == g.Key)
+                            .Sum(r => r.RefundValue)
+                    })
+                    .OrderBy(d => d.Date)
+                    .ToList();
+
+                foreach (var day in salesByDate)
+                {
+                    chartSalesTrend.Series["Sales"].Points.AddXY(day.Date.ToString("MMM dd"), day.Sales);
+                    chartSalesTrend.Series["Returns"].Points.AddXY(day.Date.ToString("MMM dd"), day.Returns);
+                }
+
+                chartSalesTrend.ChartAreas["MainArea"].RecalculateAxesScale();
+            }
+
+            private void BtnClear_Click(object sender, EventArgs e)
+            {
+                dtpStartDate.Value = DateTime.Today.AddMonths(-1);
+                dtpEndDate.Value = DateTime.Today;
+                cmbBrand.SelectedIndex = -1;
+                cmbCategory.SelectedIndex = -1;
+
+                foreach (var label in summaryLabels)
+                {
+                    label.Text = "0.00";
+                }
+
+                dgvSalesItems.DataSource = null;
+                dgvReturnItems.DataSource = null;
+                chartSalesTrend.Series["Sales"].Points.Clear();
+                chartSalesTrend.Series["Returns"].Points.Clear();
+            }
+
+            private void BtnExport_Click(object sender, EventArgs e)
+            {
+                if (_currentReport == null)
+                {
+                    MessageBox.Show("No data to export. Please generate a report first.");
+                    return;
+                }
+
+                using (var sfd = new SaveFileDialog())
+                {
+                    sfd.Filter = "Excel Files|*.xlsx|CSV Files|*.csv";
+                    sfd.Title = "Export Sales Report";
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        try
+                        {
+                            ExportReport(sfd.FileName);
+                            MessageBox.Show("Report exported successfully!");
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Export failed: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            private void ExportReport(string filePath)
+            {
+                // This would be implemented with EPPlus or similar library
+                MessageBox.Show($"Export functionality would save to: {filePath}\n" +
+                    "Implementation requires EPPlus or CSV library");
+            }
+        }
+        public partial class Bills : Form
+        {
+            // Theme colors matching ItemsManagement and Sales
+            private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
+            private static readonly Color BackgroundColor = Color.White;
+            private static readonly Color HeaderColor = Color.FromArgb(230, 244, 253);
+            private static readonly Color ForegroundColor = Color.Black;
+            private static readonly Color SecondaryColor = Color.Gray;
+            private static readonly Color SelectionColor = Color.FromArgb(200, 230, 255);
+
+            // Form controls
+            private DataGridView dgvBills;
+            private TextBox txtBillNumber;
+            private TextBox txtCustomerContact;
+            private DateTimePicker dtpBillDate;
+            private CheckBox chkUseDate;
+            private Button btnSearch;
+            private Button btnClear;
+
+            public Bills()
+            {
+                InitializeComponent();
+                this.Dock = DockStyle.Fill;
+                this.FormBorderStyle = FormBorderStyle.None;
+            }
+
+            private void InitializeComponent()
+            {
+                // Form setup
+                this.Size = new Size(1200, 750);
+                this.Text = "Bill Search";
+                this.BackColor = BackgroundColor;
+                this.Padding = new Padding(20);
+
+                // Main container
+                var container = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(0)
+                };
+
+                // Title panel
+                var titlePanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 70,
+                    BackColor = PrimaryColor
+                };
+
+                var lblTitle = new Label
+                {
+                    Text = "BILL SEARCH",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                    ForeColor = Color.White
+                };
+                titlePanel.Controls.Add(lblTitle);
+
+                // Filter panel
+                var filterPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 120,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(20, 15, 20, 15)
+                };
+
+                // Filter controls in table layout
+                var filterTable = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 6,
+                    RowCount = 2,
+                    AutoSize = true
+                };
+
+                // Configure columns
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));   // Date controls
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));     // Buttons
+
+                // Row heights
+                filterTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+                filterTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+
+                // Bill Number
+                var lblBillNumber = new Label
+                {
+                    Text = "Bill Number:",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = ForegroundColor
+                };
+
+                txtBillNumber = new TextBox
+                {
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 10),
+                    Margin = new Padding(0, 10, 10, 0)
+                };
+                txtBillNumber.KeyDown += TextBox_KeyDown;
+
+                // Customer Contact
+                var lblCustomerContact = new Label
+                {
+                    Text = "Customer Contact:",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = ForegroundColor
+                };
+
+                txtCustomerContact = new TextBox
+                {
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 10),
+                    Margin = new Padding(0, 10, 10, 0)
+                };
+                txtCustomerContact.KeyDown += TextBox_KeyDown;
+
+                // Bill Date
+                var lblBillDate = new Label
+                {
+                    Text = "Bill Date:",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = ForegroundColor
+                };
+
+                var datePanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(0, 5, 0, 5)
+                };
+
+                dtpBillDate = new DateTimePicker
+                {
+                    Format = DateTimePickerFormat.Short,
+                    Width = 120,
+                    Location = new Point(0, 5),
+                    Enabled = false,
+                    Font = new Font("Segoe UI", 10)
+                };
+
+                chkUseDate = new CheckBox
+                {
+                    Text = "Use Date",
+                    Location = new Point(130, 5),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
+                };
+                chkUseDate.CheckedChanged += ChkUseDate_CheckedChanged;
+
+                datePanel.Controls.Add(dtpBillDate);
+                datePanel.Controls.Add(chkUseDate);
+
+                // Buttons
+                var buttonPanel = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    Padding = new Padding(0, 5, 0, 5)
+                };
+
+                btnSearch = CreateButton("SEARCH", PrimaryColor);
+                btnSearch.Click += BtnSearch_Click;
+                btnSearch.Height = 30;
+
+                btnClear = CreateButton("CLEAR", SecondaryColor);
+                btnClear.Click += BtnClear_Click;
+                btnClear.Height = 30;
+                btnClear.Margin = new Padding(10, 0, 0, 0);
+
+                buttonPanel.Controls.Add(btnSearch);
+                buttonPanel.Controls.Add(btnClear);
+
+                // Add controls to filter table
+                filterTable.Controls.Add(lblBillNumber, 0, 0);
+                filterTable.Controls.Add(txtBillNumber, 1, 0);
+                filterTable.Controls.Add(lblCustomerContact, 2, 0);
+                filterTable.Controls.Add(txtCustomerContact, 3, 0);
+                filterTable.Controls.Add(lblBillDate, 4, 0);
+                filterTable.Controls.Add(datePanel, 5, 0);
+                filterTable.Controls.Add(buttonPanel, 5, 1);
+
+                filterPanel.Controls.Add(filterTable);
+
+                // Data Grid
+                dgvBills = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = BackgroundColor,
+                    BorderStyle = BorderStyle.None,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    RowHeadersVisible = false,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    ReadOnly = true,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                };
+
+                // Configure grid style
+                FormatDataGrid(dgvBills);
+
+                // Create columns
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "Bill_ID",
+                    HeaderText = "BILL NO",
+                    Name = "colBillId",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "BillDate",
+                    HeaderText = "DATE",
+                    Name = "colBillDate",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "dd-MMM-yyyy"
+                    }
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "PaymentMethod",
+                    HeaderText = "PAYMENT",
+                    Name = "colPayment",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "CustomerContact",
+                    HeaderText = "CONTACT",
+                    Name = "colContact",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "Barcode",
+                    HeaderText = "BARCODE",
+                    Name = "colBarcode",
+                });
+
+                //dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                //{
+                //    DataPropertyName = "Description",
+                //    HeaderText = "DESCRIPTION",
+                //    Name = "colDescription",
+                //});
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "BrandName",
+                    HeaderText = "BRAND",
+                    Name = "colBrand",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "CategoryName",
+                    HeaderText = "CATEGORY",
+                    Name = "colCategory",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "SizeLabel",
+                    HeaderText = "SIZE",
+                    Name = "colSize",
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "Quantity",
+                    HeaderText = "QTY",
+                    Name = "colQuantity",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    }
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "RetailPrice",
+                    HeaderText = "RETAIL PRICE",
+                    Name = "colRetailPrice",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    }
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "ItemSellingPrice",
+                    HeaderText = "SOLD PRICE",
+                    Name = "colSoldPrice",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    }
+                });
+
+                // Image column
+                //var imgCol = new DataGridViewImageColumn
+                //{
+                //    DataPropertyName = "ItemImage",
+                //    HeaderText = "IMAGE",
+                //    Name = "colImage",
+                //    ImageLayout = DataGridViewImageCellLayout.Zoom,
+                //    FillWeight = 80
+                //};
+                //dgvBills.Columns.Add(imgCol);
+                //dgvBills.AutoGenerateColumns = false;
+
+                // Handle image formatting
+                //dgvBills.CellFormatting += DgvBills_CellFormatting;
+
+                // Assemble container
+                container.Controls.Add(dgvBills);
+                container.Controls.Add(filterPanel);
+                container.Controls.Add(titlePanel);
+                this.Controls.Add(container);
+            }
+
+            private void FormatDataGrid(DataGridView dgv)
+            {
+                dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                dgv.RowHeadersVisible = false;
+                dgv.ReadOnly = true;
+                dgv.AllowUserToAddRows = false;
+                dgv.AllowUserToDeleteRows = false;
+                dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                dgv.BackgroundColor = BackgroundColor;
+                dgv.ForeColor = ForegroundColor;
+                dgv.BorderStyle = BorderStyle.None;
+                dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+                dgv.RowTemplate.Height = 50;
+
+
+                // Header styling
+                dgv.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = PrimaryColor,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(0)
+                };
+                dgv.ColumnHeadersHeight = 40;
+                dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+
+                // Cell styling
+                dgv.DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = BackgroundColor,
+                    ForeColor = ForegroundColor,
+                    Font = new Font("Segoe UI", 10),
+                    SelectionBackColor = SelectionColor,
+                    SelectionForeColor = ForegroundColor,
+                    Padding = new Padding(10, 5, 10, 5)
+                };
+
+                // Alternating rows
+                dgv.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(245, 249, 255)
+                };
+
+                dgv.EnableHeadersVisualStyles = false;
+            }
+
+            private Button CreateButton(string text, Color backColor)
+            {
+                return new Button
+                {
+                    Text = text,
+                    FlatStyle = FlatStyle.Flat,
+                    FlatAppearance = {
+                BorderSize = 0,
+                MouseOverBackColor = ControlPaint.Light(backColor, 0.2f)
+            },
+                    BackColor = backColor,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Height = 35,
+                    Margin = new Padding(0, 0, 10, 0)
+                };
+            }
+
+            //private void DgvBills_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+            //{
+            //    if (e.RowIndex < 0 || e.ColumnIndex != dgvBills.Columns["colImage"].Index)
+            //        return;
+
+            //    if (dgvBills.Rows[e.RowIndex].Cells["colImage"].Value != null &&
+            //        dgvBills.Rows[e.RowIndex].Cells["colImage"].Value != DBNull.Value)
+            //    {
+            //        try
+            //        {
+            //            byte[] imageData = (byte[])dgvBills.Rows[e.RowIndex].Cells["colImage"].Value;
+            //            using (var ms = new System.IO.MemoryStream(imageData))
+            //            {
+            //                e.Value = Image.FromStream(ms);
+            //            }
+            //        }
+            //        catch
+            //        {
+            //            SetDefaultImage(e);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        SetDefaultImage(e);
+            //    }
+            //}
+
+            //private void SetDefaultImage(DataGridViewCellFormattingEventArgs e)
+            //{
+            //    // Create a default placeholder image
+            //    var defaultImage = new Bitmap(60, 60);
+            //    using (var g = Graphics.FromImage(defaultImage))
+            //    {
+            //        g.Clear(Color.LightGray);
+            //        using (var pen = new Pen(Color.Gray, 1))
+            //        {
+            //            g.DrawRectangle(pen, 0, 0, defaultImage.Width - 1, defaultImage.Height - 1);
+            //        }
+            //        using (var font = new Font("Arial", 8))
+            //        {
+            //            g.DrawString("No Image", font, Brushes.DarkGray,
+            //                new PointF(10, defaultImage.Height / 2 - 10));
+            //        }
+            //    }
+            //    e.Value = defaultImage;
+            //}
+
+            private void ChkUseDate_CheckedChanged(object sender, EventArgs e)
+            {
+                dtpBillDate.Enabled = chkUseDate.Checked;
+            }
+
+            private void TextBox_KeyDown(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    SearchBills();
+                }
+            }
+
+            private void BtnSearch_Click(object sender, EventArgs e)
+            {
+                SearchBills();
+            }
+
+            private void BtnClear_Click(object sender, EventArgs e)
+            {
+                txtBillNumber.Clear();
+                txtCustomerContact.Clear();
+                chkUseDate.Checked = false;
+                if (dgvBills.DataSource is DataTable dt)
+                {
+                    dt.Clear();
+                }
+                else
+                {
+                    dgvBills.DataSource = new DataTable();
+                }
+            }
+
+            private void SearchBills()
+            {
+                int? billId = null;
+                if (!string.IsNullOrWhiteSpace(txtBillNumber.Text))
+                {
+                    if (int.TryParse(txtBillNumber.Text, out int tempBillId))
+                    {
+                        billId = tempBillId;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Please enter a valid Bill Number", "Invalid Input",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
+                string contact = txtCustomerContact.Text.Trim();
+                if (contact == "") contact = null;
+
+                DateTime? billDate = null;
+                if (chkUseDate.Checked)
+                {
+                    billDate = dtpBillDate.Value.Date;
+                }
+
+                try
+                {
+                    using (SqlConnection conn = DbHelper.GetConnection())
+                    {
+                        using (SqlCommand cmd = new SqlCommand("sp_SearchBills", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@BillID", billId ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CustomerContact", contact ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("@BillDate", billDate ?? (object)DBNull.Value);
+
+                            SqlDataAdapter da = new SqlDataAdapter(cmd);
+                            DataTable dt = new DataTable();
+                            da.Fill(dt);
+
+                            if (!dt.Columns.Contains("ItemImage"))
+                            {
+                                dt.Columns.Add("ItemImage", typeof(byte[]));
+                            }
+
+                            dgvBills.DataSource = dt;
+
+                            if (dgvBills.Columns.Contains("ItemImage"))
+                            {
+                                dgvBills.Columns["ItemImage"].Visible = false;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error searching bills: {ex.Message}\n\n{ex.InnerException?.Message}",
+                        "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        public class SizeForm : Form
+        {
+            private readonly Sizes _size;
+            private TextBox txtLabel;
+            private TextBox txtType;
+            private Button btnSave;
+            private Button btnCancel;
+
+            public SizeForm(Sizes size = null)
+            {
+                _size = size ?? new Sizes();
+                InitializeComponent();
+                Text = _size.Size_ID == 0 ? "Add New Size" : "Edit Size";
+            }
+
+            private void InitializeComponent()
+            {
+                // Form setup
+                Size = new Size(400, 250);
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                StartPosition = FormStartPosition.CenterParent;
+                MaximizeBox = false;
+                MinimizeBox = false;
+                BackColor = Color.White;
+
+                // Main layout
+                var mainPanel = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 2,
+                    RowCount = 3,
+                    Padding = new Padding(20),
+                    ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 30F),
+                new ColumnStyle(SizeType.Percent, 70F)
+            },
+                    RowStyles =
+            {
+                new RowStyle(SizeType.Absolute, 40F),
+                new RowStyle(SizeType.Absolute, 40F),
+                new RowStyle(SizeType.Percent, 100F)
+            }
+                };
+
+                // Labels
+                mainPanel.Controls.Add(new Label
+                {
+                    Text = "Size Label:",
+                    TextAlign = ContentAlignment.MiddleRight,
+                    Dock = DockStyle.Fill
+                }, 0, 0);
+
+                mainPanel.Controls.Add(new Label
+                {
+                    Text = "Size Type:",
+                    TextAlign = ContentAlignment.MiddleRight,
+                    Dock = DockStyle.Fill
+                }, 0, 1);
+
+                // TextBoxes
+                txtLabel = new TextBox { Dock = DockStyle.Fill, Margin = new Padding(5) };
+                txtType = new TextBox { Dock = DockStyle.Fill, Margin = new Padding(5) };
+
+                mainPanel.Controls.Add(txtLabel, 1, 0);
+                mainPanel.Controls.Add(txtType, 1, 1);
+
+                // Button panel
+                var buttonPanel = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 60,
+                    Padding = new Padding(10)
+                };
+
+                btnSave = new Button
+                {
+                    Text = "Save",
+                    DialogResult = DialogResult.OK,
+                    BackColor = Color.FromArgb(41, 128, 185),
+                    ForeColor = Color.White,
+                    Size = new Size(100, 40),
+                    Anchor = AnchorStyles.Right
+                };
+
+                btnCancel = new Button
+                {
+                    Text = "Cancel",
+                    DialogResult = DialogResult.Cancel,
+                    BackColor = Color.FromArgb(231, 76, 60),
+                    ForeColor = Color.White,
+                    Size = new Size(100, 40),
+                    Anchor = AnchorStyles.Right
+                };
+
+                btnSave.Left = buttonPanel.Width - btnSave.Width - btnCancel.Width - 20;
+                btnCancel.Left = buttonPanel.Width - btnCancel.Width - 10;
+
+                buttonPanel.Controls.Add(btnSave);
+                buttonPanel.Controls.Add(btnCancel);
+
+                // Event handlers
+                btnSave.Click += BtnSave_Click;
+                Load += SizeForm_Load;
+
+                // Add controls
+                Controls.Add(mainPanel);
+                Controls.Add(buttonPanel);
+            }
+
+            //private void SizeForm_Load(object sender, EventArgs e)
+            //{
+            //    txtLabel.Text = _size.SizeLabel;
+            //    txtType.Text = _size.SizeType;
+            //}
+
+            //private void BtnSave_Click(object sender, EventArgs e)
+            //{
+            //    if (string.IsNullOrWhiteSpace(txtLabel.Text))
+            //    {
+            //        MessageBox.Show("Size label is required", "Validation Error",
+            //                       MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //        return;
+            //    }
+
+            //    _size.SizeLabel = txtLabel.Text.Trim();
+            //    _size.SizeType = txtType.Text.Trim();
+
+            //    var service = new SizeService();
+            //    if (service.SaveSize(_size))
+            //    {
+            //        DialogResult = DialogResult.OK;
+            //        Close();
+            //    }
+            //    else
+            //    {
+            //        MessageBox.Show("Failed to save size", "Database Error",
+            //                       MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    }
+            //}
+
+            private void SizeForm_Load(object sender, EventArgs e)
+            {
+                // Populate form fields
+                txtLabel.Text = _size.SizeLabel;
+                txtType.Text = _size.SizeType;
+            }
+
+            private void BtnSave_Click(object sender, EventArgs e)
+            {
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(txtLabel.Text))
+                {
+                    MessageBox.Show("Size label is required", "Validation Error",
+                                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtLabel.Focus();
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtType.Text))
+                {
+                    MessageBox.Show("Size type is required", "Validation Error",
+                                   MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtType.Focus();
+                    return;
+                }
+
+                // Update size object
+                _size.SizeLabel = txtLabel.Text.Trim();
+                _size.SizeType = txtType.Text.Trim();
+
+                // Save through service
+                var service = new SizeService();
+                if (service.SaveSize(_size))
+                {
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                else
+                {
+                    MessageBox.Show("Failed to save size", "Database Error",
+                                   MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

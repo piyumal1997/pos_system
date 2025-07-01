@@ -11,7 +11,6 @@ namespace pos_system.pos.UI.Forms.Dashboard
 {
     public partial class OwnerDashboard : Form
     {
-        // Control Declarations
         private Panel _leftPanel;
         private Panel _mainPanel;
         private Button _currentButton;
@@ -20,8 +19,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
         private Panel headerPanel;
         private Label lblWelcome;
         private Button btnClose;
+        private Button btnMinimize;
 
-        // Colors
         private Color primaryColor;
         private Color secondaryColor;
         private Color activeButtonColor;
@@ -33,6 +32,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             headerPanel = new Panel();
             lblWelcome = new Label();
             btnClose = new Button();
+            btnMinimize = new Button();
             headerPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -58,6 +58,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             // 
             headerPanel.BackColor = Color.FromArgb(41, 128, 185);
             headerPanel.Controls.Add(lblWelcome);
+            headerPanel.Controls.Add(btnMinimize);
             headerPanel.Controls.Add(btnClose);
             headerPanel.Dock = DockStyle.Top;
             headerPanel.Location = new Point(0, 0);
@@ -79,6 +80,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             // 
             btnClose.BackColor = Color.Transparent;
             btnClose.FlatStyle = FlatStyle.Flat;
+            btnClose.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnClose.ForeColor = Color.White;
             btnClose.Location = new Point(1151, 12);
             btnClose.Name = "btnClose";
@@ -86,6 +88,20 @@ namespace pos_system.pos.UI.Forms.Dashboard
             btnClose.TabIndex = 1;
             btnClose.Text = "✕";
             btnClose.UseVisualStyleBackColor = false;
+            // 
+            // btnMinimize
+            // 
+            btnMinimize.BackColor = Color.Transparent;
+            btnMinimize.FlatStyle = FlatStyle.Flat;
+            btnMinimize.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnMinimize.ForeColor = Color.White;
+            btnMinimize.Location = new Point(1111, 12);
+            btnMinimize.Name = "btnMinimize";
+            btnMinimize.Size = new Size(35, 35);
+            btnMinimize.TabIndex = 2;
+            btnMinimize.Text = "—";
+            //btnMinimize.TextAlign = ContentAlignment.MiddleCenter;
+            btnMinimize.UseVisualStyleBackColor = false;
             // 
             // OwnerDashboard
             // 

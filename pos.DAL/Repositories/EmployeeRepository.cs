@@ -21,35 +21,20 @@ namespace pos_system.pos.DAL.Repositories
             {
                 DataTable result = DbHelper.GetDataTable(query, CommandType.Text);
 
-                // Log data retrieval status
                 if (result == null)
                 {
                     Debug.WriteLine("[Database Error] Failed to retrieve data");
                     return new DataTable();
                 }
 
-                // Log row count and sample data
                 Debug.WriteLine($"[Data Retrieved] {result.Rows.Count} rows found");
-
-                if (result.Rows.Count > 0)
-                {
-                    Debug.WriteLine("[First Row Sample]:");
-                    Debug.WriteLine($"ID: {result.Rows[0]["Employee_ID"]}");
-                    Debug.WriteLine($"Name: {result.Rows[0]["firstName"]} {result.Rows[0]["lastName"]}");
-                    Debug.WriteLine($"Role: {result.Rows[0]["RoleName"]}");
-                    Debug.WriteLine($"Status: {result.Rows[0]["status"]}");
-                }
-
                 return result;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[Database Error] {ex.Message}");
-                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
                 return new DataTable();
             }
-
-            //return DbHelper.GetDataTable(query, CommandType.Text);
         }
 
         public int AddUpdateEmployee(Employee employee, bool isUpdate = false)
@@ -62,13 +47,15 @@ namespace pos_system.pos.DAL.Repositories
                     contactNo = @ContactNo,
                     status = @Status,
                     Role_ID = @RoleID,
-                    password = @Password,
-                    picture = @Picture
+                    picture = @Picture,
+                    email = @Email
                   WHERE Employee_ID = @ID" :
                 @"INSERT INTO Employee 
-                (firstName, lastName, nic, userName, password, address, contactNo, status, Role_ID, picture)
+                (firstName, lastName, nic, userName, password, 
+                 address, contactNo, status, Role_ID, picture, email)
                 VALUES
-                (@FirstName, @LastName, @NIC, @UserName, @Password, @Address, @ContactNo, @Status, @RoleID, @Picture)";
+                (@FirstName, @LastName, @NIC, @UserName, @Password, 
+                 @Address, @ContactNo, @Status, @RoleID, @Picture, @Email)";
 
             var parameters = new SqlParameter[] {
                 new("@FirstName", employee.firstName),
@@ -80,7 +67,8 @@ namespace pos_system.pos.DAL.Repositories
                 new("@ContactNo", employee.contactNo),
                 new("@Status", employee.status),
                 new("@RoleID", employee.Role_ID),
-                new("@Picture", employee.picture ?? (object)DBNull.Value)
+                new("@Picture", employee.picture ?? (object)DBNull.Value),
+                new("@Email", employee.email ?? (object)DBNull.Value)  // New email parameter
             };
 
             if (isUpdate)
@@ -99,15 +87,16 @@ namespace pos_system.pos.DAL.Repositories
                 new SqlParameter("@ID", employeeId));
         }
 
-        public bool CheckExisting(string nic, string username, string contactNo)
+        public bool CheckExisting(string nic, string username, string contactNo, string email)
         {
             string query = @"SELECT COUNT(*) FROM Employee 
                             WHERE nic = @NIC OR userName = @User 
-                            OR contactNo = @Contact";
+                            OR contactNo = @Contact OR email = @Email";
             var parameters = new SqlParameter[] {
                 new("@NIC", nic),
                 new("@User", username),
-                new("@Contact", contactNo)
+                new("@Contact", contactNo),
+                new("@Email", email)  // Added email check
             };
 
             using var dt = DbHelper.GetDataTable(query, CommandType.Text, parameters);

@@ -3,12 +3,15 @@ using pos_system.pos.BLL.Services;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Drawing;
 using System.Drawing.Printing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Forms;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -17,11 +20,8 @@ namespace pos_system.pos.UI.Forms.Sales
         private Employee _currentUser;
         private DataTable _billItems;
         private DataTable _returnReasons;
-        private int _lastReturnId;
-        private decimal _lastTotalRefund;
-        private DataTable _lastReturnItems;
-        private DateTime _billDate;
         private bool _billExpired = false;
+        private DateTime _billDate;
 
         public ReturnsForm(Employee currentUser)
         {
@@ -30,6 +30,8 @@ namespace pos_system.pos.UI.Forms.Sales
             InitializeReturnReasons();
             lblBillDate.Text = string.Empty;
             lblCurrentDate.Text = DateTime.Now.ToString("yyyy-MM-dd");
+            txtBillId.ForeColor = Color.Gray;
+            txtBillId.Text = "Enter Bill ID";
         }
 
         private void InitializeReturnReasons()
@@ -50,7 +52,7 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                if (!int.TryParse(txtBillId.Text, out int billId))
+                if (txtBillId.Text == "Enter Bill ID" || !int.TryParse(txtBillId.Text, out int billId))
                 {
                     MessageBox.Show("Please enter a valid Bill ID", "Input Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -82,11 +84,12 @@ namespace pos_system.pos.UI.Forms.Sales
                     return;
                 }
 
+                // UPDATED QUERY FOR NEW SCHEMA
                 string query = @"SELECT 
-                    bi.Item_ID, 
-                    i.description AS ItemName,
-                    b.brandName AS Brand,
-                    c.categoryName AS Category,
+                    bi.ProductSize_ID,
+                    p.description AS ItemName,
+                    br.brandName AS Brand,
+                    cat.categoryName AS Category,
                     s.SizeLabel,
                     bi.quantity AS OriginalQty,
                     ISNULL(bi.ReturnedQuantity, 0) AS ReturnedQty,
@@ -94,16 +97,15 @@ namespace pos_system.pos.UI.Forms.Sales
                     bi.ItemSellingPrice AS Price
                 FROM Bill_Item bi
                 JOIN Bill bl ON bi.Bill_ID = bl.Bill_ID
-                JOIN Item i ON bi.Item_ID = i.Item_ID
-                LEFT JOIN Size s ON bi.Size_ID = s.Size_ID
-                LEFT JOIN Brand b ON i.Brand_ID = b.Brand_ID
-                LEFT JOIN Category c ON i.Category_ID = c.Category_ID
+                JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                JOIN Product p ON ps.Product_ID = p.Product_ID
+                LEFT JOIN Size s ON ps.Size_ID = s.Size_ID
+                LEFT JOIN Brand br ON p.Brand_ID = br.Brand_ID
+                LEFT JOIN Category cat ON p.Category_ID = cat.Category_ID
                 WHERE bi.Bill_ID = @BillId
                 AND (bi.quantity - ISNULL(bi.ReturnedQuantity, 0)) > 0";
 
-                SqlParameter[] parameters = {
-                    new SqlParameter("@BillId", billId)
-                };
+                SqlParameter[] parameters = { new SqlParameter("@BillId", billId) };
 
                 _billItems = DbHelper.GetDataTable(query, CommandType.Text, parameters);
 
@@ -121,12 +123,15 @@ namespace pos_system.pos.UI.Forms.Sales
                 dgvBillItems.DataSource = null;
                 dgvBillItems.Columns.Clear();
 
+                // Hidden columns
                 dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
                 {
-                    DataPropertyName = "Item_ID",
+                    DataPropertyName = "ProductSize_ID",
+                    HeaderText = "ProductSize_ID",
                     Visible = false
                 });
 
+                // Visible columns
                 dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = "ItemName",
@@ -170,7 +175,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = "ReturnedQty",
-                    HeaderText = "Already Returned",
+                    HeaderText = "Returned Qty",
                     ReadOnly = true,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });
@@ -180,7 +185,6 @@ namespace pos_system.pos.UI.Forms.Sales
                     DataPropertyName = "AvailableQty",
                     HeaderText = "Available",
                     ReadOnly = true,
-                    Name = "AvailableQtyCol",
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });
 
@@ -188,11 +192,12 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     DataPropertyName = "Price",
                     HeaderText = "Price",
-                    DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" },
                     ReadOnly = true,
+                    DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });
 
+                // Editable columns
                 DataGridViewColumn returnQtyCol = CreateNumericUpDownColumn();
                 dgvBillItems.Columns.Add(returnQtyCol);
 
@@ -204,8 +209,6 @@ namespace pos_system.pos.UI.Forms.Sales
                     DisplayMember = "Description",
                     ValueMember = "Reason_ID",
                     DataSource = _returnReasons.Copy(),
-                    DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
-                    FlatStyle = FlatStyle.Flat,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 };
                 dgvBillItems.Columns.Add(reasonColumn);
@@ -224,19 +227,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 foreach (DataGridViewRow row in dgvBillItems.Rows)
                 {
                     if (row.Cells["ReturnQtyCol"] != null)
-                    {
                         row.Cells["ReturnQtyCol"].Value = 0;
-                    }
 
                     if (row.Cells["ReasonCol"] != null && _returnReasons.Rows.Count > 0)
-                    {
                         row.Cells["ReasonCol"].Value = _returnReasons.Rows[0]["Reason_ID"];
-                    }
 
                     if (row.Cells["RestockCol"] != null)
-                    {
                         row.Cells["RestockCol"].Value = true;
-                    }
                 }
 
                 btnProcessReturn.Enabled = true;
@@ -263,6 +260,13 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
+                if (txtBillId.Text == "Enter Bill ID" || !int.TryParse(txtBillId.Text, out int billId))
+                {
+                    MessageBox.Show("Please enter a valid Bill ID", "Input Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 if (_billExpired)
                 {
                     MessageBox.Show("This bill is more than 3 days old. Returns are not allowed.",
@@ -279,31 +283,22 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 bool allValid = true;
                 StringBuilder validationErrors = new StringBuilder();
-                _lastReturnItems = new DataTable();
-                _lastReturnItems.Columns.Add("ItemName", typeof(string));
-                _lastReturnItems.Columns.Add("Brand", typeof(string));
-                _lastReturnItems.Columns.Add("Category", typeof(string));
-                _lastReturnItems.Columns.Add("Size", typeof(string));
-                _lastReturnItems.Columns.Add("Quantity", typeof(int));
-                _lastReturnItems.Columns.Add("Price", typeof(decimal));
-                _lastReturnItems.Columns.Add("Refund", typeof(decimal));
+                List<ReturnItem> returnItems = new List<ReturnItem>();
 
                 foreach (DataRow row in _billItems.Rows)
                 {
                     try
                     {
-                        // Skip validation if no return requested
                         if (row["ReturnQty"] == DBNull.Value || (int)row["ReturnQty"] <= 0)
-                        {
                             continue;
-                        }
 
                         int returnQty = (int)row["ReturnQty"];
                         int availableQty = (int)row["AvailableQty"];
 
                         if (returnQty > availableQty)
                         {
-                            validationErrors.AppendLine($"Return quantity cannot exceed available quantity for {row["Brand"] + " " + row["Category"]}  (Available: {availableQty})");
+                            validationErrors.AppendLine(
+                                $"Return quantity cannot exceed available quantity for {row["Brand"]} {row["Category"]} (Available: {availableQty})");
                             allValid = false;
                         }
 
@@ -313,16 +308,15 @@ namespace pos_system.pos.UI.Forms.Sales
                             allValid = false;
                         }
 
-                        // Add to receipt table
-                        _lastReturnItems.Rows.Add(
-                            row["ItemName"],
-                            row["Brand"],
-                            row["Category"],
-                            row["SizeLabel"],
-                            returnQty,
-                            row["Price"],
-                            (decimal)row["Price"] * returnQty
-                        );
+                        // UPDATED FOR NEW SCHEMA - Using ProductSize_ID
+                        returnItems.Add(new ReturnItem
+                        {
+                            BillId = billId,
+                            ProductSizeId = (int)row["ProductSize_ID"],
+                            Quantity = returnQty,
+                            ReasonId = (int)row["ReasonId"],
+                            IsRestocked = (bool)row["IsRestocked"]
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -338,61 +332,36 @@ namespace pos_system.pos.UI.Forms.Sales
                     return;
                 }
 
-                if (_lastReturnItems.Rows.Count == 0)
+                if (returnItems.Count == 0)
                 {
                     MessageBox.Show("No items selected for return", "Information",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var returnItems = new List<ReturnItem>();
-                foreach (DataRow row in _billItems.Rows)
-                {
-                    try
-                    {
-                        if (row["ReturnQty"] != DBNull.Value && (int)row["ReturnQty"] > 0)
-                        {
-                            returnItems.Add(new ReturnItem
-                            {
-                                BillId = int.Parse(txtBillId.Text),
-                                ItemId = (int)row["Item_ID"],
-                                Quantity = (int)row["ReturnQty"],
-                                ReasonId = (int)row["ReasonId"],
-                                IsRestocked = (bool)row["IsRestocked"]
-                            });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error processing item {row["ItemName"]}: {ex.Message}", "Processing Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-
                 ReturnService returnService = new ReturnService();
-                ReturnResult result = returnService.ProcessReturn(
+                var result = returnService.ProcessReturn(
                     _currentUser.Employee_ID,
-                    int.Parse(txtBillId.Text),
+                    billId,
                     returnItems
                 );
 
-                _lastReturnId = result.ReturnId;
-                _lastTotalRefund = result.TotalRefund;
+                var receiptData = returnService.GetReturnReceiptData(result.ReturnId);
 
-                MessageBox.Show($"Return processed successfully!\nReturn ID: {_lastReturnId}",
-                    "Return Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                PrintReturnReceipt();
+                PrintReturnReceipt(receiptData);
                 ResetForm();
+
+                MessageBox.Show($"Return processed successfully!\nReturn ID: {receiptData.ReturnId}",
+                    "Return Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error processing return: {ex.Message}", "Processing Error",
+                MessageBox.Show($"Error processing return: {ex}", "Processing Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void PrintReturnReceipt()
+        private void PrintReturnReceipt(ReturnReceiptData receiptData)
         {
             try
             {
@@ -405,47 +374,43 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
 
                 List<byte> output = new List<byte>();
-                output.AddRange(new byte[] { 0x1B, 0x40 });
+                output.AddRange(new byte[] { 0x1B, 0x40 }); // Initialize printer
 
+                // Print header
                 PrintCentered("RETURN RECEIPT", output, true);
                 PrintCentered("STYLE NEWAGE", output);
                 PrintCentered("No.16, Negombo Rd, Narammala", output);
                 PrintCentered("Tel: 077491913 / 0372249139", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
-                PrintCentered($"RETURN ID: {_lastReturnId}", output, true);
-                PrintCentered($"ORIGINAL BILL: {txtBillId.Text}", output);
-                PrintCentered($"BILL DATE: {_billDate:yyyy-MM-dd}", output);
-                PrintCentered($"RETURN DATE: {DateTime.Now:yyyy-MM-dd}", output);
-                PrintCentered($"CASHIER: {_currentUser.firstName} {_currentUser.lastName}", output);
+                // Print return details
+                PrintCentered($"RETURN ID: {receiptData.ReturnId}", output, true);
+                PrintCentered($"ORIGINAL BILL: {receiptData.OriginalBillId}", output);
+                PrintCentered($"BILL DATE: {receiptData.BillDate:yyyy-MM-dd}", output);
+                PrintCentered($"RETURN DATE: {receiptData.ReturnDate:yyyy-MM-dd}", output);
+                PrintCentered($"CASHIER: {receiptData.CashierName}", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
                 PrintSeparator(output);
 
+                // Print items header
                 PrintLeftRight("ITEM", "QTY  REFUND", output);
                 PrintSeparator(output);
 
-                foreach (DataRow row in _lastReturnItems.Rows)
+                // Print items
+                foreach (var item in receiptData.Items)
                 {
-                    string itemName = row["ItemName"].ToString();
-                    string brand = row["Brand"].ToString();
-                    string category = row["Category"].ToString();
-                    string size = row["Size"].ToString();
-                    int qty = (int)row["Quantity"];
-                    decimal refund = (decimal)row["Refund"];
+                    PrintLeft($"{item.Brand} {item.Category}", output);
+                    if (!string.IsNullOrEmpty(item.Size))
+                        PrintLeft($"Size: {item.Size}", output);
 
-                    PrintLeft($"{brand} {category}", output);
-                    if (!string.IsNullOrEmpty(size))
-                    {
-                        PrintLeft($"Size: {size}", output);
-                    }
-                    PrintLeft(itemName, output);
-
-                    PrintLeftRight(string.Empty, $"{qty}   {refund:C}", output);
+                    PrintLeft(item.ItemName, output);
+                    PrintLeftRight(string.Empty, $"{item.Quantity}   {item.Refund:C}", output);
                     output.AddRange(Encoding.ASCII.GetBytes("\n"));
                 }
 
+                // Print footer
                 PrintSeparator(output);
-                PrintLeftRight("TOTAL REFUND:", _lastTotalRefund.ToString("C"), output, true);
+                PrintLeftRight("TOTAL REFUND:", receiptData.TotalRefund.ToString("C"), output, true);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 PrintCentered("Thank you for your business!", output);
@@ -453,9 +418,11 @@ namespace pos_system.pos.UI.Forms.Sales
                 PrintCentered("within 3 days for exchange only", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n\n\n"));
 
-                output.AddRange(new byte[] { 0x1B, 0x64, 0x02 });
-                output.AddRange(new byte[] { 0x1B, 0x69 });
+                // Printer commands
+                output.AddRange(new byte[] { 0x1B, 0x64, 0x02 }); // Feed 2 lines
+                output.AddRange(new byte[] { 0x1B, 0x69 }); // Cut paper
 
+                // Send to printer
                 RawPrinterHelper.SendBytesToPrinter(printerName, output.ToArray());
             }
             catch (Exception ex)
@@ -470,9 +437,7 @@ namespace pos_system.pos.UI.Forms.Sales
             foreach (string printer in PrinterSettings.InstalledPrinters)
             {
                 if (printer.Contains("POS") || printer.Contains("Receipt"))
-                {
                     return printer;
-                }
             }
             return null;
         }
@@ -482,9 +447,7 @@ namespace pos_system.pos.UI.Forms.Sales
             const int MAX_LINE_WIDTH = 32;
 
             if (bold)
-            {
-                output.AddRange(new byte[] { 0x1B, 0x45, 0x01 });
-            }
+                output.AddRange(new byte[] { 0x1B, 0x45, 0x01 }); // Bold on
 
             if (text.Length > MAX_LINE_WIDTH)
                 text = text.Substring(0, MAX_LINE_WIDTH);
@@ -493,9 +456,7 @@ namespace pos_system.pos.UI.Forms.Sales
             output.AddRange(Encoding.ASCII.GetBytes(new string(' ', spaces) + text + "\n"));
 
             if (bold)
-            {
-                output.AddRange(new byte[] { 0x1B, 0x45, 0x00 });
-            }
+                output.AddRange(new byte[] { 0x1B, 0x45, 0x00 }); // Bold off
         }
 
         private void PrintLeft(string text, List<byte> output)
@@ -510,9 +471,7 @@ namespace pos_system.pos.UI.Forms.Sales
             const int MAX_LINE_WIDTH = 32;
 
             if (bold)
-            {
-                output.AddRange(new byte[] { 0x1B, 0x45, 0x01 });
-            }
+                output.AddRange(new byte[] { 0x1B, 0x45, 0x01 }); // Bold on
 
             int availableSpace = MAX_LINE_WIDTH - right.Length - 1;
             if (availableSpace < 1) availableSpace = 1;
@@ -522,9 +481,7 @@ namespace pos_system.pos.UI.Forms.Sales
             output.AddRange(Encoding.ASCII.GetBytes(line + "\n"));
 
             if (bold)
-            {
-                output.AddRange(new byte[] { 0x1B, 0x45, 0x00 });
-            }
+                output.AddRange(new byte[] { 0x1B, 0x45, 0x00 }); // Bold off
         }
 
         private void PrintSeparator(List<byte> output)
@@ -534,7 +491,8 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void ResetForm()
         {
-            txtBillId.Clear();
+            txtBillId.Text = "Enter Bill ID";
+            txtBillId.ForeColor = Color.Gray;
             dgvBillItems.DataSource = null;
             dgvBillItems.Columns.Clear();
             btnProcessReturn.Enabled = false;
@@ -543,39 +501,31 @@ namespace pos_system.pos.UI.Forms.Sales
             _billExpired = false;
         }
 
-        private void txtBillId_KeyPress(object sender, KeyPressEventArgs e)
+        private void txtBillId_Enter(object sender, EventArgs e)
         {
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            if (txtBillId.Text == "Enter Bill ID")
             {
-                e.Handled = true;
+                txtBillId.Text = "";
+                txtBillId.ForeColor = SystemColors.WindowText;
+            }
+        }
+
+        private void txtBillId_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtBillId.Text))
+            {
+                txtBillId.Text = "Enter Bill ID";
+                txtBillId.ForeColor = Color.Gray;
             }
         }
 
         private void dgvBillItems_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            try
+            if (e.Exception != null)
             {
-                if (e.Exception != null)
-                {
-                    string columnName = dgvBillItems.Columns[e.ColumnIndex].HeaderText;
-
-                    if (e.Exception is FormatException)
-                    {
-                        MessageBox.Show($"Invalid format in {columnName} column", "Input Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Data error in {columnName}: {e.Exception.Message}", "Input Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-
-                    e.ThrowException = false;
-                }
-            }
-            catch
-            {
-                // Suppress any secondary errors
+                MessageBox.Show($"Data error: {e.Exception.Message}", "Input Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                e.ThrowException = false;
             }
         }
 
@@ -589,54 +539,28 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void dgvBillItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
-            try
+            if (dgvBillItems.Columns[e.ColumnIndex].Name == "ReturnQtyCol" &&
+                dgvBillItems.Rows[e.RowIndex].IsNewRow == false)
             {
-                if (dgvBillItems.Columns[e.ColumnIndex].Name == "ReturnQtyCol" &&
-                    dgvBillItems.Rows[e.RowIndex].IsNewRow == false)
-                {
-                    dgvBillItems.Rows[e.RowIndex].ErrorText = null;
+                dgvBillItems.Rows[e.RowIndex].ErrorText = null;
 
-                    if (!int.TryParse(e.FormattedValue.ToString(), out int returnQty) || returnQty < 0)
+                if (!int.TryParse(e.FormattedValue.ToString(), out int returnQty) || returnQty < 0)
+                {
+                    e.Cancel = true;
+                    dgvBillItems.Rows[e.RowIndex].ErrorText = "Please enter a valid positive number";
+                    return;
+                }
+
+                if (_billItems != null && e.RowIndex < _billItems.Rows.Count)
+                {
+                    int availableQty = Convert.ToInt32(_billItems.Rows[e.RowIndex]["AvailableQty"]);
+
+                    if (returnQty > availableQty)
                     {
                         e.Cancel = true;
-                        dgvBillItems.Rows[e.RowIndex].ErrorText = "Please enter a valid positive number";
-                        return;
-                    }
-
-                    if (_billItems != null && e.RowIndex < _billItems.Rows.Count)
-                    {
-                        int availableQty = Convert.ToInt32(_billItems.Rows[e.RowIndex]["AvailableQty"]);
-
-                        if (returnQty > availableQty)
-                        {
-                            e.Cancel = true;
-                            dgvBillItems.Rows[e.RowIndex].ErrorText = $"Cannot exceed available quantity ({availableQty})";
-                        }
+                        dgvBillItems.Rows[e.RowIndex].ErrorText = $"Cannot exceed available quantity ({availableQty})";
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Validation error: {ex.Message}", "Validation Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        private void txtBillId_Enter(object sender, EventArgs e)
-        {
-            if (txtBillId.Text == "Enter Bill ID")
-            {
-                txtBillId.Text = string.Empty;
-                txtBillId.ForeColor = DarkText;
-            }
-        }
-
-        private void txtBillId_Leave(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtBillId.Text))
-            {
-                txtBillId.Text = "Enter Bill ID";
-                txtBillId.ForeColor = Color.Gray;
             }
         }
 
@@ -769,7 +693,8 @@ namespace pos_system.pos.UI.Forms.Sales
             [DllImport("winspool.Drv", EntryPoint = "OpenPrinterA",
                 SetLastError = true, CharSet = CharSet.Ansi,
                 ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
-            private static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter, out IntPtr hPrinter, IntPtr pd);
+            private static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter,
+                out IntPtr hPrinter, IntPtr pd);
 
             [DllImport("winspool.Drv", EntryPoint = "ClosePrinter",
                 SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
@@ -778,7 +703,8 @@ namespace pos_system.pos.UI.Forms.Sales
             [DllImport("winspool.Drv", EntryPoint = "StartDocPrinterA",
                 SetLastError = true, CharSet = CharSet.Ansi,
                 ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
-            private static extern bool StartDocPrinter(IntPtr hPrinter, Int32 level, [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFOA di);
+            private static extern bool StartDocPrinter(IntPtr hPrinter, Int32 level,
+                [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFOA di);
 
             [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter",
                 SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
@@ -794,7 +720,8 @@ namespace pos_system.pos.UI.Forms.Sales
 
             [DllImport("winspool.Drv", EntryPoint = "WritePrinter",
                 SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
-            private static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, Int32 dwCount, out Int32 dwWritten);
+            private static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes,
+                Int32 dwCount, out Int32 dwWritten);
 
             [StructLayout(LayoutKind.Sequential)]
             private class DOCINFOA
@@ -833,13 +760,8 @@ namespace pos_system.pos.UI.Forms.Sales
                     ClosePrinter(hPrinter);
                 }
 
-                if (dwWritten != pBytes.Length)
-                {
-                    return false;
-                }
-                return true;
+                return dwWritten == pBytes.Length;
             }
         }
-
     }
 }

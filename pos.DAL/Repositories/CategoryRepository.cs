@@ -181,5 +181,20 @@ namespace pos_system.pos.DAL.Repositories
                 return (int)cmd.ExecuteScalar() > 0;
             }
         }
+
+        public string GetCategoryNameById(int categoryId)
+        {
+            string query = "SELECT categoryName FROM Category WHERE Category_ID = @categoryId";
+
+            using (var conn = DbHelper.GetConnection())
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@categoryId", categoryId);
+                conn.Open();
+
+                var result = cmd.ExecuteScalar();
+                return result?.ToString() ?? string.Empty;
+            }
+        }
     }
 }

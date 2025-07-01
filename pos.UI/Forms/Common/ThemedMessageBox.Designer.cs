@@ -79,7 +79,7 @@ namespace pos_system.pos.UI.Forms.Common
             // Title label - now with dynamic color
             lblTitle = new Label();
             lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            lblTitle.ForeColor = Color.White;  // White text for better contrast
+            lblTitle.ForeColor = Color.Black;  // White text for better contrast
             lblTitle.TextAlign = ContentAlignment.MiddleCenter;
             lblTitle.AutoSize = false;
             lblTitle.Dock = DockStyle.Top;

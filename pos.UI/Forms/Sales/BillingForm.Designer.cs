@@ -56,20 +56,20 @@ namespace pos_system.pos.UI.Forms.Sales
         private TextBox txtTokenId;
         private Button btnApplyToken;
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                if (_dateTimer != null)
-                {
-                    _dateTimer.Stop();
-                    _dateTimer.Dispose();
-                }
+        //protected override void Dispose(bool disposing)
+        //{
+        //    if (disposing && (components != null))
+        //    {
+        //        if (_dateTimer != null)
+        //        {
+        //            _dateTimer.Stop();
+        //            _dateTimer.Dispose();
+        //        }
 
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+        //        components.Dispose();
+        //    }
+        //    base.Dispose(disposing);
+        //}
 
         private void InitializeComponent()
         {
@@ -444,7 +444,7 @@ namespace pos_system.pos.UI.Forms.Sales
             lblSubtotal.Name = "lblSubtotal";
             lblSubtotal.Size = new Size(333, 22);
             lblSubtotal.TabIndex = 9;
-            lblSubtotal.Text = "$0.00";
+            lblSubtotal.Text = "Rs.0.00";
             lblSubtotal.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // discountLabel
@@ -467,7 +467,7 @@ namespace pos_system.pos.UI.Forms.Sales
             lblTotalDiscount.Name = "lblTotalDiscount";
             lblTotalDiscount.Size = new Size(333, 22);
             lblTotalDiscount.TabIndex = 7;
-            lblTotalDiscount.Text = "$0.00";
+            lblTotalDiscount.Text = "Rs.0.00";
             lblTotalDiscount.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblBillDiscount
@@ -500,7 +500,7 @@ namespace pos_system.pos.UI.Forms.Sales
             lblTotal.Name = "lblTotal";
             lblTotal.Size = new Size(333, 25);
             lblTotal.TabIndex = 14;
-            lblTotal.Text = "$0.00";
+            lblTotal.Text = "Rs.0.00";
             lblTotal.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // paymentPanel

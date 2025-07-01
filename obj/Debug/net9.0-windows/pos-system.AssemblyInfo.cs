@@ -9,11 +9,12 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ffcb9091578597ce6d208ce55380070886179959")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b789dc272c03908b40aaf788f3978e1ca1c7ad4b")]
 [assembly: System.Reflection.AssemblyProductAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyTitleAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

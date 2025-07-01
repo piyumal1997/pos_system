@@ -9,65 +9,84 @@ namespace pos_system.pos.BLL.Services
     {
         private readonly ItemRepository _repository = new ItemRepository();
         private readonly CategoryService _categoryService = new CategoryService();
-
-        public List<Item> SearchItems(string searchTerm, int brandId, int categoryId)
-        {
-            return _repository.SearchItems(searchTerm, brandId, categoryId);
-        }
-        public Item GetItemById(int itemId)
-        {
-            return _repository.GetItem(itemId);
-        }
-
-        public IEnumerable<Item> GetAllItems() => _repository.GetAllItems();
+        private readonly GenderService _genderService = new GenderService();
 
         public bool AddItem(Item item)
         {
-            // Validate brand and category existence
             if (!new BrandService().BrandExists(item.Brand_ID))
                 throw new ArgumentException($"Brand with ID {item.Brand_ID} does not exist");
 
             if (!_categoryService.CategoryExists(item.Category_ID))
                 throw new ArgumentException($"Category with ID {item.Category_ID} does not exist");
 
-            // Validate size if provided
-            if (item.Size_ID.HasValue && !IsValidSizeForCategory(item.Category_ID, item.Size_ID.Value))
-                return false;
-
-            if (_repository.CheckItemExists(item.description, item.barcode))
-                return false;
+            if (!_genderService.GenderExists(item.Gender_ID))
+                throw new ArgumentException($"Gender with ID {item.Gender_ID} does not exist");
 
             return _repository.AddItem(item);
         }
 
         public bool UpdateItem(Item item)
         {
-            // Validate brand and category existence
             if (!new BrandService().BrandExists(item.Brand_ID))
                 throw new ArgumentException($"Brand with ID {item.Brand_ID} does not exist");
 
             if (!_categoryService.CategoryExists(item.Category_ID))
                 throw new ArgumentException($"Category with ID {item.Category_ID} does not exist");
 
-            // Validate size if provided
-            if (item.Size_ID.HasValue && !IsValidSizeForCategory(item.Category_ID, item.Size_ID.Value))
-                return false;
-
-            if (_repository.CheckItemExists(item.description, item.barcode, item.Item_ID))
-                return false;
+            if (!_genderService.GenderExists(item.Gender_ID))
+                throw new ArgumentException($"Gender with ID {item.Gender_ID} does not exist");
 
             return _repository.UpdateItem(item);
         }
 
-        public bool DeleteItem(int itemId) => _repository.DeleteItem(itemId);
-
-        public string GenerateBarcode() => _repository.GenerateUniqueBarcode();
-
-        private bool IsValidSizeForCategory(int categoryId, int sizeId)
+        public bool DeleteItem(int productId)
         {
-            var sizeService = new SizeService();
-            var validSizes = sizeService.GetSizesByCategoryId(categoryId);
-            return validSizes.Any(s => s.Size_ID == sizeId);
+            return _repository.DeleteItem(productId);
+        }
+
+        public Item GetItemById(int productId)
+        {
+            return _repository.GetItem(productId);
+        }
+
+        public List<Item> GetAllItems()
+        {
+            return _repository.GetAllItems();
+        }
+
+        public List<Item> SearchItems(string searchTerm, int brandId, int categoryId)
+        {
+            return _repository.SearchItems(searchTerm, brandId, categoryId);
+        }
+
+        public string GenerateBarcode()
+        {
+            return _repository.GenerateUniqueBarcode();
+        }
+
+        public List<Item> SearchItemsWithVariants(string searchTerm, int brandId, int categoryId)
+        {
+            return _repository.SearchItemsWithVariants(searchTerm, brandId, categoryId);
+        }
+
+        public List<Item> SearchItemsWithFilters(
+            string searchTerm,
+            int brandId,
+            int categoryId,
+            int sizeId,
+            int genderId,
+            decimal minPrice,
+            decimal maxPrice)
+        {
+            return _repository.SearchItemsWithFilters(
+                searchTerm,
+                brandId,
+                categoryId,
+                sizeId,
+                genderId,
+                minPrice,
+                maxPrice
+            );
         }
     }
 }
