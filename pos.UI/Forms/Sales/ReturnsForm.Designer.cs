@@ -122,7 +122,7 @@
             this.dgvBillItems.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.dgvBillItems.Name = "dgvBillItems";
             this.dgvBillItems.RowHeadersVisible = false;
-            this.dgvBillItems.RowTemplate.Height = 30;
+            this.dgvBillItems.RowTemplate.Height = 40;
             this.dgvBillItems.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvBillItems.Size = new System.Drawing.Size(940, 450);
             this.dgvBillItems.TabIndex = 3;
@@ -136,14 +136,14 @@
             this.btnProcessReturn.Enabled = false;
             this.btnProcessReturn.FlatAppearance.BorderSize = 0;
             this.btnProcessReturn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnProcessReturn.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.btnProcessReturn.Font = new System.Drawing.Font("Segoe UI", 15F, System.Drawing.FontStyle.Bold);
             this.btnProcessReturn.ForeColor = System.Drawing.Color.White;
-            this.btnProcessReturn.Location = new System.Drawing.Point(800, 620);
+            this.btnProcessReturn.Location = new System.Drawing.Point(740, 590);
             this.btnProcessReturn.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnProcessReturn.Name = "btnProcessReturn";
-            this.btnProcessReturn.Size = new System.Drawing.Size(170, 45);
+            this.btnProcessReturn.Size = new System.Drawing.Size(240, 65);
             this.btnProcessReturn.TabIndex = 4;
-            this.btnProcessReturn.Text = "Process Return";
+            this.btnProcessReturn.Text = "Process Return (F12)";
             this.btnProcessReturn.UseVisualStyleBackColor = false;
             this.btnProcessReturn.Click += new System.EventHandler(this.btnProcessReturn_Click);
 

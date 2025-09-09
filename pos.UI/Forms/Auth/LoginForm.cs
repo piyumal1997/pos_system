@@ -121,7 +121,7 @@ namespace pos_system.pos.UI.Forms.Auth
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            DialogResult result = pos_system.pos.UI.Forms.Common.ThemedMessageBoxYesNo.Show("Are you sure you want to leave?", "Warning");
+            DialogResult result = ThemedMessageBoxYesNo.Show("Are you sure you want to leave?", "Warning", MessageBoxIcon.Warning);
 
             if (result == DialogResult.Yes)
             {

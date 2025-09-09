@@ -27,6 +27,10 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Text;
+using pos_system.pos.UI.Forms.Common;
+using System.ComponentModel;
+using ClosedXML.Excel;
+using System.Configuration;
 
 namespace pos_system.pos.UI.Forms.Dashboard
 {
@@ -56,7 +60,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             _currentUser = user;
 
             lblWelcome.Text = $"Welcome, {_currentUser.firstName} {_currentUser.lastName}";
-            btnClose.Click += (s, e) => System.Windows.Forms.Application.Exit();
+            btnClose.Click += (s, e) => CloseOwnerDashboard();
             btnMinimize.Click += (s, e) => this.WindowState = FormWindowState.Minimized;
 
             // Setup form dragging
@@ -107,6 +111,17 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 Point p = PointToScreen(new Point(e.X, e.Y));
                 Location = new Point(p.X - _startPoint.X, p.Y - _startPoint.Y);
             }
+        }
+
+        private void CloseOwnerDashboard()
+        {
+            DialogResult result = ThemedMessageBoxYesNo.Show($"Are you sure you want to \nclose the application {_currentUser.firstName}?", "Warning", MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                System.Windows.Forms.Application.Exit(); // Close form only on "Yes"
+            }
+
         }
 
         private void CreateSidebarButton(string text, string icon, int yPos)
@@ -203,11 +218,19 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
         private void Logout()
         {
-            this.Hide();
-            pos_system.pos.UI.Forms.Auth.LoginForm login = new pos_system.pos.UI.Forms.Auth.LoginForm();
-            login.Show();
-        }
+            DialogResult result = ThemedMessageBoxYesNo.Show($"Are you sure you want to logout {_currentUser.firstName}?", "Warning", MessageBoxIcon.Warning);
 
+            if (result == DialogResult.Yes)
+            {
+                this.Hide();
+                Auth.LoginForm login = new pos_system.pos.UI.Forms.Auth.LoginForm();
+                login.Show();
+            }
+
+            //this.Hide();
+            //Auth.LoginForm login = new pos_system.pos.UI.Forms.Auth.LoginForm();
+            //login.Show();
+        }
 
 
         public partial class DashboardForm : Form
@@ -620,6 +643,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private Button btnDelete;
             private Button btnRefresh;
             private Button btnSearch;
+            private TextBox txtSearch;
+            private System.Windows.Forms.Timer searchTimer;
 
             // Theme colors
             private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
@@ -633,9 +658,17 @@ namespace pos_system.pos.UI.Forms.Dashboard
             public ItemsManagement()
             {
                 InitializeComponent();
+                InitializeSearchTimer();
                 LoadItems();
             }
-
+            private void InitializeSearchTimer()
+            {
+                searchTimer = new System.Windows.Forms.Timer { Interval = 300 };
+                searchTimer.Tick += (s, e) => {
+                    searchTimer.Stop();
+                    LoadItems(txtSearch.Text);
+                };
+            }
             private void InitializeComponent()
             {
                 // Form setup
@@ -689,6 +722,21 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 btnRefresh = CreateToolbarButton("REFRESH", PrimaryColor);
                 btnSearch = CreateToolbarButton("SEARCH", PrimaryColor);
 
+                txtSearch = new TextBox
+                {
+                    Width = 220,
+                    Height = 80,
+                    Font = new Font("Segoe UI", 15, FontStyle.Bold),
+                    //Margin = new Padding(10, 0, 10, 0),
+                    Padding = new Padding(0, 40, 0, 0),
+                    ForeColor = ForegroundColor,
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    PlaceholderText = "Barcode && Description"
+                };
+                txtSearch.TextChanged += TxtSearch_TextChanged;
+
+
                 // DataGrid
                 dgvItems = new DataGridView
                 {
@@ -703,7 +751,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     BorderStyle = BorderStyle.None,
                     EnableHeadersVisualStyles = false,
                     RowHeadersVisible = false,
-                    CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+                    CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                    ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText
                 };
 
                 // Grid styling
@@ -718,8 +767,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 //dgvItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
                 dgvItems.ColumnHeadersHeight = 50;
 
-                dgvItems.RowTemplate.Height = 50;
+                dgvItems.RowTemplate.Height = 40;
                 dgvItems.RowTemplate.DefaultCellStyle.Padding = new Padding(10, 5, 10, 5);
+                dgvItems.RowTemplate.Height = 40;
 
                 dgvItems.DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -744,7 +794,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 // Layout
                 titlePanel.Controls.Add(lblTitle);
-                toolbar.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnDelete, btnRefresh, btnSearch });
+                toolbar.Controls.AddRange(new Control[] { btnAdd, btnEdit, btnDelete, btnRefresh, btnSearch, txtSearch });
 
                 container.Controls.Add(dgvItems);
                 container.Controls.Add(toolbar);
@@ -792,7 +842,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         DataPropertyName = "Barcode",
                         HeaderText = "BARCODE",
-                        Width = 120
+                        Width = 120,
+                        ReadOnly = true
                     },
                     new DataGridViewTextBoxColumn
                     {
@@ -804,7 +855,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         DataPropertyName = "BrandName",
                         HeaderText = "BRAND",
-                        Width = 120
+                        Width = 100
                     },
                     new DataGridViewTextBoxColumn
                     {
@@ -816,78 +867,53 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         DataPropertyName = "GenderName",
                         HeaderText = "GENDER",
-                        Width = 60
+                        Width = 40
                     },
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "SizesSummary",
                         HeaderText = "SIZES/STOCK",
-                        Width = 280,
+                        Width = 320,
                         DefaultCellStyle = new DataGridViewCellStyle
                         {
                             Alignment = DataGridViewContentAlignment.MiddleLeft
                         }
-                    },
-                    new DataGridViewImageColumn
-                    {
-                        Name = "ImageColumn",
-                        DataPropertyName = "ImageObject",
-                        HeaderText = "IMAGE",
-                        Width = 100,
-                        ImageLayout = DataGridViewImageCellLayout.Zoom,
-                        DefaultCellStyle = new DataGridViewCellStyle
-                        {
-                            Alignment = DataGridViewContentAlignment.MiddleCenter,
-                            NullValue = null,
-                            Padding = new Padding(5),
-                        }
                     }
                 );
             }
-
-            private void LoadItems()
+            private void LoadItems(string searchTerm = null)
             {
                 // Clean up previous images
                 CleanupImages();
 
                 dgvItems.DataSource = null;
-                var items = _itemService.GetAllItems();
+                var items = string.IsNullOrWhiteSpace(searchTerm)
+                    ? _itemService.GetAllItems()
+                    : _itemService.SearchItems(searchTerm);
 
                 // Process items
                 foreach (var item in items)
                 {
                     item.SizesSummary = GetSizesSummary(item.Sizes);
-
-                    // Convert byte[] to Image
-                    if (item.ItemImage != null && item.ItemImage.Length > 0)
-                    {
-                        try
-                        {
-                            byte[] imageData = item.ItemImage as byte[];
-                            if (imageData != null && imageData.Length > 0)
-                            {
-                                using (var ms = new MemoryStream(imageData))
-                                {
-                                    item.ImageObject = Image.FromStream(ms);
-                                }
-                            }
-                            else
-                            {
-                                item.ImageObject = null;
-                            }
-                        }
-                        catch
-                        {
-                            item.ImageObject = null;
-                        }
-                    }
-                    else
-                    {
-                        item.ImageObject = null;
-                    }
                 }
 
                 dgvItems.DataSource = items;
+            }
+
+            private void TxtSearch_TextChanged(object sender, EventArgs e)
+            {
+                // Search with 300ms delay to avoid excessive database calls
+                if (searchTimer == null)
+                {
+                    searchTimer = new System.Windows.Forms.Timer { Interval = 300 };
+                    searchTimer.Tick += (s, args) => {
+                        searchTimer.Stop();
+                        LoadItems(txtSearch.Text);
+                    };
+                }
+
+                searchTimer.Stop();
+                searchTimer.Start();
             }
 
             private void CleanupImages()
@@ -1779,12 +1805,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "Category_ID",
+                        Name = "Category_ID", 
                         HeaderText = "ID",
                         Visible = false
                     },
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "categoryName",
+                        Name = "categoryName",
                         HeaderText = "CATEGORY NAME",
                         AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                     }
@@ -2527,6 +2555,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private List<Item> items = new List<Item>();
             private Item selectedItem;
             private List<TemplateItem> templateItems = new List<TemplateItem>();
+            private readonly ItemService _itemService = new ItemService();
 
             // State
             private volatile bool _isClosing = false;
@@ -2938,9 +2967,17 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     new DataGridViewTextBoxColumn
                     {
                         DataPropertyName = "ProductSize_ID",
+                        HeaderText = "PS_ID",
+                        Width = 40,
+                        Name = "Item_ID",
+                        Visible = false
+                    },
+                    new DataGridViewTextBoxColumn
+                    {
+                        DataPropertyName = "Product_ID",
                         HeaderText = "ID",
                         Width = 40,
-                        Name = "Item_ID"
+                        Name = "Product_ID"
                     },
                     new DataGridViewTextBoxColumn
                     {
@@ -2959,7 +2996,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         DataPropertyName = "RetailPrice",
                         HeaderText = "PRICE",
                         Width = 80,
-                        DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
+                        DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" }
                     },
                     new DataGridViewTextBoxColumn
                     {
@@ -3156,14 +3193,16 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 try
                 {
-                    var repository = new ItemRepository();
-                    items = repository.SearchItemsWithVariants(searchTerm, brandId, categoryId);
+                    items = _itemService.SearchItemsWithVariants(searchTerm, brandId, categoryId);
+                    //var repository = new ItemRepository();
+                    //items = repository.SearchItemsWithVariants(searchTerm, brandId, categoryId);
 
                     dgvItems.Rows.Clear();
                     foreach (var item in items)
                     {
                         dgvItems.Rows.Add(
                             item.ProductSize_ID,
+                            item.Product_ID,
                             item.Barcode,
                             item.Description,
                             item.RetailPrice,
@@ -3250,7 +3289,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     {
                         // Populate details
                         txtBarcode.Text = selectedItem.Barcode;
-                        txtPrice.Text = selectedItem.RetailPrice.ToString("C2");
+                        txtPrice.Text = selectedItem.RetailPrice.ToString("N2");
                         txtBrand.Text = selectedItem.BrandName;
                         txtCategory.Text = selectedItem.CategoryName;
                         txtSize.Text = selectedItem.SizeLabel ?? "N/A";
@@ -3518,6 +3557,20 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     "One Size" => "One",  // One Size
                     "XXXL" => "3XL",
                     "XXXXl" => "4XL",
+                    "XXXXXl" => "5XL",
+                    "Free Size" => "Fr",
+                    "Standard Size" => "SS",
+                    "18ml" => "18",
+                    "30ml" => "30",
+                    "50ml" => "50",
+                    "80ml" => "80",
+                    "100ml" => "100",
+                    "120ml" => "120",
+                    "150ml" => "150",
+                    "200ml" => "200",
+                    "Zipper Half" => "Z Half",
+                    "Zipper Pocket" => "Z P",
+                    "Zipper Full" => "Z Full",
                     _ => size,  // Other Any Sizes
                 };
             }
@@ -3526,11 +3579,11 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 return genderId switch
                 {
-                    1 => "M",  // Male
-                    2 => "F",  // Female
-                    3 => "U",  // Unisex
-                    4 => "N",  // None
-                    _ => "N"   // Default to None
+                    1 => "Male",  // Male
+                    2 => "Female",  // Female
+                    3 => "Unisex",  // Unisex
+                    4 => "None",  // None
+                    _ => "None"   // Default to None
                 };
             }
 
@@ -3649,6 +3702,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private Button btnFilter;
             private Button btnClear;
             private Button btnExport;
+            private Button btnPrintSummary;
             private Label[] summaryLabels = new Label[10];
             private TabControl tabControl;
             private DataGridView dgvSalesItems;
@@ -3767,20 +3821,24 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 };
 
                 // Buttons - repositioned vertically
-                btnFilter = CreateButton("Apply Filters", PrimaryColor, 450, 55);
+                btnFilter = CreateButton("Apply Filters", PrimaryColor, 300, 55);
                 btnFilter.Click += BtnFilter_Click;
 
-                btnClear = CreateButton("Clear Filters", SecondaryColor, 600, 55);
+                btnClear = CreateButton("Clear Filters", SecondaryColor, 450, 55);
                 btnClear.Click += BtnClear_Click;
 
-                btnExport = CreateButton("Export Report", Color.DarkGreen, 750, 55);
+                btnExport = CreateButton("Export Report", Color.DarkGreen, 600, 55);
                 btnExport.Click += BtnExport_Click;
+
+                btnPrintSummary = CreateButton("Print Summary", Color.DarkOrange, 750, 55);
+                btnPrintSummary.Click += BtnPrintSummary_Click;
+                btnPrintSummary.Enabled = false;
 
                 // Add controls to filter panel
                 filterPanel.Controls.AddRange(new Control[] {
                     lblStartDate, dtpStartDate, lblEndDate, dtpEndDate,
                     lblBrand, cmbBrand, lblCategory, cmbCategory,
-                    btnFilter, btnClear, btnExport
+                    btnFilter, btnClear, btnExport, btnPrintSummary
                 });
 
                 // Summary panel - increased height for two rows
@@ -3815,6 +3873,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgvSalesItems = CreateDataGridView();
                 dgvSalesItems.Dock = DockStyle.Fill;
                 dgvSalesItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+                dgvSalesItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
                 tabSales.Controls.Add(dgvSalesItems);
 
                 // Return items tab
@@ -3856,7 +3915,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 string[] labels = {
                     "Total Sales", "Total Cost", "Gross Profit", "Items Sold",
-                    "Bills Processed", "Avg. Bill Value", "Cash Sales",
+                    "Bills Processed", "Return Value", "Cash Sales",  // Changed index 5
                     "Card Sales", "Bank Transfers", "Returns"
                 };
 
@@ -3875,7 +3934,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         Text = labels[i],
                         Location = new Point(x, 15),
                         AutoSize = true,
-                        Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                        Font = new Font("Segoe UI", 12, FontStyle.Bold),
                         ForeColor = Color.Black
                     };
 
@@ -3903,7 +3962,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         Text = labels[i],
                         Location = new Point(x, 80),  // Lower position
                         AutoSize = true,
-                        Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                        Font = new Font("Segoe UI", 12, FontStyle.Bold),
                         ForeColor = Color.Black
                     };
 
@@ -3947,10 +4006,13 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     FlatStyle = FlatStyle.Flat,
                     BackColor = color,
                     ForeColor = Color.White,
-                    Size = new Size(120, 34),
+                    Size = new Size(130, 35),
                     Location = new Point(x, y),
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
                     Cursor = Cursors.Hand,
+                    FlatAppearance = {
+                        BorderSize = 0
+                    },
                 };
             }
 
@@ -4037,21 +4099,24 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             private void UpdateUI()
             {
-                // Update summary labels
-                summaryLabels[0].Text = _currentReport.TotalSales.ToString("N2");
-                summaryLabels[1].Text = _currentReport.TotalCost.ToString("N2");
-                summaryLabels[2].Text = (_currentReport.TotalSales - _currentReport.TotalCost).ToString("N2");
-                summaryLabels[3].Text = _currentReport.TotalItemsSold.ToString("N0");
-                summaryLabels[4].Text = _currentReport.BillCount.ToString("N0");
+                if (_currentReport == null) return;
 
-                decimal avgBillValue = _currentReport.BillCount > 0 ?
-                    _currentReport.TotalSales / _currentReport.BillCount : 0;
-                summaryLabels[5].Text = avgBillValue.ToString("N2");
+                // Get all report sections
+                var accounting = _currentReport.AccountingSummary;
+                var cashFlow = _currentReport.CashFlowSummary;
+                var tokenActivity = _currentReport.TokenActivity;
 
-                summaryLabels[6].Text = _currentReport.CashSales.ToString("N2");
-                summaryLabels[7].Text = _currentReport.CardSales.ToString("N2");
-                summaryLabels[8].Text = _currentReport.BankTransferSales.ToString("N2");
-                summaryLabels[9].Text = _currentReport.ReturnCount.ToString("N0");
+                // Update summary labels with new mappings
+                summaryLabels[0].Text = cashFlow.CashInflow.ToString("N2");  // Total Sales → CashInflow
+                summaryLabels[1].Text = accounting.NetCOGS.ToString("N2");    // Total Cost
+                summaryLabels[2].Text = accounting.NetProfit.ToString("N2");  // Gross Profit
+                summaryLabels[3].Text = accounting.NetItemsSold.ToString("N0");  // Items Sold
+                summaryLabels[4].Text = accounting.BillCount.ToString("N0");  // Bills Processed
+                summaryLabels[5].Text = tokenActivity.TokenValueUsed.ToString("N2");  // Return Value (was Avg Bill Value)
+                summaryLabels[6].Text = cashFlow.CashSales.ToString("N2");    // Cash Sales
+                summaryLabels[7].Text = cashFlow.CardSales.ToString("N2");    // Card Sales
+                summaryLabels[8].Text = cashFlow.BankSales.ToString("N2");    // Bank Transfers
+                summaryLabels[9].Text = tokenActivity.TokensUsed.ToString("N0");  // Returns
 
                 // Bind data grids
                 dgvSalesItems.DataSource = _currentReport.SalesItems;
@@ -4060,8 +4125,128 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgvReturnItems.DataSource = _currentReport.ReturnItems;
                 FormatDataGridColumns(dgvReturnItems, false);
 
+                // Enable print button
+                btnPrintSummary.Enabled = _currentReport != null;
+
                 // Update chart
                 UpdateSalesChart();
+            }
+
+            // Print functionality
+            private void BtnPrintSummary_Click(object sender, EventArgs e)
+            {
+                try
+                {
+                    PrintSalesSummary();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error printing summary: {ex.Message}", "Print Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void PrintSalesSummary()
+            {
+                const string PRINTER_NAME = "XP-80C";
+                if (string.IsNullOrEmpty(PRINTER_NAME))
+                {
+                    MessageBox.Show("No receipt printer found.", "Print Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                List<byte> output = new List<byte>();
+                output.AddRange(new byte[] { 0x1B, 0x40 }); // Initialize printer
+
+                // Print header
+                PrintCentered("SALES SUMMARY REPORT", output, true);
+                PrintCentered("STYLE NEWAGE", output);
+                PrintCentered("No.102, Negombo Rd, Narammala.", output);
+                PrintCentered("Tel: 077491913 / 0374545097", output);
+                output.AddRange(Encoding.ASCII.GetBytes("\n"));
+
+                // Print date range
+                PrintLeftRight("Start Date:", dtpStartDate.Value.ToString("yyyy-MM-dd"), output);
+                PrintLeftRight("End Date:", dtpEndDate.Value.ToString("yyyy-MM-dd"), output);
+                PrintLeftRight("Generated:", DateTime.Now.ToString("yyyy-MM-dd HH:mm"), output);
+                output.AddRange(Encoding.ASCII.GetBytes("\n"));
+                PrintSeparator(output);
+
+                // Print summary data
+                for (int i = 0; i < summaryLabels.Length; i++)
+                {
+                    string label = summaryLabels[i].Tag.ToString();
+                    string value = summaryLabels[i].Text;
+
+                    // Format currency values
+                    if (i < 3 || i == 5 || i == 6 || i == 7 || i == 8)
+                    {
+                        value = "Rs." + value;
+                    }
+
+                    PrintLeftRight(label, value, output);
+                }
+
+                // Print footer
+                PrintSeparator(output);
+                PrintCentered("End of Report", output);
+                output.AddRange(Encoding.ASCII.GetBytes("\n\n\n"));
+
+                // Printer commands
+                output.AddRange(new byte[] { 0x1B, 0x64, 0x02 }); // Feed 2 lines
+                output.AddRange(new byte[] { 0x1B, 0x69 });        // Cut paper
+
+                // Send to printer
+                RawPrinterHelper.SendBytesToPrinter(PRINTER_NAME, output.ToArray());
+            }
+
+            // Helper methods (same as in ReturnsForm)
+            private void PrintCentered(string text, List<byte> output, bool bold = false)
+            {
+                const int MAX_LINE_WIDTH = 32;
+
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x01 }); // Bold on
+
+                if (text.Length > MAX_LINE_WIDTH)
+                    text = text.Substring(0, MAX_LINE_WIDTH);
+
+                int spaces = (MAX_LINE_WIDTH - text.Length) / 2;
+                output.AddRange(Encoding.ASCII.GetBytes(new string(' ', spaces) + text + "\n"));
+
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x00 }); // Bold off
+            }
+
+            private void PrintLeft(string text, List<byte> output)
+            {
+                const int MAX_LINE_WIDTH = 32;
+                text = text.Length > MAX_LINE_WIDTH ? text.Substring(0, MAX_LINE_WIDTH) : text;
+                output.AddRange(Encoding.ASCII.GetBytes(text + "\n"));
+            }
+
+            private void PrintLeftRight(string left, string right, List<byte> output, bool bold = false)
+            {
+                const int MAX_LINE_WIDTH = 32;
+
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x01 }); // Bold on
+
+                int availableSpace = MAX_LINE_WIDTH - right.Length - 1;
+                if (availableSpace < 1) availableSpace = 1;
+
+                left = left.Length > availableSpace ? left.Substring(0, availableSpace) : left;
+                string line = left.PadRight(availableSpace) + " " + right;
+                output.AddRange(Encoding.ASCII.GetBytes(line + "\n"));
+
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x00 }); // Bold off
+            }
+
+            private void PrintSeparator(List<byte> output)
+            {
+                output.AddRange(Encoding.ASCII.GetBytes(new string('-', 32) + "\n"));
             }
 
             private void FormatDataGridColumns(DataGridView dgv, bool isSales)
@@ -4090,6 +4275,94 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgv.AutoResizeColumns();
             }
 
+            public static class RawPrinterHelper
+            {
+                [DllImport("winspool.Drv", EntryPoint = "OpenPrinterA",
+                    SetLastError = true, CharSet = CharSet.Ansi,
+                    ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter,
+                    out IntPtr hPrinter, IntPtr pd);
+
+                [DllImport("winspool.Drv", EntryPoint = "ClosePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool ClosePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "StartDocPrinterA",
+                    SetLastError = true, CharSet = CharSet.Ansi,
+                    ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool StartDocPrinter(IntPtr hPrinter, Int32 level,
+                    [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFOA di);
+
+                [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool EndDocPrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "StartPagePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool StartPagePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "EndPagePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool EndPagePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "WritePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes,
+                    Int32 dwCount, out Int32 dwWritten);
+
+                [StructLayout(LayoutKind.Sequential)]
+                private class DOCINFOA
+                {
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pDocName;
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pOutputFile;
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pDataType;
+                }
+
+                public static bool SendBytesToPrinter(string szPrinterName, byte[] pBytes)
+                {
+                    Int32 dwError = 0, dwWritten = 0;
+                    IntPtr hPrinter = IntPtr.Zero;
+                    DOCINFOA di = new DOCINFOA();
+                    di.pDocName = "POS Sales Summary";
+                    di.pDataType = "RAW";
+
+                    if (OpenPrinter(szPrinterName.Normalize(), out hPrinter, IntPtr.Zero))
+                    {
+                        if (StartDocPrinter(hPrinter, 1, di))
+                        {
+                            if (StartPagePrinter(hPrinter))
+                            {
+                                IntPtr pUnmanagedBytes = Marshal.AllocCoTaskMem(pBytes.Length);
+                                Marshal.Copy(pBytes, 0, pUnmanagedBytes, pBytes.Length);
+                                bool success = WritePrinter(hPrinter, pUnmanagedBytes, pBytes.Length, out dwWritten);
+                                Marshal.FreeCoTaskMem(pUnmanagedBytes);
+
+                                if (!success || dwWritten != pBytes.Length)
+                                {
+                                    dwError = Marshal.GetLastWin32Error();
+                                }
+                                EndPagePrinter(hPrinter);
+                            }
+                            EndDocPrinter(hPrinter);
+                        }
+                        ClosePrinter(hPrinter);
+                    }
+                    else
+                    {
+                        dwError = Marshal.GetLastWin32Error();
+                    }
+
+                    if (dwError != 0)
+                    {
+                        throw new Win32Exception(dwError, $"Printer error (Code: {dwError})");
+                    }
+
+                    return dwWritten == pBytes.Length;
+                }
+            }
             private void UpdateSalesChart()
             {
                 if (_currentReport?.SalesItems == null) return;
@@ -4137,6 +4410,200 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 chartSalesTrend.Series["Returns"].Points.Clear();
             }
 
+            //private void BtnExport_Click(object sender, EventArgs e)
+            //{
+            //    if (_currentReport == null)
+            //    {
+            //        MessageBox.Show("No data to export. Please generate a report first.");
+            //        return;
+            //    }
+
+            //    using (var sfd = new SaveFileDialog())
+            //    {
+            //        sfd.Filter = "Excel Files|*.xlsx|CSV Files|*.csv";
+            //        sfd.Title = "Export Sales Report";
+            //        if (sfd.ShowDialog() == DialogResult.OK)
+            //        {
+            //            try
+            //            {
+            //                ExportReport(sfd.FileName);
+            //                MessageBox.Show("Report exported successfully!");
+            //            }
+            //            catch (Exception ex)
+            //            {
+            //                MessageBox.Show($"Export failed: {ex.Message}");
+            //            }
+            //        }
+            //    }
+            //}
+
+            // Add to SalesForm.cs
+            private void ExportReport(string filePath)
+            {
+                try
+                {
+                    using (var workbook = new XLWorkbook())
+                    {
+                        // 1. Accounting Summary
+                        var accSheet = workbook.Worksheets.Add("Accounting Summary");
+                        AddAccountingSummary(accSheet, _currentReport.AccountingSummary);
+
+                        // 2. Cash Flow
+                        var cashSheet = workbook.Worksheets.Add("Cash Flow");
+                        AddCashFlowSummary(cashSheet, _currentReport.CashFlowSummary);
+
+                        // 3. Token Activity
+                        var tokenSheet = workbook.Worksheets.Add("Token Activity");
+                        AddTokenActivity(tokenSheet, _currentReport.TokenActivity);
+
+                        // 4. Sales Items
+                        var salesSheet = workbook.Worksheets.Add("Sales Items");
+                        AddDataTable(salesSheet, _currentReport.SalesItems);
+
+                        // 5. Return Items
+                        var returnSheet = workbook.Worksheets.Add("Return Items");
+                        AddDataTable(returnSheet, _currentReport.ReturnItems);
+
+                        // 6. Bill Summaries
+                        var billsSheet = workbook.Worksheets.Add("Bills");
+                        AddDataTable(billsSheet, _currentReport.BillSummaries);
+
+                        workbook.SaveAs(filePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Export failed: " + ex.Message);
+                }
+            }
+
+            private void AddAccountingSummary(IXLWorksheet sheet, AccountingSummary summary)
+            {
+                sheet.Cell(1, 1).Value = "Accounting Summary";
+                sheet.Cell(1, 1).Style.Font.Bold = true;
+
+                int row = 2;
+                AddSheetRow(sheet, ref row, "Gross Sales", summary.GrossSales);
+                AddSheetRow(sheet, ref row, "Discounts", summary.Discounts);
+                AddSheetRow(sheet, ref row, "Returns", summary.Returns);
+                AddSheetRow(sheet, ref row, "Net Sales", summary.NetSales);
+                AddSheetRow(sheet, ref row, "Gross COGS", summary.GrossCOGS);
+                AddSheetRow(sheet, ref row, "Returns COGS", summary.ReturnsCOGS);
+                AddSheetRow(sheet, ref row, "Net COGS", summary.NetCOGS);
+                AddSheetRow(sheet, ref row, "Gross Profit", summary.GrossProfit);
+                AddSheetRow(sheet, ref row, "Net Profit", summary.NetProfit);
+                AddSheetRow(sheet, ref row, "Gross Items Sold", summary.GrossItemsSold);
+                AddSheetRow(sheet, ref row, "Returned Items", summary.ReturnedItems);
+                AddSheetRow(sheet, ref row, "Net Items Sold", summary.NetItemsSold);
+                AddSheetRow(sheet, ref row, "Bill Count", summary.BillCount);
+            }
+
+            private void AddCashFlowSummary(IXLWorksheet sheet, CashFlowSummary summary)
+            {
+                sheet.Cell(1, 1).Value = "Cash Flow Summary";
+                sheet.Cell(1, 1).Style.Font.Bold = true;
+
+                int row = 2;
+                AddSheetRow(sheet, ref row, "Cash Inflow", summary.CashInflow);
+                AddSheetRow(sheet, ref row, "Cash Outflow", summary.CashOutflow);
+                AddSheetRow(sheet, ref row, "Net Cash Flow", summary.NetCashFlow);
+                AddSheetRow(sheet, ref row, "Cash Sales", summary.CashSales);
+                AddSheetRow(sheet, ref row, "Card Sales", summary.CardSales);
+                AddSheetRow(sheet, ref row, "Bank Sales", summary.BankSales);
+            }
+
+            private void AddTokenActivity(IXLWorksheet sheet, TokenActivity activity)
+            {
+                sheet.Cell(1, 1).Value = "Token Activity";
+                sheet.Cell(1, 1).Style.Font.Bold = true;
+
+                int row = 2;
+                AddSheetRow(sheet, ref row, "Tokens Issued", activity.TokensIssued);
+                AddSheetRow(sheet, ref row, "Token Value Issued", activity.TokenValueIssued);
+                AddSheetRow(sheet, ref row, "Tokens Used", activity.TokensUsed);
+                AddSheetRow(sheet, ref row, "Token Value Used", activity.TokenValueUsed);
+                AddSheetRow(sheet, ref row, "Tokens Outstanding", activity.TokensOutstanding);
+                AddSheetRow(sheet, ref row, "Token Value Outstanding", activity.TokenValueOutstanding);
+            }
+
+            private void AddSheetRow(IXLWorksheet sheet, ref int row, string label, object value)
+            {
+                sheet.Cell(row, 1).Value = label;
+
+                // Handle different types explicitly
+                switch (value)
+                {
+                    case decimal dec:
+                        sheet.Cell(row, 2).Value = dec;
+                        sheet.Cell(row, 2).Style.NumberFormat.Format = "#,##0.00";
+                        break;
+                    case int i:
+                        sheet.Cell(row, 2).Value = i;
+                        break;
+                    case double d:
+                        sheet.Cell(row, 2).Value = d;
+                        break;
+                    case DateTime dt:
+                        sheet.Cell(row, 2).Value = dt;
+                        sheet.Cell(row, 2).Style.DateFormat.Format = "yyyy-MM-dd";
+                        break;
+                    default:
+                        sheet.Cell(row, 2).Value = value?.ToString() ?? string.Empty;
+                        break;
+                }
+                row++;
+            }
+
+            private void AddDataTable<T>(IXLWorksheet sheet, List<T> data)
+            {
+                if (data == null || data.Count == 0) return;
+
+                var properties = typeof(T).GetProperties();
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    sheet.Cell(1, i + 1).Value = properties[i].Name;
+                    sheet.Cell(1, i + 1).Style.Font.Bold = true;
+                }
+
+                for (int i = 0; i < data.Count; i++)
+                {
+                    var item = data[i];
+                    for (int j = 0; j < properties.Length; j++)
+                    {
+                        var value = properties[j].GetValue(item);
+                        var cell = sheet.Cell(i + 2, j + 1);
+
+                        // Handle different types
+                        switch (value)
+                        {
+                            case decimal dec:
+                                cell.Value = dec;
+                                cell.Style.NumberFormat.Format = "#,##0.00";
+                                break;
+                            case int intVal:
+                                cell.Value = intVal;
+                                break;
+                            case double dbl:
+                                cell.Value = dbl;
+                                break;
+                            case DateTime dt:
+                                cell.Value = dt;
+                                cell.Style.DateFormat.Format = "yyyy-MM-dd";
+                                break;
+                            case bool b:
+                                cell.Value = b;
+                                break;
+                            default:
+                                cell.Value = value?.ToString() ?? string.Empty;
+                                break;
+                        }
+                    }
+                }
+
+                sheet.Columns().AdjustToContents();
+            }
+
+            // Update BtnExport_Click method
             private void BtnExport_Click(object sender, EventArgs e)
             {
                 if (_currentReport == null)
@@ -4147,8 +4614,15 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 using (var sfd = new SaveFileDialog())
                 {
-                    sfd.Filter = "Excel Files|*.xlsx|CSV Files|*.csv";
+                    // Generate filename with date range
+                    string dateRange = $"{dtpStartDate.Value:yyyyMMdd}-{dtpEndDate.Value:yyyyMMdd}";
+                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string defaultName = $"SalesReport_{dateRange}_{timestamp}.xlsx";
+
+                    sfd.FileName = defaultName;
+                    sfd.Filter = "Excel Files|*.xlsx";
                     sfd.Title = "Export Sales Report";
+
                     if (sfd.ShowDialog() == DialogResult.OK)
                     {
                         try
@@ -4164,16 +4638,11 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 }
             }
 
-            private void ExportReport(string filePath)
-            {
-                // This would be implemented with EPPlus or similar library
-                MessageBox.Show($"Export functionality would save to: {filePath}\n" +
-                    "Implementation requires EPPlus or CSV library");
-            }
+
         }
         public partial class Bills : Form
         {
-            // Theme colors matching ItemsManagement and Sales
+            // Theme colors
             private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
             private static readonly Color BackgroundColor = Color.White;
             private static readonly Color HeaderColor = Color.FromArgb(230, 244, 253);
@@ -4183,12 +4652,18 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             // Form controls
             private DataGridView dgvBills;
+            private DataGridView dgvBillItems;
             private TextBox txtBillNumber;
             private TextBox txtCustomerContact;
             private DateTimePicker dtpBillDate;
             private CheckBox chkUseDate;
             private Button btnSearch;
             private Button btnClear;
+            private Button btnPrintBill;
+            private Button btnExportContacts;
+            private int _selectedBillId;
+            private Panel container;
+            private TableLayoutPanel mainContentLayout; // For layout management
 
             public Bills()
             {
@@ -4200,13 +4675,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private void InitializeComponent()
             {
                 // Form setup
-                this.Size = new Size(1200, 750);
+                this.Size = new Size(1200, 850);
                 this.Text = "Bill Search";
                 this.BackColor = BackgroundColor;
+                this.Font = new Font("Segoe UI", 9);
                 this.Padding = new Padding(20);
 
                 // Main container
-                var container = new Panel
+                container = new Panel
                 {
                     Dock = DockStyle.Fill,
                     BackColor = BackgroundColor,
@@ -4225,9 +4701,10 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     Text = "BILL SEARCH",
                     Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleCenter,
+                    TextAlign = ContentAlignment.MiddleLeft,
                     Font = new Font("Segoe UI", 18, FontStyle.Bold),
-                    ForeColor = Color.White
+                    ForeColor = Color.White,
+                    Padding = new Padding(20, 0, 0, 0)
                 };
                 titlePanel.Controls.Add(lblTitle);
 
@@ -4235,9 +4712,10 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 var filterPanel = new Panel
                 {
                     Dock = DockStyle.Top,
-                    Height = 120,
+                    Height = 90,
                     BackColor = HeaderColor,
-                    Padding = new Padding(20, 15, 20, 15)
+                    Padding = new Padding(20, 5, 20, 5),
+                    Margin = new Padding(0, 0, 0, 5)
                 };
 
                 // Filter controls in table layout
@@ -4254,8 +4732,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
                 filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
                 filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
-                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));   // Date controls
-                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));     // Buttons
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+                filterTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
 
                 // Row heights
                 filterTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
@@ -4365,7 +4843,33 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 filterPanel.Controls.Add(filterTable);
 
-                // Data Grid
+                // Create main content layout
+                mainContentLayout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(0),
+                    Margin = new Padding(0)
+                };
+
+                // Configure rows:
+                // - Bills grid: 60% of space
+                // - Bill items grid: 30% of space
+                // - Action panel: Fixed 60px
+                mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+                mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+                mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F));
+
+                // Data Grid for Bills
+                var billsPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(0),
+                    Padding = new Padding(0, 0, 0, 5)
+                };
+
                 dgvBills = new DataGridView
                 {
                     Dock = DockStyle.Fill,
@@ -4376,28 +4880,29 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     AllowUserToAddRows = false,
                     AllowUserToDeleteRows = false,
                     ReadOnly = true,
-                    SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 };
 
                 // Configure grid style
                 FormatDataGrid(dgvBills);
 
-                // Create columns
+                // Configure grid columns
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = "Bill_ID",
                     HeaderText = "BILL NO",
-                    Name = "colBillId",
+                    Name = "Bill_ID",
+                    Width = 70
                 });
 
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = "BillDate",
                     HeaderText = "DATE",
-                    Name = "colBillDate",
+                    Name = "BillDate",
                     DefaultCellStyle = new DataGridViewCellStyle
                     {
-                        Format = "dd-MMM-yyyy"
+                        Format = "dd-MMM-yyyy HH:mm"
                     }
                 });
 
@@ -4405,106 +4910,209 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     DataPropertyName = "PaymentMethod",
                     HeaderText = "PAYMENT",
-                    Name = "colPayment",
+                    Name = "PaymentMethod",
+                    Width = 80
                 });
 
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
                     DataPropertyName = "CustomerContact",
                     HeaderText = "CONTACT",
-                    Name = "colContact",
+                    Name = "CustomerContact",
+                    Width = 150
                 });
 
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
-                    DataPropertyName = "Barcode",
-                    HeaderText = "BARCODE",
-                    Name = "colBarcode",
-                });
-
-                //dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-                //{
-                //    DataPropertyName = "Description",
-                //    HeaderText = "DESCRIPTION",
-                //    Name = "colDescription",
-                //});
-
-                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    DataPropertyName = "BrandName",
-                    HeaderText = "BRAND",
-                    Name = "colBrand",
+                    DataPropertyName = "CashierName",
+                    HeaderText = "CASHIER",
+                    Name = "CashierName",
+                    Width = 150
                 });
 
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
-                    DataPropertyName = "CategoryName",
-                    HeaderText = "CATEGORY",
-                    Name = "colCategory",
-                });
-
-                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    DataPropertyName = "SizeLabel",
-                    HeaderText = "SIZE",
-                    Name = "colSize",
-                });
-
-                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    DataPropertyName = "Quantity",
-                    HeaderText = "QTY",
-                    Name = "colQuantity",
-                    DefaultCellStyle = new DataGridViewCellStyle
-                    {
-                        Alignment = DataGridViewContentAlignment.MiddleRight
-                    }
-                });
-
-                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-                {
-                    DataPropertyName = "RetailPrice",
-                    HeaderText = "RETAIL PRICE",
-                    Name = "colRetailPrice",
+                    DataPropertyName = "Subtotal",
+                    HeaderText = "SUBTOTAL",
+                    Name = "Subtotal",
                     DefaultCellStyle = new DataGridViewCellStyle
                     {
                         Format = "N2",
                         Alignment = DataGridViewContentAlignment.MiddleRight
-                    }
+                    },
+                    Width = 70
                 });
 
                 dgvBills.Columns.Add(new DataGridViewTextBoxColumn
                 {
+                    DataPropertyName = "NetTotal",
+                    HeaderText = "AMOUNT",
+                    Name = "NetTotal",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70
+                });
+
+                dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    DataPropertyName = "TotalPerItemDiscount",
+                    HeaderText = "TOTALDISCOUNT",
+                    Name = "TotalPerItemDiscount",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70
+                });
+
+                billsPanel.Controls.Add(dgvBills);
+                mainContentLayout.Controls.Add(billsPanel, 0, 0);
+
+                // Bill items grid
+                var itemsPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(0),
+                    Padding = new Padding(0, 0, 0, 5)
+                };
+
+                dgvBillItems = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = BackgroundColor,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                };
+                FormatDataGrid(dgvBillItems);
+
+                // Configure bill items columns
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "DESCRIPTION",
+                    DataPropertyName = "description",
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                });
+
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "PRICE",
                     DataPropertyName = "ItemSellingPrice",
-                    HeaderText = "SOLD PRICE",
-                    Name = "colSoldPrice",
                     DefaultCellStyle = new DataGridViewCellStyle
                     {
                         Format = "N2",
                         Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70
+                });
+
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "QTY",
+                    DataPropertyName = "quantity",
+                    Width = 50,
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Alignment = DataGridViewContentAlignment.MiddleRight
                     }
                 });
 
-                // Image column
-                //var imgCol = new DataGridViewImageColumn
-                //{
-                //    DataPropertyName = "ItemImage",
-                //    HeaderText = "IMAGE",
-                //    Name = "colImage",
-                //    ImageLayout = DataGridViewImageCellLayout.Zoom,
-                //    FillWeight = 80
-                //};
-                //dgvBills.Columns.Add(imgCol);
-                //dgvBills.AutoGenerateColumns = false;
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "DISCOUNT",
+                    DataPropertyName = "Per_item_Discount",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70
+                });
 
-                // Handle image formatting
-                //dgvBills.CellFormatting += DgvBills_CellFormatting;
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "SOLD PRICE",
+                    DataPropertyName = "ActualSellingPrice",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 80
+                });
+
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "SIZE",
+                    DataPropertyName = "SizeLabel",
+                    Width = 80
+                });
+
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "CATEGORY",
+                    DataPropertyName = "categoryName",
+                    Width = 80
+                });
+
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "BRAND",
+                    DataPropertyName = "brandName",
+                    Width = 80
+                });
+                dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
+                {
+                    HeaderText = "BARCODE",
+                    DataPropertyName = "barcode",
+                    Width = 80
+                });
+
+                itemsPanel.Controls.Add(dgvBillItems);
+                mainContentLayout.Controls.Add(itemsPanel, 0, 1);
+
+                // Action buttons panel
+                var actionPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(10)
+                };
+
+                var actionLayout = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = false
+                };
+
+                btnPrintBill = CreateButton("PRINT BILL", PrimaryColor);
+                btnPrintBill.Height = 40;
+                btnPrintBill.Width = 150;
+                btnPrintBill.Enabled = false;
+                btnPrintBill.Click += BtnPrintBill_Click;
+                actionLayout.Controls.Add(btnPrintBill);
+
+                btnExportContacts = CreateButton("EXPORT CONTACTS", Color.DarkGreen);
+                btnExportContacts.Height = 40;
+                btnExportContacts.Width = 180;
+                btnExportContacts.Margin = new Padding(20, 0, 0, 0);
+                btnExportContacts.Click += BtnExportContacts_Click;
+                actionLayout.Controls.Add(btnExportContacts);
+
+                actionPanel.Controls.Add(actionLayout);
+                mainContentLayout.Controls.Add(actionPanel, 0, 2);
 
                 // Assemble container
-                container.Controls.Add(dgvBills);
+                container.Controls.Add(mainContentLayout);
                 container.Controls.Add(filterPanel);
                 container.Controls.Add(titlePanel);
                 this.Controls.Add(container);
+
+                // Handle bill selection
+                dgvBills.SelectionChanged += DgvBills_SelectionChanged;
             }
 
             private void FormatDataGrid(DataGridView dgv)
@@ -4519,19 +5127,18 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 dgv.ForeColor = ForegroundColor;
                 dgv.BorderStyle = BorderStyle.None;
                 dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-                dgv.RowTemplate.Height = 50;
-
+                dgv.RowTemplate.Height = 30;
 
                 // Header styling
                 dgv.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = PrimaryColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    Padding = new Padding(0)
+                    Padding = new Padding(5)
                 };
-                dgv.ColumnHeadersHeight = 40;
+                dgv.ColumnHeadersHeight = 30;
                 dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
 
                 // Cell styling
@@ -4542,7 +5149,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Font = new Font("Segoe UI", 10),
                     SelectionBackColor = SelectionColor,
                     SelectionForeColor = ForegroundColor,
-                    Padding = new Padding(10, 5, 10, 5)
+                    Padding = new Padding(2)
                 };
 
                 // Alternating rows
@@ -4561,9 +5168,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Text = text,
                     FlatStyle = FlatStyle.Flat,
                     FlatAppearance = {
-                BorderSize = 0,
-                MouseOverBackColor = ControlPaint.Light(backColor, 0.2f)
-            },
+                    BorderSize = 0,
+                    MouseOverBackColor = ControlPaint.Light(backColor, 0.2f)
+                },
                     BackColor = backColor,
                     ForeColor = Color.White,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
@@ -4572,53 +5179,6 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Margin = new Padding(0, 0, 10, 0)
                 };
             }
-
-            //private void DgvBills_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-            //{
-            //    if (e.RowIndex < 0 || e.ColumnIndex != dgvBills.Columns["colImage"].Index)
-            //        return;
-
-            //    if (dgvBills.Rows[e.RowIndex].Cells["colImage"].Value != null &&
-            //        dgvBills.Rows[e.RowIndex].Cells["colImage"].Value != DBNull.Value)
-            //    {
-            //        try
-            //        {
-            //            byte[] imageData = (byte[])dgvBills.Rows[e.RowIndex].Cells["colImage"].Value;
-            //            using (var ms = new System.IO.MemoryStream(imageData))
-            //            {
-            //                e.Value = Image.FromStream(ms);
-            //            }
-            //        }
-            //        catch
-            //        {
-            //            SetDefaultImage(e);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        SetDefaultImage(e);
-            //    }
-            //}
-
-            //private void SetDefaultImage(DataGridViewCellFormattingEventArgs e)
-            //{
-            //    // Create a default placeholder image
-            //    var defaultImage = new Bitmap(60, 60);
-            //    using (var g = Graphics.FromImage(defaultImage))
-            //    {
-            //        g.Clear(Color.LightGray);
-            //        using (var pen = new Pen(Color.Gray, 1))
-            //        {
-            //            g.DrawRectangle(pen, 0, 0, defaultImage.Width - 1, defaultImage.Height - 1);
-            //        }
-            //        using (var font = new Font("Arial", 8))
-            //        {
-            //            g.DrawString("No Image", font, Brushes.DarkGray,
-            //                new PointF(10, defaultImage.Height / 2 - 10));
-            //        }
-            //    }
-            //    e.Value = defaultImage;
-            //}
 
             private void ChkUseDate_CheckedChanged(object sender, EventArgs e)
             {
@@ -4643,14 +5203,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 txtBillNumber.Clear();
                 txtCustomerContact.Clear();
                 chkUseDate.Checked = false;
-                if (dgvBills.DataSource is DataTable dt)
-                {
-                    dt.Clear();
-                }
-                else
-                {
-                    dgvBills.DataSource = new DataTable();
-                }
+                dgvBills.DataSource = null;
+                dgvBillItems.DataSource = null;
+                btnPrintBill.Enabled = false;
             }
 
             private void SearchBills()
@@ -4694,16 +5249,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
                             DataTable dt = new DataTable();
                             da.Fill(dt);
 
-                            if (!dt.Columns.Contains("ItemImage"))
-                            {
-                                dt.Columns.Add("ItemImage", typeof(byte[]));
-                            }
-
                             dgvBills.DataSource = dt;
 
-                            if (dgvBills.Columns.Contains("ItemImage"))
+                            if (dt.Rows.Count == 0)
                             {
-                                dgvBills.Columns["ItemImage"].Visible = false;
+                                btnPrintBill.Enabled = false;
+                                dgvBillItems.DataSource = null;
                             }
                         }
                     }
@@ -4712,6 +5263,414 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 {
                     MessageBox.Show($"Error searching bills: {ex.Message}\n\n{ex.InnerException?.Message}",
                         "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void DgvBills_SelectionChanged(object sender, EventArgs e)
+            {
+                if (dgvBills.SelectedRows.Count > 0)
+                {
+                    _selectedBillId = Convert.ToInt32(dgvBills.SelectedRows[0].Cells["Bill_ID"].Value);
+                    LoadBillItems();
+                    btnPrintBill.Enabled = true;
+                }
+                else
+                {
+                    btnPrintBill.Enabled = false;
+                }
+            }
+
+            private void LoadBillItems()
+            {
+                try
+                {
+                    using (SqlConnection conn = DbHelper.GetConnection())
+                    {
+                        using (SqlCommand cmd = new SqlCommand("sp_GetBillItems", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@BillID", _selectedBillId);
+
+                            SqlDataAdapter da = new SqlDataAdapter(cmd);
+                            DataTable dt = new DataTable();
+                            da.Fill(dt);
+                            dgvBillItems.DataSource = dt;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading bill items: {ex.Message}", "Database Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private void BtnPrintBill_Click(object sender, EventArgs e)
+            {
+                PrintBill(_selectedBillId);
+            }
+
+            private void PrintBill(int billId)
+            {
+                try
+                {
+                    string printerName = ConfigurationManager.AppSettings["ReceiptPrinter"];
+                    if (string.IsNullOrEmpty(printerName))
+                    {
+                        MessageBox.Show("Receipt printer not configured", "Printer Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Get bill header using the new stored procedure
+                    DataTable header = GetBillHeader(billId);
+                    if (header.Rows.Count == 0) return;
+                    DataRow bill = header.Rows[0];
+
+                    // Get bill items
+                    DataTable items = GetBillItems(billId);
+
+                    // Build receipt
+                    List<byte> output = new List<byte> { 0x1B, 0x40 }; // Init printer
+
+                    // Shop header
+                    PrintCentered("STYLE NEWAGE", output);
+                    PrintCentered("No.102, Negombo Rd, Narammala.", output);
+                    PrintCentered("Tel: 0777491913 / 0374545097", output);
+                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
+
+                    // Reprint notice
+                    PrintCentered("** REPRINT **", output);
+                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
+
+                    // Bill info
+                    PrintCentered($"BILL #: {billId}", output);
+                    PrintCentered($"ORIGINAL DATE: {Convert.ToDateTime(bill["BillDate"]):yyyy-MM-dd HH:mm}", output);
+                    PrintCentered($"REPRINT DATE: {DateTime.Now:yyyy-MM-dd HH:mm}", output);
+                    PrintCentered($"Cashier: {bill["CashierName"]}", output);
+                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
+                    PrintSeparator(output);
+
+                    // Customer info
+                    if (!string.IsNullOrEmpty(bill["CustomerContact"].ToString()))
+                    {
+                        PrintCentered($"Customer: {bill["CustomerContact"]}", output);
+                        PrintSeparator(output);
+                    }
+
+                    // Items header
+                    PrintLeftRight("ITEM", "QTY  PRICE  TOTAL", output);
+                    PrintSeparator(output);
+
+                    // Items
+                    decimal subtotal = 0;
+                    foreach (DataRow item in items.Rows)
+                    {
+                        string description = item["description"].ToString();
+                        decimal price = Convert.ToDecimal(item["ItemSellingPrice"]);
+                        int qty = Convert.ToInt32(item["quantity"]);
+                        decimal discount = Convert.ToDecimal(item["Per_item_Discount"]);
+                        decimal netPrice = price - discount;
+                        decimal lineTotal = netPrice * qty;
+                        subtotal += lineTotal;
+
+                        PrintLeft($"{description}", output);
+                        PrintLeftRight("", $"{qty} x {price:0.00} = {lineTotal:0.00}", output);
+
+                        if (discount > 0)
+                        {
+                            PrintLeftRight("", $"Discount: -{discount:0.00} per item", output);
+                            PrintLeftRight("", $"Net: {netPrice:0.00}", output);
+                        }
+                        output.AddRange(Encoding.ASCII.GetBytes("\n"));
+                    }
+
+                    PrintSeparator(output);
+
+                    // Totals
+                    PrintLeftRight("SUB TOTAL:", $"{subtotal:0.00}", output);
+
+                    decimal totalDiscount = 0;
+                    string discountMethod = bill["Discount_Method"].ToString();
+                    if (discountMethod == "TotalBill")
+                    {
+                        totalDiscount = Convert.ToDecimal(bill["BillDiscount"]);
+                        PrintLeftRight("BILL DISCOUNT:", $"-{totalDiscount:0.00}", output);
+                    }
+
+                    decimal netTotal = subtotal - totalDiscount;
+                    PrintLeftRight("TOTAL:", $"{netTotal:0.00}", output);
+                    PrintSeparator(output);
+
+                    // Token information
+                    if (bill["Token_ReturnID"] != DBNull.Value && bill["TokenValue"] != DBNull.Value)
+                    {
+                        PrintLeftRight("RETURN VALUE:", $"{Convert.ToDecimal(bill["TokenValue"]):0.00}", output);
+                    }
+
+                    // Payment details
+                    string paymentMethod = bill["PaymentMethod"].ToString();
+                    if (paymentMethod == "Cash")
+                    {
+                        PrintLeftRight("PAYMENT METHOD:", "CASH", output);
+                        PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
+                    }
+                    else if (paymentMethod == "Card")
+                    {
+                        PrintLeftRight("PAYMENT METHOD:", "CARD", output);
+                        PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
+                        if (bill["CardLast4"] != DBNull.Value)
+                        {
+                            PrintLeftRight("LAST 4 DIGITS:", bill["CardLast4"].ToString(), output);
+                        }
+                    }
+                    else if (paymentMethod == "Bank Transfer")
+                    {
+                        PrintLeftRight("PAYMENT METHOD:", "BANK TRANSFER", output);
+                        PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
+                        if (bill["BankAccountLast4"] != DBNull.Value)
+                        {
+                            PrintLeftRight("LAST 4 DIGITS:", bill["BankAccountLast4"].ToString(), output);
+                        }
+                    }
+                    else if (paymentMethod == "Token")
+                    {
+                        PrintLeftRight("PAYMENT METHOD:", "TOKEN", output);
+                        PrintLeftRight("TOKEN VALUE:", $"{Convert.ToDecimal(bill["TokenValue"]):0.00}", output);
+                    }
+
+                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
+
+                    // Return policy
+                    PrintCentered("-------RETURN POLICY-------", output);
+                    PrintCentered("Returns accepted in 3 days with", output);
+                    PrintCentered("original tag & receipt.", output);
+                    PrintCentered("No cash refunds on returns.", output);
+                    output.AddRange(Encoding.ASCII.GetBytes("\n\n\n"));
+
+                    // Printer commands
+                    output.AddRange(new byte[] { 0x1B, 0x64, 0x02 }); // Feed 2 lines
+                    output.AddRange(new byte[] { 0x1B, 0x69 }); // Cut paper
+
+                    // Send to printer
+                    RawPrinterHelper.SendBytesToPrinter(printerName, output.ToArray());
+
+                    MessageBox.Show("Bill reprinted successfully!", "Reprint Complete",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Printing failed: {ex.Message}", "Print Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            private DataTable GetBillHeader(int billId)
+            {
+                using (SqlConnection conn = DbHelper.GetConnection())
+                {
+                    using (SqlCommand cmd = new SqlCommand("sp_GetBillForPrinting", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@BillID", billId);
+
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+
+            private DataTable GetBillItems(int billId)
+            {
+                using (SqlConnection conn = DbHelper.GetConnection())
+                {
+                    using (SqlCommand cmd = new SqlCommand("sp_GetBillItems", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@BillID", billId);
+
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+
+            private void BtnExportContacts_Click(object sender, EventArgs e)
+            {
+                if (dgvBills.DataSource == null || dgvBills.Rows.Count == 0)
+                {
+                    MessageBox.Show("No bills to export", "Export Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                using (SaveFileDialog sfd = new SaveFileDialog())
+                {
+                    sfd.Filter = "CSV files (*.csv)|*.csv";
+                    sfd.Title = "Export Customer Contacts";
+                    sfd.FileName = $"CustomerContacts_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        try
+                        {
+                            DataTable dt = (DataTable)dgvBills.DataSource;
+                            var contacts = dt.AsEnumerable()
+                                .Select(row => row.Field<string>("CustomerContact"))
+                                .Where(contact => !string.IsNullOrWhiteSpace(contact))
+                                .Distinct()
+                                .ToList();
+
+                            using (StreamWriter sw = new StreamWriter(sfd.FileName))
+                            {
+                                sw.WriteLine("CustomerContact");
+                                foreach (string contact in contacts)
+                                {
+                                    sw.WriteLine(contact);
+                                }
+                            }
+
+                            MessageBox.Show($"{contacts.Count} contacts exported", "Export Complete",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Export failed: {ex.Message}", "Export Error",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+
+            // Printing helpers
+            private const int MAX_LINE_WIDTH = 32;
+            private void PrintCentered(string text, List<byte> output, bool bold = false)
+            {
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x01 }); // Bold on
+
+                if (text.Length > MAX_LINE_WIDTH)
+                    text = text.Substring(0, MAX_LINE_WIDTH);
+
+                int spaces = (MAX_LINE_WIDTH - text.Length) / 2;
+                output.AddRange(Encoding.ASCII.GetBytes(new string(' ', spaces) + text + "\n"));
+
+                if (bold)
+                    output.AddRange(new byte[] { 0x1B, 0x45, 0x00 }); // Bold off
+            }
+
+            private void PrintLeft(string text, List<byte> output)
+            {
+                text = text.Length > MAX_LINE_WIDTH ? text.Substring(0, MAX_LINE_WIDTH) : text;
+                output.AddRange(Encoding.ASCII.GetBytes(text + "\n"));
+            }
+
+            private void PrintLeftRight(string left, string right, List<byte> output)
+            {
+                int availableSpace = MAX_LINE_WIDTH - right.Length - 1;
+                if (availableSpace < 1) availableSpace = 1;
+
+                left = left.Length > availableSpace ? left.Substring(0, availableSpace) : left;
+                string line = left.PadRight(availableSpace) + " " + right;
+                output.AddRange(Encoding.ASCII.GetBytes(line + "\n"));
+            }
+
+            private void PrintSeparator(List<byte> output)
+            {
+                output.AddRange(Encoding.ASCII.GetBytes(new string('-', MAX_LINE_WIDTH) + "\n"));
+            }
+
+            // Raw Printer Helper Class
+            public static class RawPrinterHelper
+            {
+                [DllImport("winspool.Drv", EntryPoint = "OpenPrinterA",
+                    SetLastError = true, CharSet = CharSet.Ansi,
+                    ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter,
+                    out IntPtr hPrinter, IntPtr pd);
+
+                [DllImport("winspool.Drv", EntryPoint = "ClosePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool ClosePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "StartDocPrinterA",
+                    SetLastError = true, CharSet = CharSet.Ansi,
+                    ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool StartDocPrinter(IntPtr hPrinter, Int32 level,
+                    [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFOA di);
+
+                [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool EndDocPrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "StartPagePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool StartPagePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "EndPagePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool EndPagePrinter(IntPtr hPrinter);
+
+                [DllImport("winspool.Drv", EntryPoint = "WritePrinter",
+                    SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+                private static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes,
+                    Int32 dwCount, out Int32 dwWritten);
+
+                [StructLayout(LayoutKind.Sequential)]
+                private class DOCINFOA
+                {
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pDocName;
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pOutputFile;
+                    [MarshalAs(UnmanagedType.LPStr)]
+                    public string pDataType;
+                }
+
+                public static bool SendBytesToPrinter(string szPrinterName, byte[] pBytes)
+                {
+                    Int32 dwError = 0, dwWritten = 0;
+                    IntPtr hPrinter = IntPtr.Zero;
+                    DOCINFOA di = new DOCINFOA();
+                    di.pDocName = "POS Receipt";
+                    di.pDataType = "RAW";
+
+                    if (OpenPrinter(szPrinterName.Normalize(), out hPrinter, IntPtr.Zero))
+                    {
+                        if (StartDocPrinter(hPrinter, 1, di))
+                        {
+                            if (StartPagePrinter(hPrinter))
+                            {
+                                IntPtr pUnmanagedBytes = Marshal.AllocCoTaskMem(pBytes.Length);
+                                Marshal.Copy(pBytes, 0, pUnmanagedBytes, pBytes.Length);
+                                bool success = WritePrinter(hPrinter, pUnmanagedBytes, pBytes.Length, out dwWritten);
+                                Marshal.FreeCoTaskMem(pUnmanagedBytes);
+
+                                if (!success || dwWritten != pBytes.Length)
+                                {
+                                    dwError = Marshal.GetLastWin32Error();
+                                }
+                                EndPagePrinter(hPrinter);
+                            }
+                            EndDocPrinter(hPrinter);
+                        }
+                        ClosePrinter(hPrinter);
+                    }
+                    else
+                    {
+                        dwError = Marshal.GetLastWin32Error();
+                    }
+
+                    if (dwError != 0)
+                    {
+                        throw new Win32Exception(dwError, $"Printer error (Code: {dwError})");
+                    }
+
+                    return dwWritten == pBytes.Length;
                 }
             }
         }

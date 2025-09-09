@@ -270,7 +270,7 @@ namespace pos_system.pos.UI.Forms.Inventory
                 ColumnHeadersHeight = 40,
                 AutoGenerateColumns = false,
                 RowHeadersVisible = false,
-                RowTemplate = { Height = 35 }
+                RowTemplate = { Height = 20 }
             };
 
             // Style headers
@@ -288,7 +288,7 @@ namespace pos_system.pos.UI.Forms.Inventory
             dgvItems.DefaultCellStyle.ForeColor = DarkText;
             dgvItems.DefaultCellStyle.BackColor = White;
             dgvItems.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
-            dgvItems.RowTemplate.Height = 60;
+            dgvItems.RowTemplate.Height = 35;
 
             dgvItems.Columns.AddRange(
                 new DataGridViewTextBoxColumn { Name = "Barcode", HeaderText = "Barcode", DataPropertyName = "barcode", Width = 120 },
@@ -312,14 +312,14 @@ namespace pos_system.pos.UI.Forms.Inventory
                     DataPropertyName = "quantity",
                     Width = 60,
                     DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
-                },
-                new DataGridViewImageColumn
-                {
-                    DataPropertyName = "ItemImage",
-                    HeaderText = "Image",
-                    ImageLayout = DataGridViewImageCellLayout.Zoom,
-                    Width = 80
                 }
+                //new DataGridViewImageColumn
+                //{
+                //    DataPropertyName = "ItemImage",
+                //    HeaderText = "Image",
+                //    ImageLayout = DataGridViewImageCellLayout.Zoom,
+                //    Width = 80
+                //}
             );
 
             dgvItems.DataSource = new BindingList<Item>(_searchResults);
@@ -557,22 +557,22 @@ namespace pos_system.pos.UI.Forms.Inventory
                 Padding = new Padding(20,0,20,0)
             };
 
-            if (_selectedItem.ItemImage != null && _selectedItem.ItemImage.Length > 0)
+            if (!string.IsNullOrEmpty(_selectedItem.ItemImage))
             {
                 try
                 {
-                    using (var ms = new System.IO.MemoryStream(_selectedItem.ItemImage))
-                    {
-                        pictureBox.Image = Image.FromStream(ms);
-                    }
+                    // Use ImageHelper to load image from filename
+                    pictureBox.Image = ImageHelper.LoadProductImage(_selectedItem.ItemImage);
                 }
                 catch
                 {
+                    // Fallback to default image on error
                     SetNoImageLabel(pictureBox);
                 }
             }
             else
             {
+                // No image filename available
                 SetNoImageLabel(pictureBox);
             }
             previewLayout.Controls.Add(pictureBox, 0, 0);
@@ -605,7 +605,7 @@ namespace pos_system.pos.UI.Forms.Inventory
             AddTableRow(detailsTable, "CATEGORY:", _selectedItem.CategoryName, 3);
             AddTableRow(detailsTable, "SIZE:", _selectedItem.SizeLabel, 4);
             AddTableRow(detailsTable, "GENDER:", _selectedItem.GenderName, 5);
-            AddTableRow(detailsTable, "PRICE:", _selectedItem.RetailPrice.ToString("C"), 6);
+            AddTableRow(detailsTable, "PRICE:", _selectedItem.RetailPrice.ToString("N2"), 6);
             AddTableRow(detailsTable, "QUANTITY:", _selectedItem.Quantity.ToString(), 7);
 
             previewLayout.Controls.Add(detailsTable, 0, 1);

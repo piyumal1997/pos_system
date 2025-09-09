@@ -36,18 +36,19 @@ namespace pos_system.pos.UI.Forms.Sales
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
             });
 
+
             dgvSizes.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "RetailPrice",
-                HeaderText = "Price",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
+                DataPropertyName = "description",
+                HeaderText = "Description",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
 
             dgvSizes.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "nitCost",
-                HeaderText = "Code",
+                DataPropertyName = "RetailPrice",
+                HeaderText = "Price",
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
 

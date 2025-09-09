@@ -7,7 +7,25 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- CRITICAL FIXES -->
+    <PlatformTarget>x86</PlatformTarget>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+    <Platforms>x86</Platforms> <!-- Changed from AnyCPU;x86 -->
+    
+    <!-- Optimizations -->
+    <PublishSingleFile>false</PublishSingleFile>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
+
+  <!-- Native SQL Components Deployment -->
+  <ItemGroup>
+    <Content Include="$(NuGetPackageRoot)\microsoft.data.sqlclient.sni\**\runtimes\win-x86\native\*.dll">
+      <Link>%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <COMReference Include="BarTender">
@@ -22,11 +40,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="EPPlus" Version="5.8.8" />
     <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
     <PackageReference Include="HIC.System.Windows.Forms.DataVisualization" Version="1.0.1" />
     <PackageReference Include="LiveCharts.WinForms" Version="0.9.7.1" />
     <PackageReference Include="LiveCharts.Wpf" Version="0.9.7" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    
+    <!-- Ensure latest SQL Client -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.0" />
+    
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
@@ -44,25 +67,11 @@
     <PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
     <PackageReference Include="System.Windows.Interactivity.WPF" Version="2.0.20525" />
-    <PackageReference Include="ZXing.Net" Version="0.16.10" />
-    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.13" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="pos.Database\StoredProcedures\" />
     <Folder Include="pos.UI\Barcode\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Neodynamic.SDK.Barcode">
-      <HintPath>C:\Program Files (x86)\Neodynamic\Barcode Professional SDK\v6.0\Redistributable\For .NET 4.x (WinCert)\Neodynamic.SDK.Barcode.dll</HintPath>
-    </Reference>
-    <Reference Include="Neodynamic.SDK.ThermalLabel">
-      <HintPath>C:\Program Files (x86)\Neodynamic\ThermalLabel SDK\v6.0\Redistributable\For .NET 3.5-4.x (AnyCPU)\Neodynamic.SDK.ThermalLabel.dll</HintPath>
-    </Reference>
-    <Reference Include="Neodynamic.Windows.ThermalLabelEditor">
-      <HintPath>C:\Program Files (x86)\Neodynamic\ThermalLabel SDK\v6.0\Redistributable\For .NET 3.5-4.x (AnyCPU)\Neodynamic.Windows.ThermalLabelEditor.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -80,4 +89,10 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <!-- Post-build verification -->
+  <Target Name="CheckSqlNativeFiles" AfterTargets="Build">
+    <Message Text="Verifying SQL native files exist in output..." Importance="high" />
+    <Error Condition="!Exists('$(OutputPath)\Microsoft.Data.SqlClient.SNI.dll')" Text="FATAL: Microsoft.Data.SqlClient.SNI.dll missing from build output!" />
+  </Target>
+  
 </Project>

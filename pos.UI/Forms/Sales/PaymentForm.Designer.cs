@@ -17,15 +17,20 @@
         private Label lblChangeLabel;
         private Label lblChange;
         private Panel pnlCard;
-        private MaskedTextBox txtCardDigits;
+        private TextBox txtCardDigits;
         private Panel pnlBank;
-        private MaskedTextBox txtBankDigits;
+        private TextBox txtBankDigits;
         private Button btnComplete;
         private Button btnCancel;
         private Panel pnlContact;
-        private MaskedTextBox txtCustomerContact;
+        private TextBox txtCustomerContact;
         private Label lblContact;
         private Label lblContactError;
+        private Label lblCardPrompt;
+        private Label lblBankPrompt;
+        private Label lblCashTendered;
+        private Label lblGender;
+        private ComboBox cmbGender;
 
         protected override void Dispose(bool disposing)
         {
@@ -50,16 +55,21 @@
             this.lblChange = new System.Windows.Forms.Label();
             this.lblChangeLabel = new System.Windows.Forms.Label();
             this.txtCashTendered = new System.Windows.Forms.TextBox();
+            this.lblCashTendered = new System.Windows.Forms.Label();
             this.pnlCard = new System.Windows.Forms.Panel();
-            this.txtCardDigits = new System.Windows.Forms.MaskedTextBox();
+            this.lblCardPrompt = new System.Windows.Forms.Label();
+            this.txtCardDigits = new System.Windows.Forms.TextBox();
             this.pnlBank = new System.Windows.Forms.Panel();
-            this.txtBankDigits = new System.Windows.Forms.MaskedTextBox();
+            this.lblBankPrompt = new System.Windows.Forms.Label();
+            this.txtBankDigits = new System.Windows.Forms.TextBox();
             this.btnComplete = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.pnlContact = new System.Windows.Forms.Panel();
             this.lblContactError = new System.Windows.Forms.Label();
-            this.txtCustomerContact = new System.Windows.Forms.MaskedTextBox();
+            this.txtCustomerContact = new System.Windows.Forms.TextBox();
             this.lblContact = new System.Windows.Forms.Label();
+            this.lblGender = new System.Windows.Forms.Label();
+            this.cmbGender = new System.Windows.Forms.ComboBox();
             this.pnlCash.SuspendLayout();
             this.pnlCard.SuspendLayout();
             this.pnlBank.SuspendLayout();
@@ -79,7 +89,7 @@
             // lblTotalLabel
             // 
             this.lblTotalLabel.AutoSize = true;
-            this.lblTotalLabel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTotalLabel.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTotalLabel.Location = new System.Drawing.Point(14, 50);
             this.lblTotalLabel.Name = "lblTotalLabel";
             this.lblTotalLabel.Size = new System.Drawing.Size(82, 17);
@@ -89,17 +99,17 @@
             // lblTotalAmount
             // 
             this.lblTotalAmount.AutoSize = true;
-            this.lblTotalAmount.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTotalAmount.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTotalAmount.Location = new System.Drawing.Point(200, 50);
             this.lblTotalAmount.Name = "lblTotalAmount";
             this.lblTotalAmount.Size = new System.Drawing.Size(43, 17);
             this.lblTotalAmount.TabIndex = 2;
-            this.lblTotalAmount.Text = "$0.00";
+            this.lblTotalAmount.Text = "Rs.0.00";
             // 
             // lblTokenLabel
             // 
             this.lblTokenLabel.AutoSize = true;
-            this.lblTokenLabel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTokenLabel.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTokenLabel.Location = new System.Drawing.Point(14, 75);
             this.lblTokenLabel.Name = "lblTokenLabel";
             this.lblTokenLabel.Size = new System.Drawing.Size(79, 17);
@@ -109,18 +119,18 @@
             // lblTokenValue
             // 
             this.lblTokenValue.AutoSize = true;
-            this.lblTokenValue.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTokenValue.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTokenValue.ForeColor = System.Drawing.Color.Red;
             this.lblTokenValue.Location = new System.Drawing.Point(200, 75);
             this.lblTokenValue.Name = "lblTokenValue";
             this.lblTokenValue.Size = new System.Drawing.Size(43, 17);
             this.lblTokenValue.TabIndex = 4;
-            this.lblTokenValue.Text = "$0.00";
+            this.lblTokenValue.Text = "Rs.0.00";
             // 
             // lblDueLabel
             // 
             this.lblDueLabel.AutoSize = true;
-            this.lblDueLabel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDueLabel.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblDueLabel.Location = new System.Drawing.Point(14, 100);
             this.lblDueLabel.Name = "lblDueLabel";
             this.lblDueLabel.Size = new System.Drawing.Size(80, 17);
@@ -135,12 +145,12 @@
             this.lblAmountDue.Name = "lblAmountDue";
             this.lblAmountDue.Size = new System.Drawing.Size(43, 17);
             this.lblAmountDue.TabIndex = 6;
-            this.lblAmountDue.Text = "$0.00";
+            this.lblAmountDue.Text = "Rs.0.00";
             // 
             // cmbPaymentMethod
             // 
             this.cmbPaymentMethod.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbPaymentMethod.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cmbPaymentMethod.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmbPaymentMethod.FormattingEnabled = true;
             this.cmbPaymentMethod.Items.AddRange(new object[] {
             "Cash",
@@ -157,7 +167,8 @@
             this.pnlCash.Controls.Add(this.lblChange);
             this.pnlCash.Controls.Add(this.lblChangeLabel);
             this.pnlCash.Controls.Add(this.txtCashTendered);
-            this.pnlCash.Location = new System.Drawing.Point(17, 220);
+            this.pnlCash.Controls.Add(this.lblCashTendered);
+            this.pnlCash.Location = new System.Drawing.Point(17, 260);
             this.pnlCash.Name = "pnlCash";
             this.pnlCash.Size = new System.Drawing.Size(300, 100);
             this.pnlCash.TabIndex = 8;
@@ -165,18 +176,18 @@
             // lblChange
             // 
             this.lblChange.AutoSize = true;
-            this.lblChange.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblChange.Location = new System.Drawing.Point(80, 50);
+            this.lblChange.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblChange.Location = new System.Drawing.Point(80, 65);
             this.lblChange.Name = "lblChange";
             this.lblChange.Size = new System.Drawing.Size(43, 17);
             this.lblChange.TabIndex = 2;
-            this.lblChange.Text = "$0.00";
+            this.lblChange.Text = "Rs.0.00";
             // 
             // lblChangeLabel
             // 
             this.lblChangeLabel.AutoSize = true;
-            this.lblChangeLabel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblChangeLabel.Location = new System.Drawing.Point(10, 50);
+            this.lblChangeLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblChangeLabel.Location = new System.Drawing.Point(10, 65);
             this.lblChangeLabel.Name = "lblChangeLabel";
             this.lblChangeLabel.Size = new System.Drawing.Size(56, 17);
             this.lblChangeLabel.TabIndex = 1;
@@ -184,72 +195,104 @@
             // 
             // txtCashTendered
             // 
-            this.txtCashTendered.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtCashTendered.Location = new System.Drawing.Point(10, 10);
+            this.txtCashTendered.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtCashTendered.Location = new System.Drawing.Point(10, 30);
             this.txtCashTendered.Name = "txtCashTendered";
             this.txtCashTendered.Size = new System.Drawing.Size(280, 25);
             this.txtCashTendered.TabIndex = 0;
             this.txtCashTendered.TextChanged += new System.EventHandler(this.txtCashTendered_TextChanged);
             this.txtCashTendered.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtCashTendered_KeyPress);
             // 
+            // lblCashTendered
+            // 
+            this.lblCashTendered.AutoSize = true;
+            this.lblCashTendered.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblCashTendered.Location = new System.Drawing.Point(10, 10);
+            this.lblCashTendered.Name = "lblCashTendered";
+            this.lblCashTendered.Size = new System.Drawing.Size(104, 17);
+            this.lblCashTendered.TabIndex = 3;
+            this.lblCashTendered.Text = "Cash Tendered:";
+            // 
             // pnlCard
             // 
+            this.pnlCard.Controls.Add(this.lblCardPrompt);
             this.pnlCard.Controls.Add(this.txtCardDigits);
-            this.pnlCard.Location = new System.Drawing.Point(17, 220);
+            this.pnlCard.Location = new System.Drawing.Point(17, 260);
             this.pnlCard.Name = "pnlCard";
-            this.pnlCard.Size = new System.Drawing.Size(300, 60);
+            this.pnlCard.Size = new System.Drawing.Size(300, 80);
             this.pnlCard.TabIndex = 9;
             this.pnlCard.Visible = false;
             // 
+            // lblCardPrompt
+            // 
+            this.lblCardPrompt.AutoSize = true;
+            this.lblCardPrompt.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblCardPrompt.Location = new System.Drawing.Point(10, 5);
+            this.lblCardPrompt.Name = "lblCardPrompt";
+            this.lblCardPrompt.Size = new System.Drawing.Size(119, 15);
+            this.lblCardPrompt.TabIndex = 1;
+            this.lblCardPrompt.Text = "Last 4 digits of Card:";
+            // 
             // txtCardDigits
             // 
-            this.txtCardDigits.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtCardDigits.Location = new System.Drawing.Point(10, 10);
-            this.txtCardDigits.Mask = "0000";
+            this.txtCardDigits.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtCardDigits.Location = new System.Drawing.Point(10, 25);
             this.txtCardDigits.Name = "txtCardDigits";
             this.txtCardDigits.Size = new System.Drawing.Size(280, 25);
             this.txtCardDigits.TabIndex = 0;
             this.txtCardDigits.TextChanged += new System.EventHandler(this.txtCardDigits_TextChanged);
+            this.txtCardDigits.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.DigitsOnlyTextBox_KeyPress);
             // 
             // pnlBank
             // 
+            this.pnlBank.Controls.Add(this.lblBankPrompt);
             this.pnlBank.Controls.Add(this.txtBankDigits);
-            this.pnlBank.Location = new System.Drawing.Point(17, 220);
+            this.pnlBank.Location = new System.Drawing.Point(17, 260);
             this.pnlBank.Name = "pnlBank";
-            this.pnlBank.Size = new System.Drawing.Size(300, 60);
+            this.pnlBank.Size = new System.Drawing.Size(300, 80);
             this.pnlBank.TabIndex = 10;
             this.pnlBank.Visible = false;
             // 
+            // lblBankPrompt
+            // 
+            this.lblBankPrompt.AutoSize = true;
+            this.lblBankPrompt.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBankPrompt.Location = new System.Drawing.Point(10, 5);
+            this.lblBankPrompt.Name = "lblBankPrompt";
+            this.lblBankPrompt.Size = new System.Drawing.Size(157, 15);
+            this.lblBankPrompt.TabIndex = 1;
+            this.lblBankPrompt.Text = "Last 4 digits of Account No:";
+            // 
             // txtBankDigits
             // 
-            this.txtBankDigits.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtBankDigits.Location = new System.Drawing.Point(10, 10);
-            this.txtBankDigits.Mask = "0000";
+            this.txtBankDigits.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtBankDigits.Location = new System.Drawing.Point(10, 25);
             this.txtBankDigits.Name = "txtBankDigits";
             this.txtBankDigits.Size = new System.Drawing.Size(280, 25);
             this.txtBankDigits.TabIndex = 0;
             this.txtBankDigits.TextChanged += new System.EventHandler(this.txtBankDigits_TextChanged);
+            this.txtBankDigits.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.DigitsOnlyTextBox_KeyPress);
             // 
             // btnComplete
             // 
             this.btnComplete.BackColor = System.Drawing.Color.SeaGreen;
             this.btnComplete.Enabled = false;
             this.btnComplete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnComplete.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnComplete.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnComplete.ForeColor = System.Drawing.Color.White;
-            this.btnComplete.Location = new System.Drawing.Point(17, 300);
+            this.btnComplete.Location = new System.Drawing.Point(17, 355);
             this.btnComplete.Name = "btnComplete";
             this.btnComplete.Size = new System.Drawing.Size(140, 40);
             this.btnComplete.TabIndex = 11;
-            this.btnComplete.Text = "Complete Payment";
+            this.btnComplete.Text = "Complete";
             this.btnComplete.UseVisualStyleBackColor = false;
             this.btnComplete.Click += new System.EventHandler(this.btnComplete_Click);
             // 
             // btnCancel
             // 
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCancel.Location = new System.Drawing.Point(177, 300);
+            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCancel.Location = new System.Drawing.Point(177, 355);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(140, 40);
             this.btnCancel.TabIndex = 12;
@@ -270,36 +313,63 @@
             // lblContactError
             // 
             this.lblContactError.AutoSize = true;
-            this.lblContactError.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblContactError.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblContactError.ForeColor = System.Drawing.Color.Red;
-            this.lblContactError.Location = new System.Drawing.Point(10, 40);
+            this.lblContactError.Location = new System.Drawing.Point(10, 45);
             this.lblContactError.Name = "lblContactError";
-            this.lblContactError.Size = new System.Drawing.Size(0, 13);
+            this.lblContactError.Size = new System.Drawing.Size(0, 12);
             this.lblContactError.TabIndex = 2;
             // 
             // txtCustomerContact
             // 
-            this.txtCustomerContact.Font = new System.Drawing.Font("Segoe UI", 9.75F);
+            this.txtCustomerContact.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtCustomerContact.Location = new System.Drawing.Point(10, 25);
-            this.txtCustomerContact.Mask = "0000 000 000";
             this.txtCustomerContact.Name = "txtCustomerContact";
             this.txtCustomerContact.Size = new System.Drawing.Size(280, 25);
             this.txtCustomerContact.TabIndex = 1;
             this.txtCustomerContact.TextChanged += new System.EventHandler(this.txtCustomerContact_TextChanged);
+            this.txtCustomerContact.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtCustomerContact_KeyPress);
             // 
             // lblContact
             // 
             this.lblContact.AutoSize = true;
-            this.lblContact.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblContact.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblContact.Location = new System.Drawing.Point(7, 7);
             this.lblContact.Name = "lblContact";
             this.lblContact.Size = new System.Drawing.Size(146, 15);
             this.lblContact.TabIndex = 0;
             this.lblContact.Text = "Customer Contact (optional):";
             // 
+            // lblGender
+            // 
+            this.lblGender.AutoSize = true;
+            this.lblGender.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblGender.Location = new System.Drawing.Point(26, 220);
+            this.lblGender.Name = "lblGender";
+            this.lblGender.Size = new System.Drawing.Size(61, 17);
+            this.lblGender.TabIndex = 14;
+            this.lblGender.Text = "Gender:";
+            // 
+            // cmbGender
+            // 
+            this.cmbGender.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGender.Enabled = false;
+            this.cmbGender.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cmbGender.FormattingEnabled = true;
+            this.cmbGender.Items.AddRange(new object[] {
+            "Male",
+            "Female"});
+            this.cmbGender.Location = new System.Drawing.Point(26, 240);
+            this.cmbGender.Name = "cmbGender";
+            this.cmbGender.Size = new System.Drawing.Size(226, 25);
+            this.cmbGender.TabIndex = 15;
+            this.cmbGender.SelectedIndexChanged += new System.EventHandler(this.cmbGender_SelectedIndexChanged);
+            // 
             // PaymentForm
             // 
-            this.ClientSize = new System.Drawing.Size(334, 351);
+            this.ClientSize = new System.Drawing.Size(334, 425);
+            this.Controls.Add(this.cmbGender);
+            this.Controls.Add(this.lblGender);
             this.Controls.Add(this.pnlContact);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnComplete);

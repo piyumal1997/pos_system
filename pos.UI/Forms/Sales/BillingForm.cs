@@ -2,7 +2,7 @@
 using pos_system.pos.BLL.Utilities;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
-using pos_system.pos.UI.Forms.Sales;
+using pos_system.pos.UI.Forms.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,7 +20,7 @@ namespace pos_system.pos.UI.Forms.Sales
     public partial class BillingForm : Form
     {
         #region Constants and Fields
-        private const string PRINTER_NAME = "Xprinter XP-80";
+        private const string PRINTER_NAME = "XP-80C";
         private const int MAX_LINE_WIDTH = 32;
         private System.Timers.Timer _dateTimer;
 
@@ -38,6 +38,15 @@ namespace pos_system.pos.UI.Forms.Sales
         private ReturnToken _appliedToken;
         private bool _tokenApplied;
 
+        // Barcode scanning fields
+        private TextBox _txtBarcodeInput;
+        private DateTime _lastScanTime = DateTime.MinValue;
+        private bool _isEditingGrid = false;
+
+        private DataGridViewTextBoxColumn colDiscountAmountPerItem;
+        //private DataGridViewButtonColumn colDelete;
+        //private DataGridViewTextBoxColumn colQuantity;
+
         #endregion
 
         #region Helper Classes
@@ -45,6 +54,14 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             public int ReturnId { get; set; }
             public decimal TotalRefund { get; set; }
+        }
+
+        public class BillItem
+        {
+            public int ProductSize_ID { get; set; }
+            public int Quantity { get; set; }
+            public decimal SellingPrice { get; set; }
+            public decimal Per_item_Discount { get; set; }
         }
         #endregion
 
@@ -55,6 +72,7 @@ namespace pos_system.pos.UI.Forms.Sales
             {
                 _currentUser = user;
                 InitializeComponent();
+                InitializeBarcodeScanner();
                 InitializeDataGridView();
                 container.Controls.Add(dgvCart, 0, 3);
                 dgvCart.Dock = DockStyle.Fill;
@@ -63,11 +81,30 @@ namespace pos_system.pos.UI.Forms.Sales
                 InitializeDateTimeTimer();
                 AttachEventHandlers();
                 this.Load += (s, e) => AttachGridEventHandlers();
+                SetupKeyboardShortcuts();
             }
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "Initialization");
             }
+        }
+
+        private void InitializeBarcodeScanner()
+        {
+            // Create hidden TextBox for barcode scanning
+            _txtBarcodeInput = new TextBox
+            {
+                Location = new Point(-100, -100), // Position off-screen
+                Size = new Size(1, 1), // Minimal size
+                TabIndex = 0
+            };
+            this.Controls.Add(_txtBarcodeInput);
+
+            // Set up event handlers for scanner input
+            _txtBarcodeInput.KeyDown += TxtBarcodeInput_KeyDown;
+
+            // Set focus to scanner input when form is shown
+            this.Shown += (s, e) => FocusBarcodeScanner();
         }
 
         private void InitializeDateTimeTimer()
@@ -90,6 +127,153 @@ namespace pos_system.pos.UI.Forms.Sales
             lblDateTime.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         }
 
+        private void SetupKeyboardShortcuts()
+        {
+            this.KeyPreview = true;
+            this.KeyDown += BillingForm_KeyDown;
+        }
+
+        #endregion
+
+        #region Barcode Scanning Implementation
+        private void TxtBarcodeInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true; // Prevent beep sound
+
+                // Prevent double-processing
+                if ((DateTime.Now - _lastScanTime).TotalMilliseconds < 100) return;
+                _lastScanTime = DateTime.Now;
+
+                string barcode = _txtBarcodeInput.Text.Trim();
+                if (!string.IsNullOrEmpty(barcode))
+                {
+                    // Show in visible field for user feedback
+                    txtBarcode.Text = barcode;
+                    AddItemToCart();
+                }
+
+                // Reset and prepare for next scan
+                _txtBarcodeInput.Clear();
+                FocusBarcodeScanner();
+            }
+        }
+
+        private void FocusBarcodeScanner()
+        {
+            if (!_isEditingGrid)
+            {
+                _txtBarcodeInput.Focus();
+                _txtBarcodeInput.SelectAll();
+            }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            FocusBarcodeScanner();
+        }
+
+        private void BillingForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            try
+            {
+                if (e.KeyCode == Keys.F11) // Add item
+                {
+                    if (!string.IsNullOrWhiteSpace(txtBarcode.Text))
+                    {
+                        btnAddItem.PerformClick();
+                        e.Handled = true;
+                    }
+                }
+                else if (e.KeyCode == Keys.F12) // Process payment
+                {
+                    btnProcessPayment.PerformClick();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.F1) // Clear bill
+                {
+                    btnClearBill.PerformClick();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Escape) // Refocus scanner
+                {
+                    FocusBarcodeScanner();
+                    e.Handled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Keyboard Shortcut");
+            }
+        }
+
+        private void TxtBarcode_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            try
+            {
+                // Handle Enter key
+                if (e.KeyChar == (char)Keys.Enter)
+                {
+                    e.Handled = true;
+                    if (!string.IsNullOrWhiteSpace(txtBarcode.Text))
+                    {
+                        AddItemToCart();
+                    }
+                    FocusBarcodeScanner();
+                }
+                // Allow barcode characters
+                else if (char.IsLetterOrDigit(e.KeyChar) ||
+                         e.KeyChar == '-' ||
+                         e.KeyChar == '.' ||
+                         e.KeyChar == '_' ||
+                         e.KeyChar == ' ' ||
+                         e.KeyChar == '+' ||
+                         e.KeyChar == '*')
+                {
+                    // Allow these characters
+                }
+                // Handle backspace and delete
+                else if (e.KeyChar == (char)Keys.Back || e.KeyChar == (char)Keys.Delete)
+                {
+                    // Allow through
+                }
+                // Handle Ctrl+V for paste
+                else if (e.KeyChar == 22 && Control.ModifierKeys == Keys.Control)
+                {
+                    // Allow paste
+                }
+                else
+                {
+                    e.Handled = true;
+                    ShowInvalidCharacterTooltip();
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Barcode Input");
+            }
+        }
+
+        private void ShowInvalidCharacterTooltip()
+        {
+            var toolTip = new ToolTip
+            {
+                ToolTipTitle = "Invalid Character",
+                IsBalloon = true,
+                ToolTipIcon = ToolTipIcon.Warning
+            };
+
+            toolTip.Show("Only letters, numbers, and -_.+* symbols are allowed",
+                         txtBarcode,
+                         txtBarcode.Width / 2,
+                         -40,
+                         2000);
+        }
+        #endregion
+
+        #region Form Components and Data Initialization
         private void InitializeDataGridView()
         {
             dgvCart = new DataGridView
@@ -106,6 +290,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 GridColor = Color.FromArgb(240, 240, 240),
                 Dock = DockStyle.Fill
             };
+
+            dgvCart.CellBeginEdit += (s, e) => _isEditingGrid = true;
+            dgvCart.CellEndEdit += (s, e) => {
+                _isEditingGrid = false;
+                FocusBarcodeScanner();
+            };
+            dgvCart.DataError += DgvCart_DataError;
 
             colDelete = new DataGridViewButtonColumn
             {
@@ -134,20 +325,20 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
             };
 
-            colDiscount = new DataGridViewTextBoxColumn
+            colDiscountAmountPerItem = new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "Discount",
-                HeaderText = "Discount %",
-                Name = "Discount",
+                DataPropertyName = "DiscountAmountPerItem",
+                HeaderText = "Discount (Rs.)",
+                Name = "DiscountAmountPerItem",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                    Alignment = DataGridViewContentAlignment.MiddleRight,
+                    Format = "N2"
                 }
             };
 
-            colSize = new DataGridViewTextBoxColumn
+            DataGridViewTextBoxColumn colSize = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Size",
                 HeaderText = "Size",
@@ -263,7 +454,6 @@ namespace pos_system.pos.UI.Forms.Sales
             dgvCart.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
 
             dgvCart.EnableHeadersVisualStyles = false;
-            dgvCart.RowHeadersVisible = false;
             dgvCart.DefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             dgvCart.DefaultCellStyle.SelectionBackColor = Color.FromArgb(189, 224, 254);
             dgvCart.DefaultCellStyle.SelectionForeColor = Color.FromArgb(64, 64, 64);
@@ -279,7 +469,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 colSize,
                 colPrice,
                 colQuantity,
-                colDiscount,
+                colDiscountAmountPerItem,
                 colDiscountAmount,
                 colNetPrice,
                 colMaxDiscount,
@@ -302,9 +492,9 @@ namespace pos_system.pos.UI.Forms.Sales
                 _cartItems.Columns.Add("Size", typeof(string));
                 _cartItems.Columns.Add("Price", typeof(decimal));
                 _cartItems.Columns.Add("Quantity", typeof(int));
-                _cartItems.Columns.Add("Discount", typeof(decimal));
-                _cartItems.Columns.Add("DiscountAmount", typeof(decimal), "Price * Quantity * Discount / 100");
-                _cartItems.Columns.Add("NetPrice", typeof(decimal), "Price * Quantity - (Price * Quantity * Discount / 100)");
+                _cartItems.Columns.Add("DiscountAmountPerItem", typeof(decimal));
+                _cartItems.Columns.Add("DiscountAmount", typeof(decimal), "DiscountAmountPerItem * Quantity");
+                _cartItems.Columns.Add("NetPrice", typeof(decimal), "(Price - DiscountAmountPerItem) * Quantity");
                 _cartItems.Columns.Add("MaxDiscount", typeof(decimal));
                 _cartItems.Columns.Add("AvailableStock", typeof(int));
 
@@ -358,7 +548,7 @@ namespace pos_system.pos.UI.Forms.Sales
             try
             {
                 btnRefreshBill.Click += (s, e) => RefreshBill();
-                btnClearBill.Click += (s, e) => ClearBill();
+                btnClearBill.Click += (s, e) => ClearBillButton();
                 btnAddItem.Click += BtnAddItem_Click;
                 txtBarcode.KeyPress += TxtBarcode_KeyPress;
                 btnProcessPayment.Click += BtnProcessPayment_Click;
@@ -385,17 +575,25 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     try
                     {
-                        if (e.ColumnIndex == colDiscount.Index)
+                        if (e.ColumnIndex == colDiscountAmountPerItem.Index)
                         {
                             DataRow dataRow = _cartItems.Rows[e.RowIndex];
                             decimal maxDiscount = Convert.ToDecimal(dataRow["MaxDiscount"]);
+                            decimal price = Convert.ToDecimal(dataRow["Price"]);
 
                             if (decimal.TryParse(e.FormattedValue.ToString(), out decimal newValue))
                             {
                                 if (newValue > maxDiscount)
                                 {
                                     e.Cancel = true;
-                                    dgvCart.Rows[e.RowIndex].ErrorText = $"Discount cannot exceed {maxDiscount}%";
+                                    dgvCart.Rows[e.RowIndex].ErrorText =
+                                        $"Discount cannot exceed Rs.{maxDiscount:N2}";
+                                }
+                                else if (newValue > price)
+                                {
+                                    e.Cancel = true;
+                                    dgvCart.Rows[e.RowIndex].ErrorText =
+                                        "Discount cannot exceed item price";
                                 }
 
                                 if (_isBillDiscountApplied && newValue > 0 && !_discountConflictWarningShown)
@@ -417,7 +615,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     try
                     {
-                        if (e.ColumnIndex == colDiscount.Index)
+                        if (e.ColumnIndex == colDiscountAmountPerItem.Index)
                         {
                             dgvCart.Rows[e.RowIndex].ErrorText = string.Empty;
                         }
@@ -443,12 +641,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 if (e.ColumnIndex == colDelete.Index)
                 {
                     _cartItems.Rows.RemoveAt(e.RowIndex);
+                    FocusBarcodeScanner();
                 }
                 else if (e.ColumnIndex == colQuantity.Index)
                 {
                     ShowQuantityEditor(e.RowIndex);
                 }
-                else if (e.ColumnIndex == colDiscount.Index)
+                else if (e.ColumnIndex == colDiscountAmountPerItem.Index)
                 {
                     ShowDiscountEditor(e.RowIndex);
                 }
@@ -463,7 +662,10 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                AddItemToCart();
+                if (!string.IsNullOrWhiteSpace(txtBarcode.Text))
+                {
+                    AddItemToCart();
+                }
             }
             catch (Exception ex)
             {
@@ -471,25 +673,10 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
-        private void TxtBarcode_KeyPress(object sender, KeyPressEventArgs e)
+        private void DgvCart_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            try
-            {
-                if (e.KeyChar == (char)Keys.Enter)
-                {
-                    AddItemToCart();
-                    e.Handled = true;
-
-                    BeginInvoke((MethodInvoker)delegate
-                    {
-                        txtBarcode.SelectAll();
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleUnexpectedError(ex, "Barcode Input");
-            }
+            ShowError($"Data error: {e.Exception.Message}");
+            e.Cancel = true;
         }
 
         private void BtnApplyBillDiscount_Click(object sender, EventArgs e)
@@ -497,7 +684,7 @@ namespace pos_system.pos.UI.Forms.Sales
             try
             {
                 bool hasPerItemDiscount = _cartItems.AsEnumerable()
-                    .Any(row => Convert.ToDecimal(row["Discount"]) > 0);
+                    .Any(row => Convert.ToDecimal(row["DiscountAmountPerItem"]) > 0);
 
                 if (hasPerItemDiscount)
                 {
@@ -512,7 +699,7 @@ namespace pos_system.pos.UI.Forms.Sales
 
                     foreach (DataRow row in _cartItems.Rows)
                     {
-                        row["Discount"] = 0;
+                        row["DiscountAmountPerItem"] = 0;
                     }
                 }
 
@@ -545,7 +732,7 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 foreach (DataRow row in _cartItems.Rows)
                 {
-                    row["Discount"] = 0;
+                    row["DiscountAmountPerItem"] = 0;
                 }
 
                 _discountConflictWarningShown = false;
@@ -627,9 +814,12 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
+                if (txtBarcode.Focused && string.IsNullOrWhiteSpace(txtBarcode.Text))
+                    return;
+
                 if (_cartItems.Rows.Count == 0)
                 {
-                    ShowError("Cart is empty");
+                    ThemedMessageBox.Show("Cart is empty", "Warning", ThemedMessageBoxIcon.Warning);
                     return;
                 }
 
@@ -652,7 +842,8 @@ namespace pos_system.pos.UI.Forms.Sales
                             cardLast4: paymentForm.CardLastFour,
                             bankLast4: paymentForm.BankLastFour,
                             change: paymentForm.Change,
-                            customerContact: paymentForm.CustomerContact
+                            customerContact: paymentForm.CustomerContact,
+                            paymentForm.CustomerGender
                         );
                     }
                 }
@@ -699,12 +890,12 @@ namespace pos_system.pos.UI.Forms.Sales
                             p.maxDiscount,
                             b.brandName, 
                             c.categoryName,
-                            ps.ProductSize_ID,  -- Explicitly select column
-                            ps.Size_ID, 
+                            ps.ProductSize_ID,
+                            ps.Size_ID,
+                            ps.unitCost,
                             s.SizeLabel, 
                             ps.quantity AS AvailableStock, 
-                            ps.RetailPrice,
-                            ps.unitCost
+                            ps.RetailPrice
                         FROM Product p
                         INNER JOIN Brand b ON p.Brand_ID = b.Brand_ID
                         INNER JOIN Category c ON p.Category_ID = c.Category_ID
@@ -726,13 +917,6 @@ namespace pos_system.pos.UI.Forms.Sales
                                 return;
                             }
 
-                            // DEBUG: Check columns
-                            Console.WriteLine("\nColumns in result:");
-                            foreach (DataColumn col in dt.Columns)
-                            {
-                                Console.WriteLine($"{col.ColumnName}");
-                            }
-
                             // Single size handling
                             if (dt.Rows.Count == 1)
                             {
@@ -745,7 +929,6 @@ namespace pos_system.pos.UI.Forms.Sales
                                 {
                                     if (sizeForm.ShowDialog() == DialogResult.OK)
                                     {
-                                        // Case-insensitive access
                                         var selectedRow = dt.AsEnumerable()
                                             .FirstOrDefault(r =>
                                                 Convert.ToInt32(r["ProductSize_ID"]) == sizeForm.SelectedProductSizeId);
@@ -764,10 +947,14 @@ namespace pos_system.pos.UI.Forms.Sales
                         }
                     }
                 }
+
+                txtBarcode.Clear();
+                FocusBarcodeScanner();
             }
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "Add Item");
+                FocusBarcodeScanner();
             }
         }
 
@@ -780,6 +967,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 int availableStock = itemRow.Field<int>("AvailableStock");
                 string size = itemRow["SizeLabel"] != DBNull.Value ?
                     itemRow.Field<string>("SizeLabel") : "N/A";
+                string barcode = itemRow.Field<string>("barcode");
+                string brand = itemRow.Field<string>("brandName");
+                string category = itemRow.Field<string>("categoryName");
+                string description = itemRow.Field<string>("description");
+                decimal price = itemRow.Field<decimal>("RetailPrice");
+                decimal maxDiscount = itemRow.Field<decimal>("maxDiscount");
+                decimal unitCost = itemRow.Field<decimal>("unitCost");
 
                 // Check if item already in cart
                 var existingRow = _cartItems.AsEnumerable()
@@ -787,9 +981,11 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 if (existingRow != null)
                 {
+                    // Item exists - just increment quantity (don't show dialog)
                     int currentQty = Convert.ToInt32(existingRow["Quantity"]);
                     int newQty = currentQty + quantity;
 
+                    // Ensure we don't exceed available stock
                     if (newQty > availableStock)
                     {
                         newQty = availableStock;
@@ -800,38 +996,116 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
                 else
                 {
+                    // New item - show edit dialog
+                    int currentQty = Math.Min(quantity, availableStock);
+                    decimal currentDiscount = 0;
+
                     if (quantity > availableStock)
                     {
-                        quantity = availableStock;
                         ShowError($"Cannot exceed available stock of {availableStock}");
                     }
 
-                    _cartItems.Rows.Add(
-                        productSizeId,
-                        productId,
-                        itemRow.Field<string>("barcode"),
-                        itemRow.Field<string>("brandName"),
-                        itemRow.Field<string>("categoryName"),
-                        itemRow.Field<string>("description"),
-                        size,
-                        itemRow.Field<decimal>("RetailPrice"),
-                        quantity,
-                        0, // Discount %
-                        0, // DiscountAmount
-                        0, // NetPrice
-                        itemRow.Field<decimal>("maxDiscount"),
-                        availableStock
-                    );
+                    using (var editForm = new ItemSet(
+                        description: description,
+                        barcode: barcode,
+                        brand: brand,
+                        unitCost: unitCost,
+                        category: category,
+                        size: size,
+                        availableStock: availableStock,
+                        unitPrice: price,
+                        maxDiscount: maxDiscount,
+                        currentQuantity: currentQty,
+                        currentDiscount: currentDiscount))
+                    {
+                        if (editForm.ShowDialog() == DialogResult.OK)
+                        {
+                            _cartItems.Rows.Add(
+                                productSizeId,
+                                productId,
+                                barcode,
+                                brand,
+                                category,
+                                description,
+                                size,
+                                price,
+                                editForm.SelectedQuantity,
+                                editForm.SelectedDiscountPerItem,
+                                0, // DiscountAmount
+                                0, // NetPrice
+                                maxDiscount,
+                                availableStock
+                            );
+                        }
+                    }
                 }
-
-                txtBarcode.Clear();
-                txtBarcode.Focus();
             }
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "Add Item to Cart");
             }
         }
+
+
+
+        //private void AddItemToCartInternal(DataRow itemRow, int quantity)
+        //{
+        //    try
+        //    {
+        //        int productSizeId = itemRow.Field<int>("ProductSize_ID");
+        //        int productId = itemRow.Field<int>("Product_ID");
+        //        int availableStock = itemRow.Field<int>("AvailableStock");
+        //        string size = itemRow["SizeLabel"] != DBNull.Value ?
+        //            itemRow.Field<string>("SizeLabel") : "N/A";
+
+        //        // Check if item already in cart
+        //        var existingRow = _cartItems.AsEnumerable()
+        //            .FirstOrDefault(row => row.Field<int>("ProductSize_ID") == productSizeId);
+
+        //        if (existingRow != null)
+        //        {
+        //            int currentQty = Convert.ToInt32(existingRow["Quantity"]);
+        //            int newQty = currentQty + quantity;
+
+        //            if (newQty > availableStock)
+        //            {
+        //                newQty = availableStock;
+        //                ShowError($"Cannot exceed available stock of {availableStock}");
+        //            }
+
+        //            existingRow["Quantity"] = newQty;
+        //        }
+        //        else
+        //        {
+        //            if (quantity > availableStock)
+        //            {
+        //                quantity = availableStock;
+        //                ShowError($"Cannot exceed available stock of {availableStock}");
+        //            }
+
+        //            _cartItems.Rows.Add(
+        //                productSizeId,
+        //                productId,
+        //                itemRow.Field<string>("barcode"),
+        //                itemRow.Field<string>("brandName"),
+        //                itemRow.Field<string>("categoryName"),
+        //                itemRow.Field<string>("description"),
+        //                size,
+        //                itemRow.Field<decimal>("RetailPrice"),
+        //                quantity,
+        //                0, // DiscountAmountPerItem
+        //                0, // DiscountAmount
+        //                0, // NetPrice
+        //                itemRow.Field<decimal>("maxDiscount"),
+        //                availableStock
+        //            );
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Add Item to Cart");
+        //    }
+        //}
 
         private void ShowQuantityEditor(int rowIndex)
         {
@@ -849,6 +1123,8 @@ namespace pos_system.pos.UI.Forms.Sales
                         _cartItems.Rows[rowIndex]["Quantity"] = qtyForm.SelectedQuantity;
                     }
                 }
+
+                FocusBarcodeScanner();
             }
             catch (IndexOutOfRangeException)
             {
@@ -868,7 +1144,8 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 DataRow row = _cartItems.Rows[rowIndex];
                 decimal maxDiscount = Convert.ToDecimal(row["MaxDiscount"]);
-                decimal currentDiscount = Convert.ToDecimal(row["Discount"]);
+                decimal currentDiscount = Convert.ToDecimal(row["DiscountAmountPerItem"]);
+                decimal price = Convert.ToDecimal(row["Price"]);
 
                 if (_isBillDiscountApplied && currentDiscount == 0 && !_discountConflictWarningShown)
                 {
@@ -883,13 +1160,13 @@ namespace pos_system.pos.UI.Forms.Sales
                     _discountConflictWarningShown = true;
                 }
 
-                using (var discountForm = new DiscountForm(maxDiscount, currentDiscount))
+                using (var discountForm = new DiscountAmountForm(maxDiscount, price, currentDiscount))
                 {
                     if (discountForm.ShowDialog() == DialogResult.OK)
                     {
-                        row["Discount"] = discountForm.SelectedDiscount;
+                        row["DiscountAmountPerItem"] = discountForm.SelectedDiscountAmount;
 
-                        if (discountForm.SelectedDiscount > 0 && _isBillDiscountApplied)
+                        if (discountForm.SelectedDiscountAmount > 0 && _isBillDiscountApplied)
                         {
                             _billDiscountPercentage = 0;
                             _isBillDiscountApplied = false;
@@ -898,6 +1175,8 @@ namespace pos_system.pos.UI.Forms.Sales
                         }
                     }
                 }
+
+                FocusBarcodeScanner();
             }
             catch (IndexOutOfRangeException)
             {
@@ -922,6 +1201,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
 
                 ClearBill();
+                FocusBarcodeScanner();
             }
             catch (Exception ex)
             {
@@ -929,8 +1209,38 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        private void ClearBillButton()
+        {
+            DialogResult result = ThemedMessageBoxYesNo.Show("Are you sure you want to clear the bill?", "Warning");
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    _cartItems.Rows.Clear();
+                    _billDiscountPercentage = 0;
+                    _isBillDiscountApplied = false;
+                    _discountConflictWarningShown = false;
+                    _tokenApplied = false;
+                    _appliedToken = null;
+                    lblBillDiscount.Text = string.Empty;
+                    txtTokenId.Enabled = true;
+                    btnApplyToken.Enabled = true;
+                    txtTokenId.Clear();
+                    GenerateBillId();
+                    FocusBarcodeScanner();
+                    UpdateSummary();
+                }
+                catch (Exception ex)
+                {
+                    HandleUnexpectedError(ex, "Clear Bill");
+                }
+            }
+        }
+
         private void ClearBill()
         {
+            
             try
             {
                 _cartItems.Rows.Clear();
@@ -987,15 +1297,15 @@ namespace pos_system.pos.UI.Forms.Sales
                 if (_isBillDiscountApplied && _billDiscountPercentage > 0)
                 {
                     billDiscountAmount = Math.Round((_subtotal * (_billDiscountPercentage / 100)), 2);
-                    lblBillDiscount.Text = $"-{Convert.ToDecimal(billDiscountAmount)} ({_billDiscountPercentage}%)";
+                    lblBillDiscount.Text = $"-Rs.{billDiscountAmount:0.00} ({_billDiscountPercentage}%)";
                 }
                 else
                 {
                     lblBillDiscount.Text = string.Empty;
                 }
 
-                lblTotal.Text = $"Rs.{Convert.ToDecimal(_subtotal - _totalDiscount - billDiscountAmount)}";
                 _total = _subtotal - _totalDiscount - billDiscountAmount;
+                lblTotal.Text = $"Rs.{_total:0.00}";
             }
             catch (InvalidCastException castEx)
             {
@@ -1010,7 +1320,7 @@ namespace pos_system.pos.UI.Forms.Sales
 
         #region Payment Processing
         private void ProcessConfirmedPayment(string paymentMethod, decimal amountTendered,
-            string cardLast4, string bankLast4, decimal change, string customerContact)
+            string cardLast4, string bankLast4, decimal change, string customerContact, string customerGender)
         {
             try
             {
@@ -1026,8 +1336,8 @@ namespace pos_system.pos.UI.Forms.Sales
                             Convert.ToInt32(row["Quantity"]) : 0,
                         SellingPrice = row["Price"] != DBNull.Value ?
                             Convert.ToDecimal(row["Price"]) : 0,
-                        Per_item_Discount = row["Discount"] != DBNull.Value ?
-                            Convert.ToDecimal(row["Discount"]) : 0
+                        Per_item_Discount = row["DiscountAmountPerItem"] != DBNull.Value ?
+                            Convert.ToDecimal(row["DiscountAmountPerItem"]) : 0
                     });
                 }
 
@@ -1077,6 +1387,7 @@ namespace pos_system.pos.UI.Forms.Sales
                         cmd.Parameters.AddWithValue("@BankAccountLast4", sqlBankLast4);
                         cmd.Parameters.AddWithValue("@Token_ReturnID", sqlToken);
                         cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
 
                         // Add items parameter
                         var dt = CreateItemsDataTable(items);
@@ -1103,10 +1414,18 @@ namespace pos_system.pos.UI.Forms.Sales
                 );
 
                 // Show success message
-                ShowPaymentSuccess();
+                //ShowPaymentSuccess();
+                ShowPaymentSuccess(
+                    paymentMethod: paymentMethod,
+                    amountTendered: amountTendered,
+                    change: change,
+                    totalItems: _totalItems,
+                    totalAmount: _total
+                );
 
                 // Reset for next bill
                 ClearBill();
+                FocusBarcodeScanner();
             }
             catch (SqlException ex) when (ex.Number == 50004)
             {
@@ -1148,10 +1467,9 @@ namespace pos_system.pos.UI.Forms.Sales
             decimal totalDiscount = 0;
             foreach (DataRow row in _cartItems.Rows)
             {
-                decimal price = Convert.ToDecimal(row["Price"]);
+                decimal discountPerItem = Convert.ToDecimal(row["DiscountAmountPerItem"]);
                 int qty = Convert.ToInt32(row["Quantity"]);
-                decimal disc = Convert.ToDecimal(row["Discount"]);
-                totalDiscount += price * qty * (disc / 100);
+                totalDiscount += discountPerItem * qty;
             }
 
             if (_isBillDiscountApplied && _billDiscountPercentage > 0)
@@ -1179,8 +1497,8 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 // Shop details - CENTERED
                 PrintCentered("STYLE NEWAGE", output);
-                PrintCentered("No.16, Negombo Rd, Narammala.", output);
-                PrintCentered("Tel: 0777491913 / 0372249139", output);
+                PrintCentered("No.102, Negombo Rd, Narammala.", output);
+                PrintCentered("Tel: 0777491913 / 0374545097", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 // Bill header - CENTERED
@@ -1197,68 +1515,34 @@ namespace pos_system.pos.UI.Forms.Sales
                 // Print items with proper formatting
                 foreach (DataRow row in _cartItems.Rows)
                 {
-                    int productSizeId = row.Field<int>("ProductSize_ID");
+                    string description = row["Description"].ToString();
+                    string brand = row["Brand"].ToString();
+                    string category = row["Category"].ToString();
+                    string size = row["Size"].ToString();
+                    decimal price = Convert.ToDecimal(row["Price"]);
+                    int qty = Convert.ToInt32(row["Quantity"]);
+                    decimal discountPerItem = Convert.ToDecimal(row["DiscountAmountPerItem"]);
+                    decimal netPrice = Convert.ToDecimal(row["NetPrice"]);
+                    decimal lineTotal = price * qty;
 
-                    using (var conn = DbHelper.GetConnection())
+                    // Item description (brand + category) - LEFT ALIGNED
+                    PrintLeft($"{category}", output);
+
+                    // Size and pricing details
+                    string sizeInfo = !string.IsNullOrEmpty(size) ? $"{size} " : string.Empty;
+                    string priceDetails = $"{qty} x {price:0.00} = {lineTotal:0.00}";
+                    PrintLeftRight(sizeInfo, priceDetails, output);
+
+                    // Discount information if applicable
+                    if (discountPerItem > 0)
                     {
-                        conn.Open();
-                        string query = @"
-                            SELECT 
-                                p.description, p.barcode, 
-                                b.brandName, c.categoryName,
-                                s.SizeLabel, ps.RetailPrice
-                            FROM ProductSize ps
-                            INNER JOIN Product p ON ps.Product_ID = p.Product_ID
-                            INNER JOIN Brand b ON p.Brand_ID = b.Brand_ID
-                            INNER JOIN Category c ON p.Category_ID = c.Category_ID
-                            LEFT JOIN Size s ON ps.Size_ID = s.Size_ID
-                            WHERE ps.ProductSize_ID = @ProductSizeId";
-
-                        using (var cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@ProductSizeId", productSizeId);
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                if (reader.Read())
-                                {
-                                    string brand = reader["brandName"].ToString();
-                                    string category = reader["categoryName"].ToString();
-                                    string size = reader["SizeLabel"] != DBNull.Value ?
-                                        reader["SizeLabel"].ToString() : string.Empty;
-                                    string itemDesc = $"{category}".Trim();
-
-                                    decimal retailPrice = Convert.ToDecimal(row["Price"]);
-                                    int qty = Convert.ToInt32(row["Quantity"]);
-                                    decimal discount = Convert.ToDecimal(row["Discount"]);
-                                    decimal netPrice = Convert.ToDecimal(row["NetPrice"]);
-                                    decimal lineTotal = retailPrice * qty;
-
-                                    // Item description (brand + category) - LEFT ALIGNED
-                                    PrintLeft(itemDesc, output);
-
-                                    // Size and pricing details
-                                    string sizeInfo = !string.IsNullOrEmpty(size) ? $"{size} " : string.Empty;
-                                    string priceDetails = $"{qty} x {retailPrice:0.00} {lineTotal:0.00}";
-                                    PrintLeftRight(sizeInfo, priceDetails, output);
-
-                                    // Discount information if applicable
-                                    if (discount > 0)
-                                    {
-                                        decimal discountAmount = lineTotal * (discount / 100);
-                                        string discountLine = $"Discount: {discount}% (-{discountAmount:0.00})";
-                                        PrintLeftRight(string.Empty, discountLine, output);
-                                        PrintLeftRight(string.Empty, $"Net: {netPrice:0.00}", output);
-                                    }
-                                    else
-                                    {
-                                        PrintLeftRight(string.Empty, $"Total: Rs.{lineTotal:0.00}", output);
-                                    }
-
-                                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
-                                }
-                            }
-                        }
+                        decimal discountAmount = discountPerItem * qty;
+                        string discountLine = $"Discount: -{discountPerItem:0.00} per item";
+                        PrintLeftRight(string.Empty, discountLine, output);
+                        PrintLeftRight(string.Empty, $"Net: {netPrice:0.00}", output);
                     }
+
+                    output.AddRange(Encoding.ASCII.GetBytes("\n"));
                 }
 
                 PrintSeparator(output);
@@ -1266,42 +1550,44 @@ namespace pos_system.pos.UI.Forms.Sales
                 if (_totalDiscount > 0)
                 {
                     PrintLeftRight("SUB TOTAL:", $"Rs.{_subtotal:0.00}", output);
-                    PrintLeftRight("Discount:", $"Rs.-{Math.Round(_totalDiscount, 2)}", output);
+                    PrintLeftRight("ITEM DISCOUNTS:", $"-Rs.{_totalDiscount:0.00}", output);
                 }
 
                 if (_isBillDiscountApplied && _billDiscountPercentage > 0)
                 {
-                    PrintLeftRight("SUB TOTAL:", $"Rs.{Math.Round(_subtotal, 2)}", output);
                     decimal billDiscount = Math.Round(_subtotal * (_billDiscountPercentage / 100), 2);
-                    PrintLeftRight("Discount:", $"Rs.-{Math.Round(billDiscount, 2)} ({_billDiscountPercentage}%)", output);
+                    PrintLeftRight("SUB TOTAL:", $"Rs.{Math.Round(_subtotal, 2)}", output);
+                    PrintLeftRight($"BILL DISCOUNT ({_billDiscountPercentage}%):", $"-Rs.{billDiscount:0.00}", output);
                 }
+
                 PrintLeftRight("TOTAL:", $"Rs.{Math.Round(_total, 2)}", output);
                 PrintSeparator(output);
+
                 // Token information
                 if (_tokenApplied)
                 {
-                    PrintLeftRight("Return Value:", $"Rs.{Math.Round(_appliedToken.TotalRefund, 2)}", output);
+                    PrintLeftRight("RETURN VALUE:", $"Rs.{Math.Round(_appliedToken.TotalRefund, 2)}", output);
                 }
 
                 // Payment details
                 if (paymentMethod == "Cash")
                 {
-                    PrintLeftRight("Cash Tendered:", $"Rs.{amountTendered:0.00}", output);
-                    PrintLeftRight("Change:", $"Rs.{change:0.00}", output);
+                    PrintLeftRight("CASH TENDERED:", $"Rs.{amountTendered:0.00}", output);
+                    PrintLeftRight("CHANGE:", $"Rs.{change:0.00}", output);
                 }
                 else if (paymentMethod == "Card")
                 {
-                    PrintLeftRight("Card Payment:", $"Rs.{amountTendered.ToString()}", output);
-                    PrintLeftRight("Last 4 Digits:", cardLast4, output);
+                    PrintLeftRight("CARD PAYMENT:", $"Rs.{amountTendered:0.00}", output);
+                    PrintLeftRight("LAST 4 DIGITS:", cardLast4, output);
                 }
                 else if (paymentMethod == "Bank Transfer")
                 {
-                    PrintLeftRight("Bank Transfer:", $"Rs.{amountTendered.ToString()}", output);
-                    PrintLeftRight("Last 4 Digits:", bankLast4, output);
+                    PrintLeftRight("BANK TRANSFER:", $"Rs.{amountTendered:0.00}", output);
+                    PrintLeftRight("LAST 4 DIGITS:", bankLast4, output);
                 }
                 else if (paymentMethod == "Token")
                 {
-                    PrintLeftRight("Fully Paid with Token", $"Rs.{_appliedToken.TotalRefund.ToString()}", output);
+                    PrintLeftRight("FULLY PAID WITH TOKEN", $"Rs.{_appliedToken.TotalRefund:0.00}", output);
                 }
 
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
@@ -1425,13 +1711,54 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
-        private void ShowPaymentSuccess()
+        private void ShowPaymentSuccess(
+            string paymentMethod,
+            decimal amountTendered,
+            decimal change,
+            int totalItems,
+            decimal totalAmount)
         {
-            string message = "Payment processed successfully!\n\n" +
-                             $"Bill ID: {_billId}\n" +
-                             $"Total: Rs.{_total}";
+            StringBuilder message = new StringBuilder();
+            message.AppendLine("Payment processed successfully!\n");
+            message.AppendLine($"Bill ID: {_billId}");
+            message.AppendLine($"Total Items: {totalItems}");
+            message.AppendLine($"Total Amount: Rs.{totalAmount:0.00}");
 
-            MessageBox.Show(message, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Add payment method specific details
+            switch (paymentMethod)
+            {
+                case "Cash":
+                    message.AppendLine($"\nPayment Method: Cash");
+                    message.AppendLine($"Amount Tendered: Rs.{amountTendered:0.00}");
+                    message.AppendLine($"Change: Rs.{change:0.00}");
+                    break;
+
+                case "Card":
+                    message.AppendLine($"\nPayment Method: Card");
+                    message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
+                    break;
+
+                case "Bank Transfer":
+                    message.AppendLine($"\nPayment Method: Bank Transfer");
+                    message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
+                    break;
+
+                case "Token":
+                    message.AppendLine($"\nPayment Method: Token");
+                    message.AppendLine($"Token Value Applied: Rs.{_appliedToken.TotalRefund:0.00}");
+                    message.AppendLine($"Remaining Token Balance: Rs.0.00");
+                    break;
+            }
+
+            // Always show remaining balance (change) if any
+            if (change > 0)
+            {
+                message.AppendLine($"\nBalance Returned: Rs.{change:0.00}");
+            }
+
+            ThemedMessageBoxGreen.Show(message.ToString(), "Success");
+
+            //MessageBox.Show(message.ToString(), "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         #endregion
 
@@ -1501,5 +1828,12 @@ namespace pos_system.pos.UI.Forms.Sales
             base.Dispose(disposing);
         }
         #endregion
+
+        //#region UI Components (Auto-generated)
+        //private void InitializeComponent()
+        //{
+        //    // ... [The UI initialization code you provided earlier] ...
+        //}
+        //#endregion
     }
 }

@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Windows.Forms;
 using System.Drawing;
+using pos_system.pos.Core;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -24,6 +25,7 @@ namespace pos_system.pos.UI.Forms.Sales
         public DiscountAmountForm(decimal maxDiscountAmount, decimal itemPrice, decimal currentDiscount = 0)
         {
             InitializeUI(maxDiscountAmount, itemPrice, currentDiscount);
+            new DropShadow().ApplyShadows(this);
         }
 
         private void InitializeUI(decimal maxDiscountAmount, decimal itemPrice, decimal currentDiscount)
@@ -94,7 +96,7 @@ namespace pos_system.pos.UI.Forms.Sales
             var container = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(20, 20, 20, 20),
+                Padding = new Padding(20, 60, 20, 20),
                 BackColor = White
             };
             mainPanel.Controls.Add(container);
@@ -117,7 +119,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 Text = $"Maximum Discount: Rs.{maxDiscountAmount:N2}",
                 Dock = DockStyle.Top,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 10),
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Color.DarkRed,
                 Height = 25
             };
@@ -136,7 +138,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 Text = "Discount Amount (Rs.):",
                 Dock = DockStyle.Left,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 10),
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 ForeColor = DarkText,
                 Width = 180
             };
@@ -170,10 +172,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 Size = new Size(120, 40),
                 BackColor = PrimaryBlue,
                 ForeColor = White,
+                FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 DialogResult = DialogResult.OK,
+                Margin = new Padding(0, 0, 5, 0),
                 Cursor = Cursors.Hand
             };
+            btnOK.FlatAppearance.BorderSize = 0;
             btnOK.Click += (s, e) => SelectedDiscountAmount = numDiscountAmount.Value;
 
             var btnCancel = new Button
@@ -182,11 +187,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 Size = new Size(120, 40),
                 BackColor = Color.LightGray,
                 ForeColor = DarkText,
+                FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 DialogResult = DialogResult.Cancel,
                 Margin = new Padding(0, 0, 10, 0),
                 Cursor = Cursors.Hand
             };
+            btnCancel.FlatAppearance.BorderSize = 0;
 
             actionPanel.Controls.Add(btnOK);
             actionPanel.Controls.Add(btnCancel);

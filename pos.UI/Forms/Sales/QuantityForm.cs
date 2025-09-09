@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Linq;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -17,11 +18,13 @@ namespace pos_system.pos.UI.Forms.Sales
 
         public QuantityForm(int maxQuantity, int currentQuantity)
         {
+            InitializeComponent();
             InitializeUI(maxQuantity, currentQuantity);
         }
 
         private void InitializeUI(int maxQuantity, int currentQuantity)
         {
+            // Form setup
             this.Size = new Size(350, 240);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
@@ -31,7 +34,9 @@ namespace pos_system.pos.UI.Forms.Sales
             this.BackColor = White;
             this.Padding = new Padding(15);
             this.Font = new Font("Segoe UI", 10);
+            this.KeyPreview = true;  // Enable form-level key events
 
+            // Main container
             var container = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -43,6 +48,7 @@ namespace pos_system.pos.UI.Forms.Sales
             container.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
             container.RowStyles.Add(new RowStyle(SizeType.Percent, 30F));
 
+            // Header panel
             var headerPanel = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -62,6 +68,7 @@ namespace pos_system.pos.UI.Forms.Sales
             headerPanel.Controls.Add(lblInfo);
             container.Controls.Add(headerPanel, 0, 0);
 
+            // Input panel
             var inputPanel = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -73,17 +80,19 @@ namespace pos_system.pos.UI.Forms.Sales
             {
                 Minimum = 1,
                 Maximum = maxQuantity,
-                Value = currentQuantity,
+                Value = Math.Max(1, Math.Min(maxQuantity, currentQuantity)),
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14),
                 TextAlign = HorizontalAlignment.Center,
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = LightGray,
-                ForeColor = DarkText
+                ForeColor = DarkText,
+                DecimalPlaces = 0
             };
             inputPanel.Controls.Add(numQuantity);
             container.Controls.Add(inputPanel, 0, 1);
 
+            // Button panel
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -101,48 +110,80 @@ namespace pos_system.pos.UI.Forms.Sales
                     new ColumnStyle(SizeType.Percent, 50F)
                 },
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
-                Padding = new Padding(0, 0, 0, 0),
+                Padding = new Padding(0),
                 Margin = new Padding(0)
             };
 
+            // Cancel button
             var btnCancel = new Button
             {
-                Text = "CANCEL",
+                Text = "&CANCEL",
                 Dock = DockStyle.Fill,
                 BackColor = LightGray,
                 ForeColor = DarkText,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 5, 0)
+                Margin = new Padding(0, 0, 5, 0),
+                DialogResult = DialogResult.Cancel
             };
             btnCancel.FlatAppearance.BorderSize = 0;
-            btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
+            btnCancel.Click += (s, e) => this.Close();
 
+            // Confirm button
             var btnOK = new Button
             {
-                Text = "CONFIRM",
+                Text = "C&ONFIRM",
                 Dock = DockStyle.Fill,
                 BackColor = PrimaryBlue,
                 ForeColor = White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(5, 0, 0, 0)
+                Margin = new Padding(5, 0, 0, 0),
+                DialogResult = DialogResult.OK
             };
             btnOK.FlatAppearance.BorderSize = 0;
-            btnOK.Click += (s, e) =>
-            {
-                SelectedQuantity = (int)numQuantity.Value;
-                this.DialogResult = DialogResult.OK;
-            };
+            btnOK.Click += (s, e) => SelectedQuantity = (int)numQuantity.Value;
 
+            // Add buttons to layout
             buttonLayout.Controls.Add(btnCancel, 0, 0);
             buttonLayout.Controls.Add(btnOK, 1, 0);
             buttonPanel.Controls.Add(buttonLayout);
             container.Controls.Add(buttonPanel, 0, 2);
 
+            // Add container to form
             this.Controls.Add(container);
+
+            // Keyboard handling
+            this.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    this.DialogResult = DialogResult.Cancel;
+                    this.Close();
+                }
+            };
+
+            numQuantity.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    btnOK.PerformClick();
+                    e.Handled = e.SuppressKeyPress = true;
+                }
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    btnCancel.PerformClick();
+                    e.Handled = e.SuppressKeyPress = true;
+                }
+            };
+
+            // Set form action buttons
+            this.AcceptButton = btnOK;
+            this.CancelButton = btnCancel;
+
+            // Initial focus
             numQuantity.Select();
             numQuantity.Select(0, numQuantity.Text.Length);
         }

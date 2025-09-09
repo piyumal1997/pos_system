@@ -16,10 +16,12 @@ namespace pos_system.pos.DAL.Repositories
             var metrics = new DashboardMetrics();
 
             using (var conn = DbHelper.GetConnection())
-            using (var cmd = new SqlCommand("sp_GetCashierDashboardMetrics", conn))
+            //using (var cmd = new SqlCommand("sp_GetCashierDashboardMetrics", conn))
+            using (var cmd = new SqlCommand("sp_GetCashierDashboard", conn))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@EmployeeID", employeeId);
+                //cmd.Parameters.AddWithValue("@Today", "2025-07-18");
                 cmd.Parameters.AddWithValue("@Today", date.Date);
 
                 conn.Open();
@@ -29,13 +31,20 @@ namespace pos_system.pos.DAL.Repositories
                     // First result set (sales metrics)
                     if (reader.Read())
                     {
+                        //metrics.DailySalesAll = reader.IsDBNull(0) ? 0 : reader.GetDecimal(0);
+                        //metrics.DailyCashIncome = reader.IsDBNull(1) ? 0 : reader.GetDecimal(1);
+                        //metrics.DailyQuantitySold = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                        //metrics.DailyItemsSold = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
+                        //metrics.DailyBankPayments = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4);
+                        //metrics.DailyCashPayments = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5);
+                        //metrics.DailyCardPayments = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6);
                         metrics.DailySalesAll = reader.IsDBNull(0) ? 0 : reader.GetDecimal(0);
-                        metrics.DailyCashIncome = reader.IsDBNull(1) ? 0 : reader.GetDecimal(1);
-                        metrics.DailyQuantitySold = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
-                        metrics.DailyItemsSold = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
-                        metrics.DailyBankPayments = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4);
-                        metrics.DailyCashPayments = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5);
-                        metrics.DailyCardPayments = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6);
+                        metrics.DailyQuantitySold = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                        metrics.DailyItemsSold = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                        metrics.DailyBankPayments = reader.IsDBNull(3) ? 0 : reader.GetDecimal(3);
+                        metrics.DailyCashPayments = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4);
+                        metrics.DailyCardPayments = reader.IsDBNull(5) ? 0 : reader.GetDecimal(5);
+                        metrics.DailyTokenPayment = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6);
                     }
 
                     // Second result set (return metrics)

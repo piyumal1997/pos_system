@@ -24,6 +24,7 @@ namespace pos_system.pos.UI.Forms.Inventory
         private readonly GenderService _genderService = new GenderService();
         private BindingList<ProductSize> _sizesBindingList;
         private Point _startPos;
+        private string _tempImagePath;
 
         public ItemForm(Item item = null)
         {
@@ -43,6 +44,7 @@ namespace pos_system.pos.UI.Forms.Inventory
             {
                 txtBarcode.ReadOnly = true;
                 txtBarcode.BackColor = SystemColors.Control;
+                btnGenerate.Visible = false;
             }
             else
             {
@@ -52,14 +54,7 @@ namespace pos_system.pos.UI.Forms.Inventory
             // Initialize sizes binding list
             _sizesBindingList = new BindingList<ProductSize>(_item.Sizes);
             dgvSizes.DataSource = _sizesBindingList;
-
-            // Configure grid columns
             ConfigureGridColumns();
-
-            // Add event handlers for grid validation
-            dgvSizes.CellValidating += DgvSizes_CellValidating;
-            dgvSizes.CellEndEdit += DgvSizes_CellEndEdit;
-            dgvSizes.DataError += DgvSizes_DataError;
 
             // Event handlers
             btnGenerate.Click += BtnGenerate_Click;
@@ -71,28 +66,35 @@ namespace pos_system.pos.UI.Forms.Inventory
             btnMinimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
             btnAddSize.Click += BtnAddSize_Click;
             btnRemoveSize.Click += BtnRemoveSize_Click;
+            btnClearImage.Click += BtnClearImage_Click;
+
+            // NEW: Disable category combo for existing items with sizes
+            if (_item.Product_ID > 0 && _item.Sizes.Any())
+            {
+                cmbCategory.Enabled = false;
+            }
 
             // Enable form dragging
             topPanel.MouseDown += TopPanel_MouseDown;
             topPanel.MouseMove += TopPanel_MouseMove;
             lblTitle.MouseDown += TopPanel_MouseDown;
             lblTitle.MouseMove += TopPanel_MouseMove;
+
+            cmbCategory.SelectedValueChanged += CmbCategory_SelectedValueChanged;
         }
 
         private void ConfigureGridColumns()
         {
-            // Clear existing columns
             dgvSizes.Columns.Clear();
 
-            // Size column (ComboBox)
+            // Size column
             DataGridViewComboBoxColumn sizeColumn = new DataGridViewComboBoxColumn
             {
                 DataPropertyName = "Size_ID",
                 HeaderText = "Size",
                 Name = "colSize",
                 Width = 120,
-                FlatStyle = FlatStyle.Flat,
-                DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton
+                FlatStyle = FlatStyle.Flat
             };
             dgvSizes.Columns.Add(sizeColumn);
 
@@ -126,15 +128,23 @@ namespace pos_system.pos.UI.Forms.Inventory
             };
             dgvSizes.Columns.Add(unitCostColumn);
 
-            // Set grid properties
             dgvSizes.AutoGenerateColumns = false;
             dgvSizes.AllowUserToAddRows = false;
             dgvSizes.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvSizes.RowHeadersVisible = false;
-            dgvSizes.MultiSelect = false;
-            dgvSizes.BackgroundColor = SystemColors.Window;
-            dgvSizes.BorderStyle = BorderStyle.None;
-            dgvSizes.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240);
+        }
+
+        private void CmbCategory_SelectedValueChanged(object sender, EventArgs e)
+        {
+            if (_sizesBindingList.Count == 0) return;
+
+            cmbCategory.SelectedValueChanged -= CmbCategory_SelectedValueChanged;
+            cmbCategory.SelectedValue = _item.Category_ID;
+            cmbCategory.SelectedValueChanged += CmbCategory_SelectedValueChanged;
+        }
+
+        private void UpdateAddSizeButtonState()
+        {
+            btnAddSize.Enabled = cmbCategory.SelectedItem != null;
         }
 
         private void LoadInitialData()
@@ -155,14 +165,29 @@ namespace pos_system.pos.UI.Forms.Inventory
                 cmbCategory.SelectedValue = _item.Category_ID;
                 cmbGender.SelectedValue = _item.Gender_ID;
 
-                if (_item.ItemImage != null)
+                // Load image using filename
+                if (!string.IsNullOrEmpty(_item.ItemImage))
                 {
-                    using (var ms = new MemoryStream(_item.ItemImage))
+                    try
                     {
-                        picItemImage.Image = Image.FromStream(ms);
+                        picItemImage.Image = ImageHelper.LoadProductImage(_item.ItemImage);
+                    }
+                    catch
+                    {
+                        picItemImage.Image = ImageHelper.GenerateDefaultImage();
                     }
                 }
+                else
+                {
+                    picItemImage.Image = ImageHelper.GenerateDefaultImage();
+                }
             }
+            else
+            {
+                picItemImage.Image = ImageHelper.GenerateDefaultImage();
+            }
+
+            UpdateAddSizeButtonState();
         }
 
         private void PopulateBrands()
@@ -177,6 +202,8 @@ namespace pos_system.pos.UI.Forms.Inventory
             cmbCategory.DataSource = _categoryService.GetAllCategorie();
             cmbCategory.DisplayMember = "categoryName";
             cmbCategory.ValueMember = "Category_ID";
+
+            cmbCategory.SelectedValueChanged += (s, e) => UpdateAddSizeButtonState();
         }
 
         private void PopulateGenders()
@@ -198,8 +225,6 @@ namespace pos_system.pos.UI.Forms.Inventory
                     sizeColumn.DataSource = sizes;
                     sizeColumn.DisplayMember = "SizeLabel";
                     sizeColumn.ValueMember = "Size_ID";
-
-                    // Refresh the grid to update display values
                     dgvSizes.Refresh();
                 }
             }
@@ -216,27 +241,13 @@ namespace pos_system.pos.UI.Forms.Inventory
             _item.Brand_ID = (int)cmbBrand.SelectedValue;
             _item.Category_ID = (int)cmbCategory.SelectedValue;
             _item.Gender_ID = (int)cmbGender.SelectedValue;
-
-            // Update sizes from binding list
             _item.Sizes = _sizesBindingList.ToList();
 
-            if (picItemImage.Image != null)
-            {
-                using var ms = new MemoryStream();
-                // Create a clone to avoid GDI+ errors
-                using (var imageClone = new Bitmap(picItemImage.Image))
-                {
-                    imageClone.Save(ms, ImageFormat.Jpeg);
-                }
-                _item.ItemImage = ms.ToArray();
-                //using var ms = new MemoryStream();
-                //picItemImage.Image.Save(ms, ImageFormat.Jpeg);
-                //_item.ItemImage = ms.ToArray();
-            }
-            else
-            {
-                _item.ItemImage = null;
-            }
+            // Store temp image path for later processing
+            _item.TempImagePath = _tempImagePath;
+
+            // Clear actual image path - will be set after saving
+            _item.ItemImage = null;
         }
 
         private bool ValidateInputs()
@@ -254,7 +265,7 @@ namespace pos_system.pos.UI.Forms.Inventory
                 errors.Add("Description cannot exceed 200 characters");
 
             if (!decimal.TryParse(txtMaxDiscount.Text, out decimal maxDiscount) ||
-                maxDiscount < 0 || maxDiscount > 100)
+                maxDiscount < 0 || maxDiscount > 2000)
             {
                 errors.Add("Max discount must be between 0 and 100");
             }
@@ -271,7 +282,6 @@ namespace pos_system.pos.UI.Forms.Inventory
             if (cmbGender.SelectedItem == null)
                 errors.Add("Please select a gender");
 
-            // Validate sizes
             if (_sizesBindingList.Count == 0)
             {
                 errors.Add("At least one size variant is required");
@@ -302,31 +312,73 @@ namespace pos_system.pos.UI.Forms.Inventory
             return true;
         }
 
-        private static bool IsValidImage(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length < 8) return false;
 
-            return bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 || // PNG
-                   bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF ||                      // JPEG
-                   bytes[0] == 0x42 && bytes[1] == 0x4D ||                                          // BMP
-                   bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38;    // GIF
-        }
+        //private bool ValidateInputs()
+        //{
+        //    var errors = new List<string>();
 
-        private void TopPanel_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-                _startPos = e.Location;
-        }
+        //    if (_item.Product_ID == 0 && !Regex.IsMatch(txtBarcode.Text, @"^\d{8}$"))
+        //    {
+        //        errors.Add("Barcode must be an 8-digit number");
+        //    }
 
-        private void TopPanel_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-                Location = PointToScreen(new Point(e.X - _startPos.X, e.Y - _startPos.Y));
-        }
+        //    if (string.IsNullOrWhiteSpace(txtDescription.Text))
+        //        errors.Add("Description is required");
+        //    else if (txtDescription.Text.Length > 200)
+        //        errors.Add("Description cannot exceed 200 characters");
 
-        private void BtnGenerate_Click(object sender, EventArgs e)
+        //    if (!decimal.TryParse(txtMaxDiscount.Text, out decimal maxDiscount) ||
+        //        maxDiscount < 0 || maxDiscount > 2000)
+        //    {
+        //        errors.Add("Max discount must be between 0 and 100");
+        //    }
+
+        //    if (!int.TryParse(txtMinStock.Text, out int minStock) || minStock < 0)
+        //        errors.Add("Min stock level cannot be negative");
+
+        //    if (cmbBrand.SelectedItem == null)
+        //        errors.Add("Please select a brand");
+
+        //    if (cmbCategory.SelectedItem == null)
+        //        errors.Add("Please select a category");
+
+        //    if (cmbGender.SelectedItem == null)
+        //        errors.Add("Please select a gender");
+
+        //    if (_sizesBindingList.Count == 0)
+        //    {
+        //        errors.Add("At least one size variant is required");
+        //    }
+
+        //    foreach (var size in _sizesBindingList)
+        //    {
+        //        if (size.Quantity < 0)
+        //            errors.Add("Quantity cannot be negative");
+
+        //        if (size.RetailPrice <= 0)
+        //            errors.Add("Retail price must be greater than 0");
+
+        //        if (size.UnitCost <= 0)
+        //            errors.Add("Unit cost must be greater than 0");
+
+        //        if (size.RetailPrice < size.UnitCost)
+        //            errors.Add("Retail price must be greater than unit cost");
+        //    }
+
+        //    if (errors.Count > 0)
+        //    {
+        //        MessageBox.Show(string.Join(Environment.NewLine, errors), "Validation Errors",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+
+        private void BtnClearImage_Click(object sender, EventArgs e)
         {
-            txtBarcode.Text = _itemService.GenerateBarcode();
+            picItemImage.Image = null;
+            _tempImagePath = null;
         }
 
         private void BrowseImage(object sender, EventArgs e)
@@ -336,53 +388,31 @@ namespace pos_system.pos.UI.Forms.Inventory
                 Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif"
             };
 
-            if (openFileDialog.ShowDialog() != DialogResult.OK) return;
-
-            try
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                var fileImage = Image.FromFile(openFileDialog.FileName);
-                picItemImage.Image = fileImage;
-
-                var imageBytes = File.ReadAllBytes(openFileDialog.FileName);
-                if (!IsValidImage(imageBytes))
+                try
                 {
-                    MessageBox.Show("Invalid image format", "Warning",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading image: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+                    // Create temp copy to avoid file locks
+                    _tempImagePath = Path.GetTempFileName() + Path.GetExtension(openFileDialog.FileName);
+                    File.Copy(openFileDialog.FileName, _tempImagePath, true);
 
-            try
-            {
-                // Dispose previous image
-                if (picItemImage.Image != null)
+                    // Load image via temp file
+                    using (var image = Image.FromFile(_tempImagePath))
+                    {
+                        picItemImage.Image = new Bitmap(image);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    var oldImage = picItemImage.Image;
-                    picItemImage.Image = null; // Detach first
-                    oldImage.Dispose();
-                }
-
-                var imageBytes = File.ReadAllBytes(openFileDialog.FileName);
-                if (!IsValidImage(imageBytes)) 
-                { 
-                }
-
-                // Load via MemoryStream to avoid file locks
-                using (var ms = new MemoryStream(imageBytes))
-                {
-                    picItemImage.Image = new Bitmap(ms); // Create standalone copy
+                    MessageBox.Show($"Error loading image: {ex.Message}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-            catch (Exception ex) 
-            {
-                MessageBox.Show($"Error : {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+        }
+
+        private void BtnGenerate_Click(object sender, EventArgs e)
+        {
+            txtBarcode.Text = _itemService.GenerateBarcode();
         }
 
         private void CmbCategory_SelectedIndexChanged(object sender, EventArgs e)
@@ -399,16 +429,14 @@ namespace pos_system.pos.UI.Forms.Inventory
             }
 
             var sizeColumn = dgvSizes.Columns["colSize"] as DataGridViewComboBoxColumn;
-
-            // FIX: Use IList instead of casting to List<Size>
             var sizeList = sizeColumn?.DataSource as IList;
+
             if (sizeList == null || sizeList.Count == 0)
             {
                 MessageBox.Show("No sizes available for the selected category");
                 return;
             }
 
-            // FIX: Get first item using IList indexer instead of LINQ
             object firstSize = sizeList[0];
             int firstSizeId = (int)firstSize.GetType().GetProperty("Size_ID").GetValue(firstSize);
 
@@ -420,80 +448,30 @@ namespace pos_system.pos.UI.Forms.Inventory
                 UnitCost = 0
             });
 
-            // Select and scroll to the new row
             dgvSizes.ClearSelection();
             dgvSizes.Rows[_sizesBindingList.Count - 1].Selected = true;
             dgvSizes.FirstDisplayedScrollingRowIndex = _sizesBindingList.Count - 1;
+
+            if (_sizesBindingList.Count == 1)
+            {
+                cmbCategory.Enabled = false;
+            }
         }
 
         private void BtnRemoveSize_Click(object sender, EventArgs e)
         {
-            if (dgvSizes.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Please select a size variant to remove", "No Selection",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+            if (dgvSizes.SelectedRows.Count == 0) return;
 
             var selectedSize = dgvSizes.SelectedRows[0].DataBoundItem as ProductSize;
             if (selectedSize != null)
             {
                 _sizesBindingList.Remove(selectedSize);
             }
-        }
 
-        private void DgvSizes_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
-        {
-            if (dgvSizes.Rows[e.RowIndex].IsNewRow) return;
-
-            string headerText = dgvSizes.Columns[e.ColumnIndex].HeaderText;
-            string value = e.FormattedValue?.ToString() ?? string.Empty;
-
-            // Validate quantity
-            if (headerText.Equals("Quantity"))
+            if (_sizesBindingList.Count == 0)
             {
-                if (!int.TryParse(value, out int quantity) || quantity < 0)
-                {
-                    dgvSizes.Rows[e.RowIndex].ErrorText = "Quantity must be a positive integer";
-                    e.Cancel = true;
-                }
+                cmbCategory.Enabled = true;
             }
-            // Validate prices
-            else if (headerText.Equals("Retail Price") || headerText.Equals("Unit Cost"))
-            {
-                if (!decimal.TryParse(value, out decimal price) || price <= 0)
-                {
-                    dgvSizes.Rows[e.RowIndex].ErrorText = "Price must be a positive number";
-                    e.Cancel = true;
-                }
-            }
-        }
-
-        private void DgvSizes_CellEndEdit(object sender, DataGridViewCellEventArgs e)
-        {
-            // Clear row error
-            dgvSizes.Rows[e.RowIndex].ErrorText = null;
-
-            // Validate retail price vs unit cost
-            if (e.ColumnIndex == dgvSizes.Columns["colRetailPrice"].Index ||
-                e.ColumnIndex == dgvSizes.Columns["colUnitCost"].Index)
-            {
-                var row = dgvSizes.Rows[e.RowIndex];
-                if (row.DataBoundItem is ProductSize size)
-                {
-                    if (size.RetailPrice < size.UnitCost)
-                    {
-                        row.ErrorText = "Retail price must be greater than unit cost";
-                    }
-                }
-            }
-        }
-
-        private void DgvSizes_DataError(object sender, DataGridViewDataErrorEventArgs e)
-        {
-            MessageBox.Show($"Data error: {e.Exception.Message}", "Input Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-            e.ThrowException = false;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -503,20 +481,54 @@ namespace pos_system.pos.UI.Forms.Inventory
 
         private void SaveItem()
         {
-            if (!ValidateInputs()) return;
-
             try
             {
+                if (!ValidateInputs()) return;
+
                 MapFormToItem();
 
-                bool success = _item.Product_ID > 0 ?
-                    _itemService.UpdateItem(_item) :
-                    _itemService.AddItem(_item);
+                bool success = false;
+                int productId = 0;
+
+                if (_item.Product_ID > 0)
+                {
+                    // Update existing item
+                    success = _itemService.UpdateItem(_item);
+                    productId = _item.Product_ID;
+                }
+                else
+                {
+                    // Add new item and get generated ID
+                    productId = _itemService.AddItem(_item);
+                    success = productId > 0;
+                }
 
                 if (success)
                 {
-                    // Only open print form if sizes exist
-                    if (_item.Sizes != null && _item.Sizes.Count > 0)
+                    // Handle image saving after item is saved
+                    if (!string.IsNullOrEmpty(_item.TempImagePath))
+                    {
+                        try
+                        {
+                            // Save image using actual product ID
+                            using (Image image = Image.FromFile(_item.TempImagePath))
+                            {
+                                string fileName = ImageHelper.SaveProductImage(image, productId);
+                                _itemService.UpdateItemImage(productId, fileName);
+                            }
+
+                            // Clean up temp file
+                            File.Delete(_item.TempImagePath);
+                            _tempImagePath = null;
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Image saving failed: {ex.Message}", "Warning",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+
+                    if (_item.Sizes.Count > 0)
                     {
                         using (var printForm = new BarcodePrintForm(_item))
                         {
@@ -534,21 +546,43 @@ namespace pos_system.pos.UI.Forms.Inventory
                 }
                 else
                 {
-                    MessageBox.Show("Error saving item. It may already exist.", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Operation completed but no changes were made.", "Information",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Error",
+                MessageBox.Show($"Error saving item:\n{ex.Message}", "Save Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
+            // Clean up temp image if exists
+            if (!string.IsNullOrEmpty(_tempImagePath) && File.Exists(_tempImagePath))
+            {
+                try
+                {
+                    File.Delete(_tempImagePath);
+                }
+                catch { /* Ignore deletion errors */ }
+            }
+
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        private void TopPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+                _startPos = e.Location;
+        }
+
+        private void TopPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+                Location = PointToScreen(new Point(e.X - _startPos.X, e.Y - _startPos.Y));
         }
     }
 }

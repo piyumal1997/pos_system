@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Projects\\pos-system\\pos-system.csproj": {}
+    "D:\\POS 1.6\\pos_system-main\\pos-system.csproj": {}
   },
   "projects": {
-    "D:\\Projects\\pos-system\\pos-system.csproj": {
+    "D:\\POS 1.6\\pos_system-main\\pos-system.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Projects\\pos-system\\pos-system.csproj",
+        "projectUniqueName": "D:\\POS 1.6\\pos_system-main\\pos-system.csproj",
         "projectName": "pos-system",
-        "projectPath": "D:\\Projects\\pos-system\\pos-system.csproj",
+        "projectPath": "D:\\POS 1.6\\pos_system-main\\pos-system.csproj",
         "packagesPath": "C:\\Users\\piyum\\.nuget\\packages\\",
-        "outputPath": "D:\\Projects\\pos-system\\obj\\",
+        "outputPath": "D:\\POS 1.6\\pos_system-main\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\DevExpress 22.2\\Components\\Offline Packages",
@@ -53,6 +53,14 @@
         "net9.0-windows7.0": {
           "targetAlias": "net9.0-windows",
           "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.105.0, )"
+            },
+            "EPPlus": {
+              "target": "Package",
+              "version": "[5.8.8, )"
+            },
             "FontAwesome.Sharp": {
               "target": "Package",
               "version": "[6.6.0, )"
@@ -75,7 +83,7 @@
             },
             "Microsoft.Data.SqlClient": {
               "target": "Package",
-              "version": "[6.0.2, )"
+              "version": "[6.0.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
@@ -120,14 +128,6 @@
             "System.Windows.Interactivity.WPF": {
               "target": "Package",
               "version": "[2.0.20525, )"
-            },
-            "ZXing.Net": {
-              "target": "Package",
-              "version": "[0.16.10, )"
-            },
-            "ZXing.Net.Bindings.Windows.Compatibility": {
-              "target": "Package",
-              "version": "[0.16.13, )"
             }
           },
           "imports": [
@@ -150,6 +150,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.204/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x86": {
+          "#import": []
         }
       }
     }

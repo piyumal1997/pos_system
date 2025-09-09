@@ -1,0 +1,6 @@
+[7/18/2025 11:12:03 AM] UpdateItem failed for ID 8:
+Message: Database update failed: The DELETE statement conflicted with the REFERENCE constraint "FK__Bill_Item__Produ__07C12930". The conflict occurred in database "RetailManagement", table "dbo.Bill_Item", column 'ProductSize_ID'.
+The statement has been terminated.
+Stack Trace:    at pos_system.pos.DAL.Repositories.ItemRepository.UpdateItem(Item item) in H:\pos_system-main\pos.DAL\Repositories\ItemRepository.cs:line 154
+   at pos_system.pos.BLL.Services.ItemService.UpdateItem(Item item) in H:\pos_system-main\pos.BLL\Services\ItemService.cs:line 51
+

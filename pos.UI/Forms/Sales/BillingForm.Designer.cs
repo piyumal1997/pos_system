@@ -270,7 +270,7 @@ namespace pos_system.pos.UI.Forms.Sales
             btnClearBill.Name = "btnClearBill";
             btnClearBill.Size = new Size(183, 41);
             btnClearBill.TabIndex = 2;
-            btnClearBill.Text = "Clear Bill";
+            btnClearBill.Text = "Clear Bill (F1)";
             btnClearBill.UseVisualStyleBackColor = false;
             // 
             // btnApplyBillDiscount
@@ -315,7 +315,7 @@ namespace pos_system.pos.UI.Forms.Sales
             btnAddItem.Name = "btnAddItem";
             btnAddItem.Size = new Size(466, 41);
             btnAddItem.TabIndex = 1;
-            btnAddItem.Text = "Add Item";
+            btnAddItem.Text = "Add Item (F11)";
             btnAddItem.UseVisualStyleBackColor = false;
             // 
             // txtTokenId
@@ -538,7 +538,7 @@ namespace pos_system.pos.UI.Forms.Sales
             btnProcessPayment.Name = "btnProcessPayment";
             btnProcessPayment.Size = new Size(330, 93);
             btnProcessPayment.TabIndex = 1;
-            btnProcessPayment.Text = "PROCESS PAYMENT";
+            btnProcessPayment.Text = "PROCESS PAYMENT (F12)";
             btnProcessPayment.UseVisualStyleBackColor = false;
             // 
             // spacer

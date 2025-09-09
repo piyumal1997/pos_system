@@ -14,7 +14,8 @@ namespace pos_system.pos.Models
         public int Brand_ID { get; set; }
         public int Category_ID { get; set; }
         public int Gender_ID { get; set; }
-        public byte[] ItemImage { get; set; }
+        public string ItemImage { get; set; }
+        public string TempImagePath { get; set; }
 
         // Navigation properties
         public string BrandName { get; set; }
@@ -31,7 +32,6 @@ namespace pos_system.pos.Models
         public decimal RetailPrice { get; set; }
         public decimal UnitCost { get; set; }
         public string SizesSummary { get; internal set; }
-
         public Image ImageObject { get; set; }
     }
 

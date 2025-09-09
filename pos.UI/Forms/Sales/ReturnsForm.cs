@@ -2,6 +2,7 @@
 using pos_system.pos.BLL.Services;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
+using pos_system.pos.UI.Forms.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,6 +23,7 @@ namespace pos_system.pos.UI.Forms.Sales
         private DataTable _returnReasons;
         private bool _billExpired = false;
         private DateTime _billDate;
+        private const string PRINTER_NAME = "XP-80C";
 
         public ReturnsForm(Employee currentUser)
         {
@@ -32,6 +34,11 @@ namespace pos_system.pos.UI.Forms.Sales
             lblCurrentDate.Text = DateTime.Now.ToString("yyyy-MM-dd");
             txtBillId.ForeColor = Color.Gray;
             txtBillId.Text = "Enter Bill ID";
+
+            // Enable form-level key event capture
+            this.KeyPreview = true;
+            this.KeyDown += ReturnsForm_KeyDown; // Handle F12
+            txtBillId.KeyDown += txtBillId_KeyDown; // Handle Enter in textbox
         }
 
         private void InitializeReturnReasons()
@@ -74,12 +81,12 @@ namespace pos_system.pos.UI.Forms.Sales
                 lblBillDate.Text = _billDate.ToString("yyyy-MM-dd");
 
                 TimeSpan difference = DateTime.Now - _billDate;
-                _billExpired = difference.TotalDays > 3;
+                _billExpired = difference.TotalDays > 30;
 
                 if (_billExpired)
                 {
-                    MessageBox.Show($"This bill is from {_billDate:yyyy-MM-dd} and is more than 3 days old. Returns are not allowed.",
-                        "Bill Expired", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ThemedMessageBox.Show($"This bill is from {_billDate:yyyy-MM-dd} and is more than 30 days old. Returns are not allowed.",
+                        "Bill Expired", ThemedMessageBoxIcon.Warning);
                     btnProcessReturn.Enabled = false;
                     return;
                 }
@@ -94,7 +101,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     bi.quantity AS OriginalQty,
                     ISNULL(bi.ReturnedQuantity, 0) AS ReturnedQty,
                     (bi.quantity - ISNULL(bi.ReturnedQuantity, 0)) AS AvailableQty,
-                    bi.ItemSellingPrice AS Price
+                    (bi.ItemSellingPrice - bi.Per_item_Discount) AS Price  -- Actual price after discount
                 FROM Bill_Item bi
                 JOIN Bill bl ON bi.Bill_ID = bl.Bill_ID
                 JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
@@ -365,8 +372,8 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                string printerName = GetPrinterName();
-                if (string.IsNullOrEmpty(printerName))
+                //string printerName = GetPrinterName();
+                if (string.IsNullOrEmpty(PRINTER_NAME))
                 {
                     MessageBox.Show("No receipt printer found. Please configure a printer.", "Print Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -379,8 +386,8 @@ namespace pos_system.pos.UI.Forms.Sales
                 // Print header
                 PrintCentered("RETURN RECEIPT", output, true);
                 PrintCentered("STYLE NEWAGE", output);
-                PrintCentered("No.16, Negombo Rd, Narammala", output);
-                PrintCentered("Tel: 077491913 / 0372249139", output);
+                PrintCentered("No.102, Negombo Rd, Narammala.", output);
+                PrintCentered("Tel: 077491913 / 0374545097", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 // Print return details
@@ -399,7 +406,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 // Print items
                 foreach (var item in receiptData.Items)
                 {
-                    PrintLeft($"{item.Brand} {item.Category}", output);
+                    PrintLeft($"{item.Category}", output);
                     if (!string.IsNullOrEmpty(item.Size))
                         PrintLeft($"Size: {item.Size}", output);
 
@@ -423,7 +430,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 output.AddRange(new byte[] { 0x1B, 0x69 }); // Cut paper
 
                 // Send to printer
-                RawPrinterHelper.SendBytesToPrinter(printerName, output.ToArray());
+                RawPrinterHelper.SendBytesToPrinter(PRINTER_NAME, output.ToArray());
             }
             catch (Exception ex)
             {
@@ -564,6 +571,25 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        // Trigger Search when Enter is pressed in Bill ID textbox
+        private void txtBillId_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                btnSearchBill.PerformClick();
+                e.Handled = true;
+            }
+        }
+
+        // Trigger Process Return when F12 is pressed
+        private void ReturnsForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F12 && btnProcessReturn.Enabled)
+            {
+                btnProcessReturn.PerformClick();
+                e.Handled = true;
+            }
+        }
         public class DataGridViewNumericUpDownCell : DataGridViewTextBoxCell
         {
             public override void InitializeEditingControl(int rowIndex, object initialFormattedValue,

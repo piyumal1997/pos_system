@@ -5,16 +5,28 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pos-system", "pos-system.csproj", "{97336C4A-131F-4EA1-A6FD-07233E951226}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "NewAgeTest", "C:\Users\piyum\Documents\NewAgeTest\NewAgeTest.vdproj", "{1C8EC9BC-4532-DC06-3CDD-63ED4232DDDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{97336C4A-131F-4EA1-A6FD-07233E951226}.Debug|Any CPU.ActiveCfg = Release|Any CPU
 		{97336C4A-131F-4EA1-A6FD-07233E951226}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{97336C4A-131F-4EA1-A6FD-07233E951226}.Debug|x86.ActiveCfg = Release|x86
+		{97336C4A-131F-4EA1-A6FD-07233E951226}.Debug|x86.Build.0 = Release|x86
 		{97336C4A-131F-4EA1-A6FD-07233E951226}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97336C4A-131F-4EA1-A6FD-07233E951226}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97336C4A-131F-4EA1-A6FD-07233E951226}.Release|x86.ActiveCfg = Release|x86
+		{97336C4A-131F-4EA1-A6FD-07233E951226}.Release|x86.Build.0 = Release|x86
+		{1C8EC9BC-4532-DC06-3CDD-63ED4232DDDE}.Debug|Any CPU.ActiveCfg = Debug
+		{1C8EC9BC-4532-DC06-3CDD-63ED4232DDDE}.Debug|x86.ActiveCfg = Debug
+		{1C8EC9BC-4532-DC06-3CDD-63ED4232DDDE}.Release|Any CPU.ActiveCfg = Release
+		{1C8EC9BC-4532-DC06-3CDD-63ED4232DDDE}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

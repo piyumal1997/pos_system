@@ -23,6 +23,8 @@ namespace pos_system.pos.UI.Forms.Sales
         public bool IsConfirmed { get; private set; }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string CustomerContact { get; private set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string CustomerGender { get; private set; }
 
         private readonly decimal _totalAmount;
         private readonly decimal _tokenValue;
@@ -87,74 +89,245 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void txtCardDigits_TextChanged(object sender, EventArgs e)
         {
+            string input = txtCardDigits.Text;
+            string digitsOnly = new string(input.Where(char.IsDigit).ToArray());
+
+            // Truncate to 4 digits if needed
+            if (digitsOnly.Length > 4)
+            {
+                digitsOnly = digitsOnly.Substring(0, 4);
+            }
+
+            // Only update if there's a mismatch
+            if (digitsOnly != input)
+            {
+                int selectionStart = txtCardDigits.SelectionStart;
+                txtCardDigits.Text = digitsOnly;
+                txtCardDigits.SelectionStart = selectionStart > digitsOnly.Length
+                    ? digitsOnly.Length
+                    : selectionStart;
+            }
+
             btnComplete.Enabled = txtCardDigits.Text.Length == 4;
         }
 
         private void txtBankDigits_TextChanged(object sender, EventArgs e)
         {
+            string input = txtBankDigits.Text;
+            string digitsOnly = new string(input.Where(char.IsDigit).ToArray());
+
+            // Truncate to 4 digits if needed
+            if (digitsOnly.Length > 4)
+            {
+                digitsOnly = digitsOnly.Substring(0, 4);
+            }
+
+            // Only update if there's a mismatch
+            if (digitsOnly != input)
+            {
+                int selectionStart = txtBankDigits.SelectionStart;
+                txtBankDigits.Text = digitsOnly;
+                txtBankDigits.SelectionStart = selectionStart > digitsOnly.Length
+                    ? digitsOnly.Length
+                    : selectionStart;
+            }
+
             btnComplete.Enabled = txtBankDigits.Text.Length == 4;
         }
 
         private void txtCustomerContact_TextChanged(object sender, EventArgs e)
         {
-            // Enable complete button if contact is valid or empty
+            string contact = txtCustomerContact.Text;
+            string digitsOnly = new string(contact.Where(char.IsDigit).ToArray());
+
+            if (digitsOnly.Length > 10)
+            {
+                digitsOnly = digitsOnly.Substring(0, 10);
+            }
+
+            if (digitsOnly != contact)
+            {
+                int selectionStart = txtCustomerContact.SelectionStart;
+                txtCustomerContact.Text = digitsOnly;
+                txtCustomerContact.SelectionStart = selectionStart > digitsOnly.Length
+                    ? digitsOnly.Length
+                    : selectionStart;
+            }
+
+            bool hasValidContact = (txtCustomerContact.Text.Length == 10);
+            cmbGender.Enabled = hasValidContact;
+
+            // Visual feedback for required gender field
+            if (hasValidContact)
+            {
+                lblGender.ForeColor = Color.Red;
+                lblGender.Text = "Gender:*"; // Add asterisk to indicate required
+                cmbGender.BackColor = Color.LightYellow;
+            }
+            else
+            {
+                lblGender.ForeColor = SystemColors.ControlText;
+                lblGender.Text = "Gender:";
+                cmbGender.BackColor = SystemColors.Window;
+                cmbGender.SelectedIndex = -1;
+            }
+
+            // Call the validation method
             ValidateContact();
+
+            // Enable gender only when valid contact is provided
+            bool hasContact = (txtCustomerContact.Text.Length == 10);
+            cmbGender.Enabled = hasContact;
+
+            if (!hasContact)
+            {
+                cmbGender.SelectedIndex = -1;
+            }
+
+            UpdateCompleteButtonState();
         }
+
+        //private void ValidateContact()
+        //{
+        //    string contact = txtCustomerContact.Text;
+
+        //    if (string.IsNullOrEmpty(contact))
+        //    {
+        //        lblContactError.Visible = false;
+        //        UpdateCompleteButtonState();
+        //        return;
+        //    }
+
+        //    if (contact.Length != 10)
+        //    {
+        //        lblContactError.Text = "Contact must be 10 digits";
+        //        lblContactError.Visible = true;
+        //        btnComplete.Enabled = false;
+        //    }
+        //    else
+        //    {
+        //        lblContactError.Visible = false;
+        //        UpdateCompleteButtonState();
+        //    }
+        //}
 
         private void ValidateContact()
         {
-            string contact = txtCustomerContact.Text.Replace(" ", "").Replace("-", "");
-            
+            string contact = txtCustomerContact.Text;
+
             if (string.IsNullOrEmpty(contact))
             {
-                // Contact is optional, so valid if empty
+                lblContactError.Visible = false;
+                lblContactError.Text = "";
+                UpdateCompleteButtonState();
+                txtCustomerContact.BackColor = Color.White;
                 return;
             }
-            
+
             if (contact.Length != 10)
             {
-                lblContactError.Text = "Contact must be 10 digits";
+                lblContactError.Text = "Contact must be exactly 10 digits";
                 lblContactError.Visible = true;
-                btnComplete.Enabled = false;
+                lblContactError.ForeColor = Color.Red;
+                txtCustomerContact.BackColor = Color.LightPink;
             }
             else
             {
                 lblContactError.Visible = false;
-                // Only enable if other validations pass
-                UpdateCompleteButtonState();
+                txtCustomerContact.BackColor = Color.LightGreen;
+                //lblContactError.Text = "";
+                //txtCustomerContact.BackColor = SystemColors.Window;
+
+                //// Check if gender is required but not selected
+                //if (cmbGender.Enabled && cmbGender.SelectedIndex < 0)
+                //{
+                //    lblContactError.Text = "Gender selection is required";
+                //    lblContactError.Visible = true;
+                //    lblContactError.ForeColor = Color.Orange;
+                //}
             }
+
+            UpdateCompleteButtonState();
         }
+
+        //private void UpdateCompleteButtonState()
+        //{
+        //    bool contactValid = string.IsNullOrEmpty(txtCustomerContact.Text) ||
+        //                       txtCustomerContact.Text.Length == 10;
+
+        //    bool genderValid = string.IsNullOrEmpty(txtCustomerContact.Text) ||
+        //                      (cmbGender.Enabled && cmbGender.SelectedIndex >= 0);
+
+        //    if (cmbPaymentMethod.Text == "Cash")
+        //    {
+        //        btnComplete.Enabled = contactValid && genderValid &&
+        //                              decimal.TryParse(txtCashTendered.Text, out _);
+        //    }
+        //    else if (cmbPaymentMethod.Text == "Card")
+        //    {
+        //        btnComplete.Enabled = contactValid && genderValid &&
+        //                              txtCardDigits.Text.Length == 4;
+        //    }
+        //    else if (cmbPaymentMethod.Text == "Bank Transfer")
+        //    {
+        //        btnComplete.Enabled = contactValid && genderValid &&
+        //                              txtBankDigits.Text.Length == 4;
+        //    }
+        //    else
+        //    {
+        //        btnComplete.Enabled = contactValid && genderValid;
+        //    }
+        //}
 
         private void UpdateCompleteButtonState()
         {
-            bool contactValid = string.IsNullOrEmpty(txtCustomerContact.Text) || 
-                               txtCustomerContact.Text.Replace(" ", "").Replace("-", "").Length == 10;
+            bool contactValid = string.IsNullOrEmpty(txtCustomerContact.Text) ||
+                               txtCustomerContact.Text.Length == 10;
+
+            bool genderValid = string.IsNullOrEmpty(txtCustomerContact.Text) ||
+                              (cmbGender.Enabled && cmbGender.SelectedIndex >= 0);
+
+            // Additional check for payment method specific validations
+            bool paymentValid = true;
 
             if (cmbPaymentMethod.Text == "Cash")
             {
-                btnComplete.Enabled = contactValid && decimal.TryParse(txtCashTendered.Text, out _);
+                paymentValid = decimal.TryParse(txtCashTendered.Text, out decimal tendered) &&
+                              tendered >= _amountDue;
             }
             else if (cmbPaymentMethod.Text == "Card")
             {
-                btnComplete.Enabled = contactValid && txtCardDigits.Text.Length == 4;
+                paymentValid = txtCardDigits.Text.Length == 4;
             }
             else if (cmbPaymentMethod.Text == "Bank Transfer")
             {
-                btnComplete.Enabled = contactValid && txtBankDigits.Text.Length == 4;
+                paymentValid = txtBankDigits.Text.Length == 4;
             }
-            else
-            {
-                btnComplete.Enabled = contactValid;
-            }
+
+            btnComplete.Enabled = contactValid && genderValid && paymentValid;
         }
 
         private void btnComplete_Click(object sender, EventArgs e)
         {
-            string contact = txtCustomerContact.Text.Replace(" ", "").Replace("-", "");
-            
+            string contact = txtCustomerContact.Text;
+
+            // Validate contact
             if (!string.IsNullOrEmpty(contact) && contact.Length != 10)
             {
-                MessageBox.Show("Customer contact must be 10 digits if provided");
+                MessageBox.Show("Customer contact must be 10 digits if provided",
+                                "Validation Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Validate gender if contact provided
+            if (!string.IsNullOrEmpty(contact) && cmbGender.SelectedIndex < 0)
+            {
+                MessageBox.Show("Please select customer gender",
+                                "Validation Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
                 return;
             }
 
@@ -169,6 +342,10 @@ namespace pos_system.pos.UI.Forms.Sales
                 MessageBox.Show("Please enter last 4 digits of account");
                 return;
             }
+
+            CustomerGender = cmbGender.Enabled && cmbGender.SelectedItem != null
+                ? cmbGender.SelectedItem.ToString()
+                : null;
 
             PaymentMethod = cmbPaymentMethod.Text;
             AmountTendered = cmbPaymentMethod.Text == "Cash" ? 
@@ -200,22 +377,57 @@ namespace pos_system.pos.UI.Forms.Sales
             Close();
         }
 
+        private void cmbGender_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Provide visual feedback for gender validation
+            if (cmbGender.Enabled && cmbGender.SelectedIndex < 0)
+            {
+                cmbGender.BackColor = Color.LightPink;
+            }
+            else
+            {
+                cmbGender.BackColor = SystemColors.Window;
+            }
+
+            UpdateCompleteButtonState();
+        }
+
         private void PaymentForm_Load(object sender, EventArgs e)
         {
             if (_amountDue == 0)
             {
                 btnComplete.Enabled = true;
             }
-            txtCustomerContact.KeyDown += TxtCustomerContact_KeyDown;
+            // txtCustomerContact.KeyDown += TxtCustomerContact_KeyDown;
+
+            // Enter Key:
+            this.AcceptButton = btnComplete;
         }
 
-        private void TxtCustomerContact_KeyDown(object sender, KeyEventArgs e)
+        private void txtCustomerContact_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter && btnComplete.Enabled)
+            // Allow only digits and control characters
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
             {
-                btnComplete.PerformClick();
+                e.Handled = true;
             }
         }
+
+        private void DigitsOnlyTextBox_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // Allow only digits and control characters
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+        //private void TxtCustomerContact_KeyDown(object sender, KeyEventArgs e)
+        //{
+        //    if (e.KeyCode == Keys.Enter && btnComplete.Enabled)
+        //    {
+        //        btnComplete.PerformClick();
+        //    }
+        //}
 
         private void txtCashTendered_KeyPress(object sender, KeyPressEventArgs e)
         {

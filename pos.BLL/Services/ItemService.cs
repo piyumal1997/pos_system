@@ -11,19 +11,19 @@ namespace pos_system.pos.BLL.Services
         private readonly CategoryService _categoryService = new CategoryService();
         private readonly GenderService _genderService = new GenderService();
 
-        public bool AddItem(Item item)
-        {
-            if (!new BrandService().BrandExists(item.Brand_ID))
-                throw new ArgumentException($"Brand with ID {item.Brand_ID} does not exist");
+        //public bool AddItem(Item item)
+        //{
+        //    if (!new BrandService().BrandExists(item.Brand_ID))
+        //        throw new ArgumentException($"Brand with ID {item.Brand_ID} does not exist");
 
-            if (!_categoryService.CategoryExists(item.Category_ID))
-                throw new ArgumentException($"Category with ID {item.Category_ID} does not exist");
+        //    if (!_categoryService.CategoryExists(item.Category_ID))
+        //        throw new ArgumentException($"Category with ID {item.Category_ID} does not exist");
 
-            if (!_genderService.GenderExists(item.Gender_ID))
-                throw new ArgumentException($"Gender with ID {item.Gender_ID} does not exist");
+        //    if (!_genderService.GenderExists(item.Gender_ID))
+        //        throw new ArgumentException($"Gender with ID {item.Gender_ID} does not exist");
 
-            return _repository.AddItem(item);
-        }
+        //    return _repository.AddItem(item);
+        //}
 
         public bool UpdateItem(Item item)
         {
@@ -48,7 +48,10 @@ namespace pos_system.pos.BLL.Services
         {
             return _repository.GetItem(productId);
         }
-
+        public List<Item> SearchItems(string searchTerm)
+        {
+            return _repository.SearchItems(searchTerm);
+        }
         public List<Item> GetAllItems()
         {
             return _repository.GetAllItems();
@@ -62,6 +65,11 @@ namespace pos_system.pos.BLL.Services
         public string GenerateBarcode()
         {
             return _repository.GenerateUniqueBarcode();
+        }
+
+        public List<Item> SearchItemsOwner(string searchTerm, int brandId, int categoryId)
+        {
+            return _repository.SearchItemsOwner(searchTerm, brandId, categoryId);
         }
 
         public List<Item> SearchItemsWithVariants(string searchTerm, int brandId, int categoryId)
@@ -87,6 +95,25 @@ namespace pos_system.pos.BLL.Services
                 minPrice,
                 maxPrice
             );
+        }
+
+        public int AddItem(Item item)
+        {
+            if (!new BrandService().BrandExists(item.Brand_ID))
+                throw new ArgumentException($"Brand with ID {item.Brand_ID} does not exist");
+
+            if (!_categoryService.CategoryExists(item.Category_ID))
+                throw new ArgumentException($"Category with ID {item.Category_ID} does not exist");
+
+            if (!_genderService.GenderExists(item.Gender_ID))
+                throw new ArgumentException($"Gender with ID {item.Gender_ID} does not exist");
+
+            return _repository.AddItem(item);
+        }
+
+        public bool UpdateItemImage(int productId, string fileName)
+        {
+            return _repository.UpdateItemImage(productId, fileName);
         }
     }
 }

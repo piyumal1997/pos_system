@@ -574,11 +574,11 @@ namespace pos_system.pos.UI.Forms.Inventory
         {
             return genderId switch
             {
-                1 => "M",  // Male
-                2 => "F",  // Female
-                3 => "U",  // Unisex
-                4 => "N",  // None
-                _ => "N"   // Default to None
+                1 => "Male",  // Male
+                2 => "Female",  // Female
+                3 => "Unisex",  // Unisex
+                4 => "None",  // None
+                _ => "None"   // Default to None
             };
         }
 
@@ -662,8 +662,21 @@ namespace pos_system.pos.UI.Forms.Inventory
             {
                 "One Size" => "One",  // One Size
                 "XXXL" => "3XL",
-                "XXXXL" => "4XL",
-                "XXXXXL" => "5XL",
+                "XXXXl" => "4XL",
+                "XXXXXl" => "5XL",
+                "Free Size" => "Fr",
+                "Standard Size" => "SS",
+                "18ml" => "18",
+                "30ml" => "30",
+                "50ml" => "50",
+                "80ml" => "80",
+                "100ml" => "100",
+                "120ml" => "120",
+                "150ml" => "150",
+                "200ml" => "200",
+                "Zipper Half" => "Z Half",
+                "Zipper Pocket" => "Z P",
+                "Zipper Full" => "Z Full",
                 _ => size,  // Other Any Sizes
             };
         }

@@ -81,7 +81,11 @@ namespace pos_system.pos.UI.Forms.Inventory
             cmbBrand.SelectedIndexChanged += (s, e) => SearchItems();
             cmbCategory.SelectedIndexChanged += (s, e) => SearchItems();
             dgvItems.CellDoubleClick += (s, e) => SelectItem();
-            dgvItems.CellFormatting += DgvItems_CellFormatting;
+            // Remove byte array formatting handler
+            //dgvItems.CellFormatting += DgvItems_CellFormatting;
+
+            // Add new image rendering handler
+            dgvItems.CellPainting += DgvItems_CellPainting;
         }
 
         private void AddBottomBorder(Control control, int width)
@@ -111,7 +115,7 @@ namespace pos_system.pos.UI.Forms.Inventory
                     DataPropertyName = "Product_ID",
                     Name = "Product_ID",
                     HeaderText = "Prod ID",
-                    Visible = false
+                    Visible = true
                 },
                 new DataGridViewTextBoxColumn {
                     DataPropertyName = "Barcode",
@@ -128,16 +132,19 @@ namespace pos_system.pos.UI.Forms.Inventory
                 new DataGridViewTextBoxColumn {
                     DataPropertyName = "BrandName",
                     HeaderText = "Brand",
+                    Name = "BrandName",
                     Width = 100
                 },
                 new DataGridViewTextBoxColumn {
                     DataPropertyName = "CategoryName",
                     HeaderText = "Category",
+                    Name = "CategoryName",
                     Width = 100
                 },
                 new DataGridViewTextBoxColumn {
                     DataPropertyName = "SizeLabel",
                     HeaderText = "Size",
+                    Name = "SizeLabel",
                     Width = 80
                 },
                 new DataGridViewTextBoxColumn {
@@ -157,16 +164,62 @@ namespace pos_system.pos.UI.Forms.Inventory
                 new DataGridViewTextBoxColumn {
                     DataPropertyName = "Quantity",
                     HeaderText = "Stock",
+                    Name = "Quantity",
                     Width = 60
                 },
-                new DataGridViewImageColumn
-                {
+                new DataGridViewTextBoxColumn {
                     DataPropertyName = "ItemImage",
                     HeaderText = "Image",
+                    Name = "ItemImage",
+                    Visible = false  // Hide filename column
+                },
+                
+                // Add new unbound column for image display
+                new DataGridViewImageColumn {
+                    HeaderText = "Image",
+                    Name = "ImagePreview",
                     ImageLayout = DataGridViewImageCellLayout.Zoom,
                     Width = 80
                 }
             });
+        }
+
+        private void DgvItems_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            // Only handle image column and rows (not headers)
+            if (e.RowIndex < 0 || e.ColumnIndex != dgvItems.Columns["ImagePreview"].Index)
+                return;
+
+            e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.ContentForeground);
+
+            // Get filename from hidden column
+            var filename = dgvItems.Rows[e.RowIndex].Cells["ItemImage"].Value?.ToString();
+            var image = ImageHelper.LoadProductImage(filename);
+
+            if (image != null)
+            {
+                // Calculate aspect ratio
+                float ratio = Math.Min(
+                    (float)(e.CellBounds.Width - 4) / image.Width,
+                    (float)(e.CellBounds.Height - 4) / image.Height
+                );
+
+                int newWidth = (int)(image.Width * ratio);
+                int newHeight = (int)(image.Height * ratio);
+                int x = e.CellBounds.X + (e.CellBounds.Width - newWidth) / 2;
+                int y = e.CellBounds.Y + (e.CellBounds.Height - newHeight) / 2;
+
+                e.Graphics.DrawImage(image, x, y, newWidth, newHeight);
+            }
+            else
+            {
+                // Draw placeholder text
+                TextRenderer.DrawText(e.Graphics, "No Image",
+                    dgvItems.Font, e.CellBounds, Color.Gray,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
+
+            e.Handled = true;
         }
 
         private void PopulateBrands()
@@ -193,7 +246,7 @@ namespace pos_system.pos.UI.Forms.Inventory
             int brandId = (int)cmbBrand.SelectedValue;
             int categoryId = (int)cmbCategory.SelectedValue;
 
-            var items = _itemService.SearchItemsWithVariants(searchTerm, brandId, categoryId);
+            var items = _itemService.SearchItemsOwner(searchTerm, brandId, categoryId);
             dgvItems.DataSource = items;
         }
 
@@ -253,7 +306,7 @@ namespace pos_system.pos.UI.Forms.Inventory
                 RetailPrice = Convert.ToDecimal(selectedRow.Cells["RetailPrice"].Value),
                 Quantity = Convert.ToInt32(selectedRow.Cells["Quantity"].Value),
                 UnitCost = 0,
-                ItemImage = selectedRow.Cells["ItemImage"].Value as byte[]
+                ItemImage = selectedRow.Cells["ItemImage"].Value?.ToString()
             };
 
             this.DialogResult = DialogResult.OK;

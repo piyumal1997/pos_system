@@ -69,7 +69,7 @@ namespace pos_system.pos.UI.Forms.Common
 
             // Title label
             lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
-            lblTitle.ForeColor = Color.White;
+            lblTitle.ForeColor = Color.Black;
             lblTitle.TextAlign = ContentAlignment.MiddleCenter;
             lblTitle.AutoSize = false;
             lblTitle.Dock = DockStyle.Top;
@@ -77,22 +77,22 @@ namespace pos_system.pos.UI.Forms.Common
             lblTitle.Padding = new Padding(0, 5, 0, 5);
 
             // Yes button
-            btnYes.BackColor = Color.FromArgb(76, 175, 80); // Green
+            btnYes.BackColor = Color.FromArgb(231, 76, 60); // Green
             btnYes.FlatAppearance.BorderSize = 0;
             btnYes.FlatStyle = FlatStyle.Flat;
-            btnYes.Font = new Font("Segoe UI", 12F);
+            btnYes.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             btnYes.ForeColor = Color.White;
-            btnYes.Size = new Size(100, 40);
+            btnYes.Size = new Size(90, 35);
             btnYes.Text = "Yes";
             btnYes.Click += (s, e) => { Result = DialogResult.Yes; Close(); };
 
             // No button
-            btnNo.BackColor = Color.FromArgb(231, 76, 60); // Red
+            btnNo.BackColor = Color.FromArgb(76, 175, 80); // Red
             btnNo.FlatAppearance.BorderSize = 0;
             btnNo.FlatStyle = FlatStyle.Flat;
-            btnNo.Font = new Font("Segoe UI", 12F);
+            btnNo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             btnNo.ForeColor = Color.White;
-            btnNo.Size = new Size(100, 40);
+            btnNo.Size = new Size(90, 35);
             btnNo.Text = "No";
             btnNo.Click += (s, e) => { Result = DialogResult.No; Close(); };
 

@@ -27,5 +27,6 @@ namespace pos_system.pos.Models
         public decimal DailyCardPayments { get; set; }
         public decimal DailyReturnAmount { get; set; }
         public int DailyReturnQuantity { get; set; }
+        public decimal DailyTokenPayment { get; set; }
     }
 }

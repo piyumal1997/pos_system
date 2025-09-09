@@ -1,20 +1,64 @@
-﻿using System.Data;
-
+﻿// Updated SalesReport.cs
 namespace pos_system.pos.Models
 {
     public class SalesReport
     {
-        public decimal TotalSales { get; set; }
-        public decimal TotalCost { get; set; }
-        public int TotalItemsSold { get; set; }
-        public int BillCount { get; set; }
-        public decimal CashSales { get; set; }
-        public decimal CardSales { get; set; }
-        public decimal BankTransferSales { get; set; }
-        public int ReturnCount { get; set; }
-        public int ReturnItemCount { get; set; }
-        public decimal ReturnTotalValue { get; set; }
+        public AccountingSummary AccountingSummary { get; set; }
+        public CashFlowSummary CashFlowSummary { get; set; }
+        public TokenActivity TokenActivity { get; set; }
         public List<SalesItemDetail> SalesItems { get; set; }
         public List<ReturnItemDetail> ReturnItems { get; set; }
+        public List<BillSummary> BillSummaries { get; set; }
+    }
+
+    public class AccountingSummary
+    {
+        public decimal GrossSales { get; set; }
+        public decimal Discounts { get; set; }
+        public decimal Returns { get; set; }
+        public decimal NetSales { get; set; }
+        public decimal GrossCOGS { get; set; }
+        public decimal ReturnsCOGS { get; set; }
+        public decimal NetCOGS { get; set; }
+        public decimal GrossProfit { get; set; }
+        public decimal NetProfit { get; set; }
+        public int GrossItemsSold { get; set; }
+        public int ReturnedItems { get; set; }
+        public int NetItemsSold { get; set; }
+        public int BillCount { get; set; }
+    }
+
+    public class CashFlowSummary
+    {
+        public decimal CashInflow { get; set; }
+        public decimal CashOutflow { get; set; }
+        public decimal NetCashFlow { get; set; }
+        public decimal CashSales { get; set; }
+        public decimal CardSales { get; set; }
+        public decimal BankSales { get; set; }
+    }
+
+    public class TokenActivity
+    {
+        public int TokensIssued { get; set; }
+        public decimal TokenValueIssued { get; set; }
+        public int TokensUsed { get; set; }
+        public decimal TokenValueUsed { get; set; }
+        public int TokensOutstanding { get; set; }
+        public decimal TokenValueOutstanding { get; set; }
+    }
+
+    public class BillSummary
+    {
+        public int Bill_ID { get; set; }
+        public string PaymentMethod { get; set; }
+        public int Employee_ID { get; set; }
+        public string Discount_Method { get; set; }
+        public string CustomerContact { get; set; }
+        public decimal? Token_Value { get; set; }
+        public DateTime SaleDate { get; set; }
+        public decimal GrossAmount { get; set; }
+        public decimal NetAmount { get; set; }
+        public decimal CashPayment { get; set; }
     }
 }

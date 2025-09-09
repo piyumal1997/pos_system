@@ -49,6 +49,7 @@
             this.flpImage = new System.Windows.Forms.FlowLayoutPanel();
             this.picItemImage = new System.Windows.Forms.PictureBox();
             this.btnBrowse = new System.Windows.Forms.Button();
+            this.btnClearImage = new System.Windows.Forms.Button();
             this.buttonPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnSave = new System.Windows.Forms.Button();
@@ -104,7 +105,7 @@
             this.tableLayout.Controls.Add(this.groupSizes, 1, 0);
             this.tableLayout.Controls.Add(new System.Windows.Forms.Label() { Text = "Barcode:", Anchor = System.Windows.Forms.AnchorStyles.Left, AutoSize = true }, 0, 0);
             this.tableLayout.Controls.Add(this.flpBarcode, 0, 1);
-            this.tableLayout.Controls.Add(new System.Windows.Forms.Label() { Text = "Max Discount (%):", Anchor = System.Windows.Forms.AnchorStyles.Left, AutoSize = true }, 0, 2);
+            this.tableLayout.Controls.Add(new System.Windows.Forms.Label() { Text = "Max Discount Value:", Anchor = System.Windows.Forms.AnchorStyles.Left, AutoSize = true }, 0, 2);
             this.tableLayout.Controls.Add(this.txtMaxDiscount, 0, 3);
             this.tableLayout.Controls.Add(new System.Windows.Forms.Label() { Text = "Min Stock Level:", Anchor = System.Windows.Forms.AnchorStyles.Left, AutoSize = true }, 0, 4);
             this.tableLayout.Controls.Add(this.txtMinStock, 0, 5);
@@ -237,6 +238,23 @@
             this.flpBarcode.Name = "flpBarcode";
             this.flpBarcode.Size = new System.Drawing.Size(440, 25);
             this.flpBarcode.TabIndex = 0;
+            // 
+            // btnClearImage
+            // 
+            this.btnClearImage.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClearImage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnClearImage.FlatAppearance.BorderSize = 0;
+            this.btnClearImage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearImage.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnClearImage.ForeColor = System.Drawing.Color.White;
+            this.btnClearImage.Location = new System.Drawing.Point(220, 45);
+            this.btnClearImage.Margin = new System.Windows.Forms.Padding(0, 45, 0, 0);
+            this.btnClearImage.Name = "btnClearImage";
+            this.btnClearImage.Size = new System.Drawing.Size(90, 30);
+            this.btnClearImage.TabIndex = 2;
+            this.btnClearImage.Text = "Clear";
+            this.btnClearImage.UseVisualStyleBackColor = false;
+            this.btnClearImage.Click += new System.EventHandler(this.BtnClearImage_Click);
             // 
             // txtBarcode
             // 
@@ -526,6 +544,7 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayout;
         private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.Button btnMinimize;
+        private System.Windows.Forms.Button btnClearImage;
         private System.Windows.Forms.Label lblTitle;
     }
 }

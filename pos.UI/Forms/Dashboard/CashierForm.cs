@@ -11,6 +11,7 @@ using pos_system.pos.UI.Forms.Inventory;
 using FontAwesome.Sharp;
 using pos_system.pos.BLL.Services;
 using System.Drawing.Drawing2D;
+using static pos_system.pos.UI.Forms.Dashboard.OwnerDashboard;
 
 namespace pos_system.pos.UI.Forms.Dashboard
 {
@@ -95,7 +96,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 UseVisualStyleBackColor = false,
                 Location = new Point(1151, 12)
             };
-            btnClose.Click += (s, e) => Application.Exit();
+            btnClose.Click += (s, e) => CloseOwnerDashboard();
 
             // Add controls to header
             headerPanel.Controls.Add(lblWelcome);
@@ -138,9 +139,10 @@ namespace pos_system.pos.UI.Forms.Dashboard
             CreateSidebarButton("Returns", "🔄", 200);
             CreateSidebarButton("Search Items", "🔍", 260);
             CreateSidebarButton("Bills", "📄", 320);
+            CreateSidebarButton("Bill Prints", "🖨️", 380);
             CreateSidebarButton("Logout", "🔒", 540);
 
-            OpenChildForm(new DashboardView(_currentUser), _dashboardButton);
+            OpenChildForm(new BillingForm(_currentUser), _dashboardButton);
         }
 
         // Form dragging implementation
@@ -181,7 +183,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 Cursor = Cursors.Hand
             };
 
-            if (text == "Dashboard") _dashboardButton = btn;
+            if (text == "Billing") _dashboardButton = btn;
 
             // Hover Effects
             btn.MouseEnter += (s, e) =>
@@ -214,6 +216,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     case "Bills":
                         OpenChildForm(new BillSearchCashier(_currentUser), btn);
                         break;
+                    case "Bill Prints":
+                        OpenChildForm(new BillPrints(_currentUser), btn);
+                        break;
                     case "Logout":
                         Logout();
                         break;
@@ -221,6 +226,17 @@ namespace pos_system.pos.UI.Forms.Dashboard
             };
 
             _leftPanel.Controls.Add(btn);
+        }
+
+        private void CloseOwnerDashboard()
+        {
+            DialogResult result = ThemedMessageBoxYesNo.Show($"Are you sure you want to \nclose the application {_currentUser.firstName}?", "Warning", MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                System.Windows.Forms.Application.Exit(); // Close form only on "Yes"
+            }
+
         }
 
         private void ActivateButton(Button btn)
@@ -250,11 +266,23 @@ namespace pos_system.pos.UI.Forms.Dashboard
             childForm.Show();
         }
 
+        //private void Logout()
+        //{
+        //    this.Hide();
+        //    Auth.LoginForm login = new Auth.LoginForm();
+        //    login.Show();
+        //}
+
         private void Logout()
         {
-            this.Hide();
-            Auth.LoginForm login = new Auth.LoginForm();
-            login.Show();
+            DialogResult result = ThemedMessageBoxYesNo.Show($"Are you sure you want to logout {_currentUser.firstName}?", "Warning", MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                this.Hide();
+                Auth.LoginForm login = new Auth.LoginForm();
+                login.Show();
+            }
         }
 
         // Nested DashboardView class for completeness
@@ -265,7 +293,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             // Card Labels
             private Label lblDailySales;
-            private Label lblDailyCashIncome;
+            //private Label lblDailyCashIncome;
+            private Label lblPaymentFromReturns;
             private Label lblDailyQuantitySold;
             private Label lblDailyItemsSold;
             private Label lblDailyBankPayments;
@@ -381,16 +410,28 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 mainLayout.Resize += (s, e) => AdjustCardSizes();
                 this.Resize += (s, e) => AdjustCardSizes();
 
-                // Create cards
+                // Create cards - Commentted old card for testing
+                //CreateModernCard("Daily Sales", "0.00", IconChar.DollarSign, SuccessColor, out lblDailySales);
+                //CreateModernCard("Cash Income", "0.00", IconChar.MoneyBillWave, SuccessColor, out lblDailyCashIncome);
+                //CreateModernCard("Quantity Sold", "0", IconChar.ShoppingCart, PrimaryColor, out lblDailyQuantitySold);
+                //CreateModernCard("Items Sold", "0", IconChar.Box, PrimaryColor, out lblDailyItemsSold);
+                //CreateModernCard("Bank Payments", "0.00", IconChar.University, PrimaryColor, out lblDailyBankPayments);
+                //CreateModernCard("Cash Payments", "0.00", IconChar.MoneyBill, WarningColor, out lblDailyCashPayments);
+                //CreateModernCard("Card Payments", "0.00", IconChar.CreditCard, WarningColor, out lblDailyCardPayments);
+                //CreateModernCard("Return Amount", "0.00", IconChar.ExchangeAlt, DeleteColor, out lblDailyReturnAmount);
+                //CreateModernCard("Return Quantity", "0", IconChar.Retweet, DeleteColor, out lblDailyReturnQuantity);
+
                 CreateModernCard("Daily Sales", "0.00", IconChar.DollarSign, SuccessColor, out lblDailySales);
-                CreateModernCard("Cash Income", "0.00", IconChar.MoneyBillWave, SuccessColor, out lblDailyCashIncome);
                 CreateModernCard("Quantity Sold", "0", IconChar.ShoppingCart, PrimaryColor, out lblDailyQuantitySold);
                 CreateModernCard("Items Sold", "0", IconChar.Box, PrimaryColor, out lblDailyItemsSold);
                 CreateModernCard("Bank Payments", "0.00", IconChar.University, PrimaryColor, out lblDailyBankPayments);
                 CreateModernCard("Cash Payments", "0.00", IconChar.MoneyBill, WarningColor, out lblDailyCashPayments);
                 CreateModernCard("Card Payments", "0.00", IconChar.CreditCard, WarningColor, out lblDailyCardPayments);
+                CreateModernCard("Payment from Returns", "0.00", IconChar.ListCheck, SuccessColor, out lblPaymentFromReturns);
                 CreateModernCard("Return Amount", "0.00", IconChar.ExchangeAlt, DeleteColor, out lblDailyReturnAmount);
                 CreateModernCard("Return Quantity", "0", IconChar.Retweet, DeleteColor, out lblDailyReturnQuantity);
+
+
 
                 this.ResumeLayout(false);
             }
@@ -530,9 +571,19 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Cursor = Cursors.WaitCursor;
                     _metrics = _dashboardService.GetCashierMetrics(_currentUser.Employee_ID);
 
-                    // Update cards
+                    // Update cards - Commented old labels for testing
+                    //lblDailySales.Text = _metrics.DailySalesAll.ToString("N2");
+                    //lblDailyCashIncome.Text = _metrics.DailyCashIncome.ToString("N2");
+                    //lblDailyQuantitySold.Text = _metrics.DailyQuantitySold.ToString("N0");
+                    //lblDailyItemsSold.Text = _metrics.DailyItemsSold.ToString("N0");
+                    //lblDailyBankPayments.Text = _metrics.DailyBankPayments.ToString("N2");
+                    //lblDailyCashPayments.Text = _metrics.DailyCashPayments.ToString("N2");
+                    //lblDailyCardPayments.Text = _metrics.DailyCardPayments.ToString("N2");
+                    //lblDailyReturnAmount.Text = _metrics.DailyReturnAmount.ToString("N2");
+                    //lblDailyReturnQuantity.Text = _metrics.DailyReturnQuantity.ToString("N0");
+
                     lblDailySales.Text = _metrics.DailySalesAll.ToString("N2");
-                    lblDailyCashIncome.Text = _metrics.DailyCashIncome.ToString("N2");
+                    lblPaymentFromReturns.Text = _metrics.DailyTokenPayment.ToString("N2");
                     lblDailyQuantitySold.Text = _metrics.DailyQuantitySold.ToString("N0");
                     lblDailyItemsSold.Text = _metrics.DailyItemsSold.ToString("N0");
                     lblDailyBankPayments.Text = _metrics.DailyBankPayments.ToString("N2");
