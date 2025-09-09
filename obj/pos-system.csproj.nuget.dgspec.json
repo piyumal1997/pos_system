@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\POS 1.6\\pos_system-main\\pos-system.csproj": {}
+    "D:\\Projects\\pos-system\\pos-system.csproj": {}
   },
   "projects": {
-    "D:\\POS 1.6\\pos_system-main\\pos-system.csproj": {
+    "D:\\Projects\\pos-system\\pos-system.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\POS 1.6\\pos_system-main\\pos-system.csproj",
+        "projectUniqueName": "D:\\Projects\\pos-system\\pos-system.csproj",
         "projectName": "pos-system",
-        "projectPath": "D:\\POS 1.6\\pos_system-main\\pos-system.csproj",
+        "projectPath": "D:\\Projects\\pos-system\\pos-system.csproj",
         "packagesPath": "C:\\Users\\piyum\\.nuget\\packages\\",
-        "outputPath": "D:\\POS 1.6\\pos_system-main\\obj\\",
+        "outputPath": "D:\\Projects\\pos-system\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\DevExpress 22.2\\Components\\Offline Packages",

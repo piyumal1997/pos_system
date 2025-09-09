@@ -1,62 +1,30 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\POS 1.6\\pos_system-main\\",
+  "WorkspaceRootPath": "D:\\Projects\\pos-system\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\sales\\paymentform.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\paymentform.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\sales\\billingform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\billingform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\dashboard\\ownerdashboard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\dashboard\\ownerdashboard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\dashboard\\ownerdashboard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\inventory\\itemform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\inventory\\itemform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.dal\\repositories\\reportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\reportservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.bll\\services\\itemservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.bll\\services\\itemservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.dal\\repositories\\returnrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\returnrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.dal\\repositories\\itemrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\itemrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\dashboard\\cashierform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\dashboard\\cashierform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.models\\item.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.models\\item.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.dal\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.dal\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\inventory\\itemsearchcashier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\inventory\\itemsearchcashier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.dal\\repositories\\billrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\billrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.ui\\forms\\sales\\billprints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\billprints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\pos 1.6\\pos_system-main\\pos.dal\\repositories\\salesrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\salesrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -66,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedHeight": 322,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -74,174 +42,80 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "app.config",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\app.config",
-              "RelativeDocumentMoniker": "pos.UI\\app.config",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\app.config",
-              "RelativeToolTip": "pos.UI\\app.config",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABPAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
-              "WhenOpened": "2025-07-28T20:52:12.018Z",
-              "IsPinned": true
+              "DocumentIndex": 2,
+              "Title": "ReturnRepository.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\ReturnRepository.cs",
+              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\ReturnRepository.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\ReturnRepository.cs",
+              "RelativeToolTip": "pos.DAL\\Repositories\\ReturnRepository.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAAcAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-09T16:48:50.511Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "PaymentForm.Designer.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\PaymentForm.Designer.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\PaymentForm.Designer.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\PaymentForm.Designer.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\PaymentForm.Designer.cs",
-              "ViewState": "AgIAADIBAAAAAAAAAAAMwEIBAAAhAAAAAAAAAA==",
+              "Title": "ReportService.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\ReportService.cs",
+              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\ReportService.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\ReportService.cs",
+              "RelativeToolTip": "pos.DAL\\Repositories\\ReportService.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAB8AAABAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-07T06:12:44.823Z",
+              "WhenOpened": "2025-09-09T16:48:08.201Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "Item.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.Models\\Item.cs",
-              "RelativeDocumentMoniker": "pos.Models\\Item.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.Models\\Item.cs",
-              "RelativeToolTip": "pos.Models\\Item.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAowBAAAAAtAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "CashierForm.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\CashierForm.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Dashboard\\CashierForm.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\CashierForm.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\CashierForm.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T11:24:09.066Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "DbHelper.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\DbHelper.cs",
-              "RelativeDocumentMoniker": "pos.DAL\\DbHelper.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\DbHelper.cs",
-              "RelativeToolTip": "pos.DAL\\DbHelper.cs",
-              "ViewState": "AgIAABMAAAAAAAAAAAA2wD4AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:54:57.543Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "ItemRepository.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\ItemRepository.cs",
-              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\ItemRepository.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\ItemRepository.cs",
-              "RelativeToolTip": "pos.DAL\\Repositories\\ItemRepository.cs",
-              "ViewState": "AgIAADUAAAAAAAAAAAAQwEYAAAAaAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:53:59.795Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "ItemService.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.BLL\\Services\\ItemService.cs",
-              "RelativeDocumentMoniker": "pos.BLL\\Services\\ItemService.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.BLL\\Services\\ItemService.cs",
-              "RelativeToolTip": "pos.BLL\\Services\\ItemService.cs",
-              "ViewState": "AgIAAFEAAAAAAAAAAAAiwBkAAAALAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:53:37.611Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "ItemForm.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Inventory\\ItemForm.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Inventory\\ItemForm.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Inventory\\ItemForm.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Inventory\\ItemForm.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsBAAAzAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:49:49.688Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "PaymentForm.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
-              "ViewState": "AgIAANEAAAAAAAAAAAAqwN4AAAA6AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:28:27.024Z",
+              "WhenOpened": "2025-09-09T07:22:45.452Z",
               "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "BillingForm.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\BillingForm.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\BillingForm.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\BillingForm.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\BillingForm.cs",
-              "ViewState": "AgIAAEUDAAAAAAAAAAAMwCkFAAAsAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T10:28:20.791Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "ItemSearchCashier.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Inventory\\ItemSearchCashier.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Inventory\\ItemSearchCashier.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Inventory\\ItemSearchCashier.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Inventory\\ItemSearchCashier.cs",
-              "ViewState": "AgIAAFICAAAAAAAAAAAMwF8CAABWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-06T08:33:51.53Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "BillPrints.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\BillPrints.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\BillPrints.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Sales\\BillPrints.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\BillPrints.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAbAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-05T20:01:39.867Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "BillRepository.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\BillRepository.cs",
-              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\BillRepository.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\BillRepository.cs",
-              "RelativeToolTip": "pos.DAL\\Repositories\\BillRepository.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAADQAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-05T19:53:17.846Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "SalesRepository.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\SalesRepository.cs",
-              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\SalesRepository.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.DAL\\Repositories\\SalesRepository.cs",
-              "RelativeToolTip": "pos.DAL\\Repositories\\SalesRepository.cs",
-              "ViewState": "AgIAAA4AAAAAAAAAAAAYwDcAAABBAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-29T08:06:44.486Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "OwnerDashboard.cs",
-              "DocumentMoniker": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "ToolTip": "D:\\POS 1.6\\pos_system-main\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAKATAAA5AAAAAAAAAA==",
+              "Title": "DbHelper.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.DAL\\DbHelper.cs",
+              "RelativeDocumentMoniker": "pos.DAL\\DbHelper.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.DAL\\DbHelper.cs",
+              "RelativeToolTip": "pos.DAL\\DbHelper.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAqwC0AAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-28T20:07:35.206Z"
+              "WhenOpened": "2025-09-09T06:07:49.851Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OwnerDashboard.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
+              "ViewState": "AgIAAFwXAAAAAAAAAAAmwHgXAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-09T04:33:56.446Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PaymentForm.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "ViewState": "AgIAAMUAAAAAAAAAAAAqwN4AAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-06T10:28:27.024Z"
             }
           ]
         },

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "rhh1B/rxKUM=",
+  "dgSpecHash": "sb/bwCqZT8k=",
   "success": true,
-  "projectFilePath": "D:\\POS 1.6\\pos_system-main\\pos-system.csproj",
+  "projectFilePath": "D:\\Projects\\pos-system\\pos-system.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\piyum\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
