@@ -13,6 +13,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
+using System.Configuration;
+using pos_system.pos.UI.Forms.Inventory;
+using System.Text.RegularExpressions;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -23,12 +26,19 @@ namespace pos_system.pos.UI.Forms.Sales
         private DataTable _returnReasons;
         private bool _billExpired = false;
         private DateTime _billDate;
-        private const string PRINTER_NAME = "XP-80C";
+        private const string PRINTER_NAME = "XP-80C"; 
+        private ContextMenuStrip contextMenuStripImage;
+        private ToolStripMenuItem viewImageToolStripMenuItem;
+        private int currentSelectedRowIndex = -1;
 
         public ReturnsForm(Employee currentUser)
         {
             InitializeComponent();
             _currentUser = currentUser;
+
+            // Initialize context menu
+            InitializeContextMenu();
+
             InitializeReturnReasons();
             lblBillDate.Text = string.Empty;
             lblCurrentDate.Text = DateTime.Now.ToString("yyyy-MM-dd");
@@ -39,6 +49,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.KeyPreview = true;
             this.KeyDown += ReturnsForm_KeyDown; // Handle F12
             txtBillId.KeyDown += txtBillId_KeyDown; // Handle Enter in textbox
+
         }
 
         private void InitializeReturnReasons()
@@ -53,6 +64,358 @@ namespace pos_system.pos.UI.Forms.Sales
                 MessageBox.Show($"Error loading return reasons: {ex.Message}", "Database Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void InitializeContextMenu()
+        {
+            // Create context menu
+            contextMenuStripImage = new ContextMenuStrip();
+
+            // Create menu item
+            viewImageToolStripMenuItem = new ToolStripMenuItem();
+            viewImageToolStripMenuItem.Text = "View Image";
+            viewImageToolStripMenuItem.Click += new EventHandler(viewImageToolStripMenuItem_Click);
+
+            // Add menu item to context menu
+            contextMenuStripImage.Items.Add(viewImageToolStripMenuItem);
+
+            // Assign context menu to DataGridView
+            dgvBillItems.ContextMenuStrip = contextMenuStripImage;
+
+            // Wire up the CellMouseClick event
+            dgvBillItems.CellMouseClick += dgvBillItems_CellMouseClick;
+
+            // Also wire up the SelectionChanged event to track the current row
+            dgvBillItems.SelectionChanged += dgvBillItems_SelectionChanged;
+
+            // Wire up the CellClick event
+            dgvBillItems.CellClick += dgvBillItems_CellClick;
+        }
+
+        private void dgvBillItems_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvBillItems.SelectedRows.Count > 0)
+            {
+                currentSelectedRowIndex = dgvBillItems.SelectedRows[0].Index;
+            }
+            else if (dgvBillItems.CurrentRow != null)
+            {
+                currentSelectedRowIndex = dgvBillItems.CurrentRow.Index;
+            }
+        }
+
+        private void ReturnsForm_Load(object sender, EventArgs e)
+        {
+            dgvBillItems.ContextMenuStrip = contextMenuStripImage;
+        }
+
+        private void dgvBillItems_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            Console.WriteLine($"CellMouseClick - Row: {e.RowIndex}, Column: {e.ColumnIndex}, Button: {e.Button}");
+
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                Console.WriteLine($"Right-click detected on row {e.RowIndex}");
+
+                // Ensure the row is selected
+                if (!dgvBillItems.Rows[e.RowIndex].Selected)
+                {
+                    Console.WriteLine($"Selecting row {e.RowIndex}");
+                    dgvBillItems.ClearSelection();
+                    dgvBillItems.Rows[e.RowIndex].Selected = true;
+                }
+
+                currentSelectedRowIndex = e.RowIndex;
+                Console.WriteLine($"Set currentSelectedRowIndex to {currentSelectedRowIndex}");
+
+                // Show the context menu at the mouse position
+                var relativeMousePosition = dgvBillItems.PointToClient(Cursor.Position);
+                contextMenuStripImage.Show(dgvBillItems, relativeMousePosition);
+            }
+        }
+
+        private void viewImageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // If currentSelectedRowIndex is -1, try to get the selected row
+            if (currentSelectedRowIndex == -1 && dgvBillItems.SelectedRows.Count > 0)
+            {
+                currentSelectedRowIndex = dgvBillItems.SelectedRows[0].Index;
+            }
+
+            if (currentSelectedRowIndex >= 0 && _billItems != null && _billItems.Rows.Count > currentSelectedRowIndex)
+            {
+                DataRow selectedRow = _billItems.Rows[currentSelectedRowIndex];
+                int productSizeId = Convert.ToInt32(selectedRow["ProductSize_ID"]);
+
+                // Debug info
+                string debugInfo = $"ProductSize_ID: {productSizeId}\n";
+                debugInfo += $"Product: {selectedRow["ItemName"]}\n";
+                debugInfo += $"Brand: {selectedRow["Brand"]}\n";
+                debugInfo += $"Category: {selectedRow["Category"]}\n";
+
+                // Get the product image
+                Image productImage = GetProductImageByProductSizeId(productSizeId);
+
+                if (productImage != null)
+                {
+                    debugInfo += $"Image size: {productImage.Width}x{productImage.Height}\n";
+
+                    // Show image in a dialog
+                    using (ImagePreviewDialog previewDialog = new ImagePreviewDialog(productImage))
+                    {
+                        previewDialog.ShowDialog();
+                    }
+                }
+                else
+                {
+                    debugInfo += "No image found\n";
+
+                    // Show debug info in a message box
+                    //MessageBox.Show(debugInfo, "Image Debug Info",
+                    //    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a row first.", "Information",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void dgvBillItems_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                currentSelectedRowIndex = e.RowIndex;
+            }
+        }
+
+        private void CheckImageBasePath()
+        {
+            string imageBasePath = ConfigurationManager.AppSettings["ImageBasePath"];
+
+            if (string.IsNullOrEmpty(imageBasePath))
+            {
+                MessageBox.Show("ImageBasePath is not configured in app.config", "Configuration Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!Directory.Exists(imageBasePath))
+            {
+                MessageBox.Show($"Image base path does not exist: {imageBasePath}", "Path Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Show some info about the path
+            string[] imageFiles = Directory.GetFiles(imageBasePath, "*.*", SearchOption.TopDirectoryOnly)
+                .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                           f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                           f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                           f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                           f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            MessageBox.Show($"Image base path: {imageBasePath}\nFound {imageFiles.Length} image files",
+                "Image Path Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        //private Image GetProductImageByProductSizeId(int productSizeId)
+        //{
+        //    try
+        //    {
+        //        string query = @"
+        //    SELECT p.ItemImage, p.Product_ID, p.description, p.barcode
+        //    FROM Product p
+        //    INNER JOIN ProductSize ps ON p.Product_ID = ps.Product_ID
+        //    WHERE ps.ProductSize_ID = @ProductSizeId";
+
+        //        SqlParameter[] parameters = { new SqlParameter("@ProductSizeId", productSizeId) };
+        //        DataTable dt = DbHelper.GetDataTable(query, CommandType.Text, parameters);
+
+        //        if (dt.Rows.Count > 0)
+        //        {
+        //            DataRow row = dt.Rows[0];
+        //            object imageData = row["ItemImage"];
+
+        //            if (imageData != DBNull.Value)
+        //            {
+        //                // Check if image is stored as byte array
+        //                if (imageData is byte[] byteArray)
+        //                {
+        //                    if (byteArray.Length > 0)
+        //                    {
+        //                        using (MemoryStream ms = new MemoryStream(byteArray))
+        //                        {
+        //                            return Image.FromStream(ms);
+        //                        }
+        //                    }
+        //                }
+        //                // Check if image is stored as base64 string
+        //                else if (imageData is string base64String)
+        //                {
+        //                    byte[] imageBytes = Convert.FromBase64String(base64String);
+        //                    using (MemoryStream ms = new MemoryStream(imageBytes))
+        //                    {
+        //                        return Image.FromStream(ms);
+        //                    }
+        //                }
+        //                // Check if image is stored as file path
+        //                else if (imageData is string filePath && File.Exists(filePath))
+        //                {
+        //                    return Image.FromFile(filePath);
+        //                }
+        //            }
+
+        //            // Fallback to file system loading (existing code)
+        //            string imageBasePath = ConfigurationManager.AppSettings["ImageBasePath"];
+        //            int productId = Convert.ToInt32(row["Product_ID"]);
+        //            string description = row["description"].ToString();
+        //            string barcode = row["barcode"].ToString();
+
+        //            if (!string.IsNullOrEmpty(imageBasePath) && Directory.Exists(imageBasePath))
+        //            {
+        //                string[] extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif" };
+        //                foreach (string ext in extensions)
+        //                {
+        //                    string imagePath = Path.Combine(imageBasePath, $"{productId}{ext}");
+        //                    if (File.Exists(imagePath)) return Image.FromFile(imagePath);
+
+        //                    imagePath = Path.Combine(imageBasePath, $"{barcode}{ext}");
+        //                    if (File.Exists(imagePath)) return Image.FromFile(imagePath);
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error loading image: {ex.Message}", "Error",
+        //                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //    return null;
+        //}
+
+        private Image GetProductImageByProductSizeId(int productSizeId)
+        {
+            try
+            {
+                string query = @"
+            SELECT p.ItemImage, p.Product_ID, p.description, p.barcode
+            FROM Product p
+            INNER JOIN ProductSize ps ON p.Product_ID = ps.Product_ID
+            WHERE ps.ProductSize_ID = @ProductSizeId";
+
+                SqlParameter[] parameters = { new SqlParameter("@ProductSizeId", productSizeId) };
+                DataTable dt = DbHelper.GetDataTable(query, CommandType.Text, parameters);
+
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow row = dt.Rows[0];
+                    object imageData = row["ItemImage"];
+
+                    // Debug: Check the actual type of the data
+                    Console.WriteLine($"Image data type: {imageData?.GetType().Name}");
+
+                    if (imageData != null && imageData != DBNull.Value)
+                    {
+                        // Handle different types of image data storage
+                        if (imageData is byte[] byteData)
+                        {
+                            // Binary data directly stored in database
+                            if (byteData.Length > 0)
+                            {
+                                using (MemoryStream ms = new MemoryStream(byteData))
+                                {
+                                    return Image.FromStream(ms);
+                                }
+                            }
+                        }
+                        else if (imageData is string stringData)
+                        {
+                            // String data - could be a file path or Base-64 encoded string
+
+                            // First, check if it's a valid file path
+                            if (File.Exists(stringData))
+                            {
+                                return Image.FromFile(stringData);
+                            }
+
+                            // If not a file path, try to parse as Base-64
+                            try
+                            {
+                                // Check if it looks like Base-64 (optional but helpful)
+                                if (stringData.Length % 4 == 0 &&
+                                    System.Text.RegularExpressions.Regex.IsMatch(stringData, @"^[a-zA-Z0-9\+/]*={0,3}$"))
+                                {
+                                    byte[] imageBytes = Convert.FromBase64String(stringData);
+                                    using (MemoryStream ms = new MemoryStream(imageBytes))
+                                    {
+                                        return Image.FromStream(ms);
+                                    }
+                                }
+                            }
+                            catch (FormatException)
+                            {
+                                // Not a valid Base-64 string, continue to other options
+                                Console.WriteLine("Data is not a valid Base-64 string");
+                            }
+
+                            // If we reach here, the string is neither a file path nor Base-64
+                            // Check if it's a relative path in the image directory
+                            string imageBasePath = ConfigurationManager.AppSettings["ImageBasePath"];
+                            if (!string.IsNullOrEmpty(imageBasePath))
+                            {
+                                string fullPath = Path.Combine(imageBasePath, stringData);
+                                if (File.Exists(fullPath))
+                                {
+                                    return Image.FromFile(fullPath);
+                                }
+                            }
+                        }
+                    }
+
+                    // If no image found in the database, try to load from file system
+                    string imageBasePathFallback = ConfigurationManager.AppSettings["ImageBasePath"];
+                    int productId = Convert.ToInt32(row["Product_ID"]);
+                    string description = row["description"].ToString();
+                    string barcode = row["barcode"].ToString();
+
+                    if (!string.IsNullOrEmpty(imageBasePathFallback) && Directory.Exists(imageBasePathFallback))
+                    {
+                        string[] extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif" };
+                        foreach (string ext in extensions)
+                        {
+                            string imagePath = Path.Combine(imageBasePathFallback, $"{productId}{ext}");
+                            if (File.Exists(imagePath)) return Image.FromFile(imagePath);
+
+                            imagePath = Path.Combine(imageBasePathFallback, $"{barcode}{ext}");
+                            if (File.Exists(imagePath)) return Image.FromFile(imagePath);
+
+                            string safeDescription = RemoveInvalidFileNameChars(description);
+                            imagePath = Path.Combine(imageBasePathFallback, $"{safeDescription}{ext}");
+                            if (File.Exists(imagePath)) return Image.FromFile(imagePath);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading image: {ex.Message}", "Error",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return null;
+        }
+
+        private string RemoveInvalidFileNameChars(string filename)
+        {
+            string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+            foreach (char c in invalidChars)
+            {
+                filename = filename.Replace(c.ToString(), "");
+            }
+            return filename;
         }
 
         private void btnSearchBill_Click(object sender, EventArgs e)
@@ -135,6 +498,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     DataPropertyName = "ProductSize_ID",
                     HeaderText = "ProductSize_ID",
+                    Name = "ProductSize_ID",
                     Visible = false
                 });
 
@@ -143,6 +507,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     DataPropertyName = "ItemName",
                     HeaderText = "Item Name",
+                    Name = "ItemName",
                     ReadOnly = true,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });
@@ -151,6 +516,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     DataPropertyName = "Brand",
                     HeaderText = "Brand",
+                    Name = "Brand",
                     ReadOnly = true,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });
@@ -159,6 +525,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     DataPropertyName = "Category",
                     HeaderText = "Category",
+                    Name = "Category",
                     ReadOnly = true,
                     AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
                 });

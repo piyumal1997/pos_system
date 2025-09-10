@@ -5998,15 +5998,15 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 InitializeComponent();
 
                 this.AutoScroll = true; // Enable automatic scrolling
-                this.AutoScrollMinSize = new Size(0, 1500); // Set minimum scroll area (adjust height as needed)
+                this.AutoScrollMinSize = new Size(0, 1400); // Set minimum scroll area (adjust height as needed)
                 LoadDefaultCharts();
                 isInitializing = false;
             }
 
             private void InitializeComponent()
             {
-                // Form setup - Increased height to 900
-                this.Size = new Size(1200, 1500);
+                // Form setup - Increased height to 1400
+                this.Size = new Size(1200, 1400);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.Dock = DockStyle.Fill;
                 this.BackColor = BackgroundColor;
@@ -6094,7 +6094,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 var controlPanel = new Panel
                 {
                     Dock = DockStyle.Top,
-                    Height = 80,
+                    Height = 60,
                     BackColor = HeaderColor,
                     Padding = new Padding(20, 15, 20, 15)
                 };
@@ -6170,15 +6170,15 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 cmbDateRange.SelectedIndexChanged += CmbDateRange_SelectedIndexChanged;
 
                 controlPanel.Controls.AddRange(new Control[] {
-                lblDateRange, cmbDateRange, dtpStartDate, dtpEndDate, lblTo, btnGenerate
-            });
+                    lblDateRange, cmbDateRange, dtpStartDate, dtpEndDate, lblTo, btnGenerate
+                });
 
                 // Split container for charts - Increased splitter distance to 400
                 var splitContainer = new SplitContainer
                 {
                     Dock = DockStyle.Fill,
                     Orientation = Orientation.Horizontal,
-                    SplitterDistance = 400, // Increased from 350 to give more space to both charts
+                    SplitterDistance = 300, // Increased from 350 to give more space to both charts
                     SplitterWidth = 8, // Added some width to make the splitter more visible
                     BackColor = Color.LightGray
                 };
@@ -6446,95 +6446,151 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 try
                 {
+                    // Clear any existing data
+                    categorySalesChart.Series.Clear();
+                    categorySalesChart.AxisX.Clear();
+                    categorySalesChart.AxisY.Clear();
+
                     // Get data from stored procedure
                     DataTable data = _reportService.GetCategorySales(startDate, endDate);
 
-                    // Prepare data for chart
-                    var seriesCollection = new SeriesCollection();
-                    var labels = new List<string>();
-                    var categories = new Dictionary<string, ChartValues<decimal>>();
+                    // Debug: Check what data we're getting
+                    Debug.WriteLine($"Data table has {data?.Rows.Count ?? 0} rows");
+                    if (data != null)
+                    {
+                        foreach (DataRow row in data.Rows)
+                        {
+                            Debug.WriteLine($"Category: {row["CategoryName"]}, Period: {row["Period"]}, Sales: {row["TotalSales"]}");
+                        }
+                    }
 
+                    // Check if we have valid data
+                    if (data == null || data.Rows.Count == 0)
+                    {
+                        // Create a simple message on the chart
+                        var series = new ColumnSeries
+                        {
+                            Title = "No Data",
+                            Values = new ChartValues<decimal> { 1 },
+                            DataLabels = true,
+                            LabelPoint = point => "No data available"
+                        };
+
+                        categorySalesChart.Series.Add(series);
+
+                        categorySalesChart.AxisX.Add(new LiveCharts.Wpf.Axis
+                        {
+                            Title = "No Data",
+                            Labels = new[] { "Select a different date range" }
+                        });
+
+                        categorySalesChart.AxisY.Add(new LiveCharts.Wpf.Axis
+                        {
+                            Title = "Sales Amount",
+                            LabelFormatter = value => value.ToString("C2")
+                        });
+
+                        return;
+                    }
+
+                    // Process the data for the chart
                     bool isSingleDay = (endDate - startDate).TotalDays <= 1;
+                    var allPeriods = new List<string>();
+                    var categorySales = new Dictionary<string, Dictionary<string, decimal>>();
 
-                    // Group data by category and period
+                    // First, collect all unique periods and category data
                     foreach (DataRow row in data.Rows)
                     {
                         string category = row["CategoryName"].ToString();
-                        string period = isSingleDay ?
-                            Convert.ToDateTime(row["Period"]).ToString("HH:mm") :
-                            Convert.ToDateTime(row["Period"]).ToString("MMM dd");
+                        DateTime periodDate = Convert.ToDateTime(row["Period"]);
+                        string period = isSingleDay ? periodDate.ToString("HH:mm") : periodDate.ToString("MMM dd");
                         decimal sales = Convert.ToDecimal(row["TotalSales"]);
 
-                        // Add period to labels if not already present
-                        if (!labels.Contains(period))
-                            labels.Add(period);
+                        // Add period to our list if not already there
+                        if (!allPeriods.Contains(period))
+                            allPeriods.Add(period);
 
-                        // Initialize category if not exists
-                        if (!categories.ContainsKey(category))
-                            categories[category] = new ChartValues<decimal>();
+                        // Initialize category dictionary if needed
+                        if (!categorySales.ContainsKey(category))
+                            categorySales[category] = new Dictionary<string, decimal>();
+
+                        // Add sales data for this category and period
+                        categorySales[category][period] = sales;
                     }
 
-                    // Fill category values for each period
-                    foreach (string period in labels)
+                    // Sort periods chronologically
+                    if (isSingleDay)
                     {
-                        foreach (var category in categories)
-                        {
-                            // Find matching row or set to zero
-                            var matchingRows = data.Select($"CategoryName = '{category.Key}' AND Period = '{period}'");
-                            decimal value = matchingRows.Length > 0 ? Convert.ToDecimal(matchingRows[0]["TotalSales"]) : 0;
-                            category.Value.Add(value);
-                        }
+                        allPeriods = allPeriods.OrderBy(p => DateTime.ParseExact(p, "HH:mm", null)).ToList();
+                    }
+                    else
+                    {
+                        allPeriods = allPeriods.OrderBy(p => DateTime.ParseExact(p, "MMM dd", null)).ToList();
                     }
 
                     // Create series for each category
                     var colors = new[] {
-                    System.Windows.Media.Color.FromRgb(41, 128, 185),   // Primary blue
-                    System.Windows.Media.Color.FromRgb(231, 76, 60),    // Red
-                    System.Windows.Media.Color.FromRgb(39, 174, 96),    // Green
-                    System.Windows.Media.Color.FromRgb(241, 196, 15),   // Yellow
-                    System.Windows.Media.Color.FromRgb(142, 68, 173),   // Purple
-                    System.Windows.Media.Color.FromRgb(44, 62, 80),     // Dark blue
-                    System.Windows.Media.Color.FromRgb(243, 156, 18)    // Orange
-                };
+            System.Windows.Media.Color.FromRgb(41, 128, 185),   // Primary blue
+            System.Windows.Media.Color.FromRgb(231, 76, 60),    // Red
+            System.Windows.Media.Color.FromRgb(39, 174, 96),    // Green
+            System.Windows.Media.Color.FromRgb(241, 196, 15),   // Yellow
+            System.Windows.Media.Color.FromRgb(142, 68, 173),   // Purple
+            System.Windows.Media.Color.FromRgb(44, 62, 80),     // Dark blue
+            System.Windows.Media.Color.FromRgb(243, 156, 18)    // Orange
+        };
 
                     int colorIndex = 0;
-                    foreach (var category in categories)
+                    foreach (var category in categorySales.Keys)
                     {
+                        var values = new ChartValues<decimal>();
+
+                        // For each period, get the sales value for this category
+                        foreach (string period in allPeriods)
+                        {
+                            decimal value = categorySales[category].ContainsKey(period) ?
+                                categorySales[category][period] : 0;
+                            values.Add(value);
+                        }
+
                         var series = new ColumnSeries
                         {
-                            Title = category.Key,
-                            Values = category.Value,
-                            Fill = new System.Windows.Media.SolidColorBrush(colors[colorIndex % colors.Length])
+                            Title = category,
+                            Values = values,
+                            Fill = new System.Windows.Media.SolidColorBrush(colors[colorIndex % colors.Length]),
+                            DataLabels = true,
+                            LabelPoint = point => point.Y > 0 ? point.Y.ToString("N2") : ""
                         };
 
-                        seriesCollection.Add(series);
+                        categorySalesChart.Series.Add(series);
                         colorIndex++;
                     }
 
-                    // Clear existing series and add new ones
-                    categorySalesChart.Series = seriesCollection;
-
-                    // Configure X-axis - Fixed: Use fully qualified name
-                    categorySalesChart.AxisX.Clear();
+                    // Configure X-axis
                     categorySalesChart.AxisX.Add(new LiveCharts.Wpf.Axis
                     {
                         Title = isSingleDay ? "Time" : "Date",
-                        Labels = labels.ToArray(),
+                        Labels = allPeriods.ToArray(),
                         Separator = new LiveCharts.Wpf.Separator { StrokeThickness = 0.5 }
                     });
 
-                    // Configure Y-axis - Fixed: Use fully qualified name
-                    categorySalesChart.AxisY.Clear();
+                    // Configure Y-axis
                     categorySalesChart.AxisY.Add(new LiveCharts.Wpf.Axis
                     {
                         Title = "Sales Amount",
                         LabelFormatter = value => value.ToString("N2")
                     });
 
+                    // Set legend location
                     categorySalesChart.LegendLocation = LegendLocation.Right;
+
+                    // Force chart update
+                    categorySalesChart.Update(true, true);
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine($"Error in LoadCategorySalesChart: {ex.Message}");
+                    Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+
                     MessageBox.Show($"Error loading category sales chart: {ex.Message}", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }

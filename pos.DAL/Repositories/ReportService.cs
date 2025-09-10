@@ -2,6 +2,7 @@
 using System;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 
 namespace pos_system.pos.BLL.Repositories
 {
@@ -35,9 +36,13 @@ namespace pos_system.pos.BLL.Repositories
                 cmd.Parameters.AddWithValue("@StartDate", startDate);
                 cmd.Parameters.AddWithValue("@EndDate", endDate);
 
+                Debug.WriteLine($"Executing sp_GetCategorySales with StartDate: {startDate}, EndDate: {endDate}");
+
                 conn.Open();
                 var dt = new DataTable();
                 dt.Load(cmd.ExecuteReader());
+
+                Debug.WriteLine($"Retrieved {dt.Rows.Count} rows");
                 return dt;
             }
         }
