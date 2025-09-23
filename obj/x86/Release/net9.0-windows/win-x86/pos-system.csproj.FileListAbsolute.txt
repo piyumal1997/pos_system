@@ -542,6 +542,7 @@ D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.BarcodePrintForm.resources
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.BrandForm.resources
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.CategoryForm.resources
+D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.ImagePreviewDialog.resources
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.ItemForm.resources
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.SearchItemForm.resources
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.BillDiscountForm.resources
@@ -566,4 +567,3 @@ D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\refint\pos-system.
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos-system.pdb
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos-system.genruntimeconfig.cache
 D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\ref\pos-system.dll
-D:\Projects\pos-system\obj\x86\Release\net9.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.ImagePreviewDialog.resources

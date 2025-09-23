@@ -88,6 +88,7 @@ namespace pos_system.pos.DAL.Repositories
                                 SaleDate = GetSafeDateTime(reader, "SaleDate"),
                                 ItemDescription = GetSafeString(reader, "ItemDescription"),
                                 Size = GetSafeString(reader, "Size"),
+                                UnitCost = GetSafeDecimal(reader, "UnitCost"),
                                 Quantity = GetSafeInt(reader, "Quantity"),
                                 UnitPrice = GetSafeDecimal(reader, "UnitPrice"),
                                 MaxAllowedDiscount = GetSafeDecimal(reader, "MaxAllowedDiscount"),

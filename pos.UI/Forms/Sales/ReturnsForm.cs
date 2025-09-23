@@ -754,7 +754,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 PrintCentered("RETURN RECEIPT", output, true);
                 PrintCentered("STYLE NEWAGE", output);
                 PrintCentered("No.102, Negombo Rd, Narammala.", output);
-                PrintCentered("Tel: 077491913 / 0374545097", output);
+                PrintCentered("Tel: 0777491913 / 0374545097", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 // Print return details
@@ -777,14 +777,14 @@ namespace pos_system.pos.UI.Forms.Sales
                     if (!string.IsNullOrEmpty(item.Size))
                         PrintLeft($"Size: {item.Size}", output);
 
-                    PrintLeft(item.ItemName, output);
-                    PrintLeftRight(string.Empty, $"{item.Quantity}   {item.Refund:C}", output);
+                    //PrintLeft(item.ItemName, output); //Description not needed
+                    PrintLeftRight(string.Empty, $"{item.Quantity}   {item.Refund:N2}", output);
                     output.AddRange(Encoding.ASCII.GetBytes("\n"));
                 }
 
                 // Print footer
                 PrintSeparator(output);
-                PrintLeftRight("TOTAL REFUND:", receiptData.TotalRefund.ToString("C"), output, true);
+                PrintLeftRight("TOTAL REFUND:", receiptData.TotalRefund.ToString("N2"), output, true);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 PrintCentered("Thank you for your business!", output);
