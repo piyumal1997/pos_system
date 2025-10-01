@@ -1,44 +1,45 @@
-﻿using pos_system.pos.BLL.Services;
-using pos_system.pos.DAL.Repositories;
-using pos_system.pos.Models;
-using System.Data;
-using System.Drawing.Printing;
-using System.Runtime.InteropServices;
-using BarTender;
-using BTFormat = BarTender.Format;
-using BTApplication = BarTender.Application;
-using System.Diagnostics;
-using pos_system.pos.Core;
-using RetailPOS.BLL.Services;
+﻿using BarTender;
+using ClosedXML.Excel;
+using FontAwesome.Sharp;
 using LiveCharts;
 using LiveCharts.WinForms;
-using System.Drawing.Drawing2D;
-using FontAwesome.Sharp;
 using LiveCharts.Wpf;
-using Microsoft.Data.SqlClient;
-using pos_system.pos.DAL;
-using static pos_system.pos.UI.Forms.Dashboard.CashierForm;
-using pos_system.pos.UI.Forms.Inventory;
 using LiveCharts.Wpf.Charts.Base;
+using Microsoft.Data.SqlClient;
+using Microsoft.Identity.Client;
+using pos_system.pos.BLL.Repositories;
+using pos_system.pos.BLL.Services;
+using pos_system.pos.Core;
+using pos_system.pos.DAL;
+using pos_system.pos.DAL.Repositories;
+using pos_system.pos.Models;
+using pos_system.pos.UI.Forms.Common;
+using pos_system.pos.UI.Forms.Inventory;
+using RetailPOS.BLL.Services;
+using System;
 using System;
 using System.Collections.Generic;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Printing;
 using System.Linq;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Windows.Forms;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using System.Text;
-using pos_system.pos.UI.Forms.Common;
-using System.ComponentModel;
-using ClosedXML.Excel;
-using System.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
+using static pos_system.pos.UI.Forms.Dashboard.CashierForm;
+using BTApplication = BarTender.Application;
+using BTFormat = BarTender.Format;
 using CartesianChart = LiveCharts.WinForms.CartesianChart;
 using SeriesCollection = LiveCharts.SeriesCollection;
-using pos_system.pos.BLL.Repositories;
 
 
 
@@ -272,6 +273,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private Label lblTodaysSales;
             private Label lblTodaysCOGS;
             private Label lblTodaysQuantity;
+            private Label lblTodaysProfit;
 
             public DashboardForm()
             {
@@ -364,6 +366,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 CreateModernCard("Brands", "0", IconChar.Tags, PrimaryColor, out lblTotalBrands);
                 CreateModernCard("Today's Sales", "0.00", IconChar.DollarSign, SuccessColor, out lblTodaysSales);
                 CreateModernCard("Today's COS", "0.00", IconChar.MoneyBillWave, WarningColor, out lblTodaysCOGS);
+                CreateModernCard("Today's Profit", "0.00", IconChar.DollarSign, WarningColor, out lblTodaysProfit);
                 CreateModernCard("Today's Quantity", "0", IconChar.ShoppingCart, PrimaryColor, out lblTodaysQuantity);
 
                 // LiveCharts CartesianChart
@@ -621,9 +624,10 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     lblTotalReturns.Text = _metrics.TotalReturns.ToString("N0");
                     lblTotalCategories.Text = _metrics.TotalCategories.ToString("N0");
                     lblTotalBrands.Text = _metrics.TotalBrands.ToString("N0");
+                    lblTodaysSales.Text = _metrics.TodaysSales.ToString("N2");
                     lblTodaysCOGS.Text = _metrics.TodaysCOGS.ToString("N2");
-                    lblTodaysCOGS.Text = _metrics.TodaysCOGS.ToString("N2");
-                    lblTodaysQuantity.Text = _metrics.TodaysQuantity.ToString("N2");
+                    lblTodaysProfit.Text = (_metrics.TodaysSales - _metrics.TodaysCOGS).ToString("N2");
+                    lblTodaysQuantity.Text = _metrics.TodaysQuantity.ToString("N0");
 
                     // Update chart with LiveCharts
                     UpdateChart();
@@ -4117,12 +4121,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 var tokenActivity = _currentReport.TokenActivity;
 
                 // Update summary labels with new mappings
-                summaryLabels[0].Text = cashFlow.CashInflow.ToString("N2");  // Total Sales → CashInflow
-                summaryLabels[1].Text = accounting.NetCOGS.ToString("N2");    // Total Cost
-                summaryLabels[2].Text = accounting.NetProfit.ToString("N2");  // Gross Profit
+                //ActualCost, ActualProfit & ActualSales
+                summaryLabels[0].Text = accounting.ActualSales.ToString("N2");  // Total Sales → CashInflow
+                summaryLabels[1].Text = accounting.ActualCost.ToString("N2");    // Total Cost
+                summaryLabels[2].Text = accounting.ActualProfit.ToString("N2");  // Gross Profit
+
                 summaryLabels[3].Text = accounting.NetItemsSold.ToString("N0");  // Items Sold
                 summaryLabels[4].Text = accounting.BillCount.ToString("N0");  // Bills Processed
-                summaryLabels[5].Text = tokenActivity.TokenValueUsed.ToString("N2");  // Return Value (was Avg Bill Value)
+                summaryLabels[5].Text = tokenActivity.TokenValueIssued.ToString("N2");  // Return Value
                 summaryLabels[6].Text = cashFlow.CashSales.ToString("N2");    // Cash Sales
                 summaryLabels[7].Text = cashFlow.CardSales.ToString("N2");    // Card Sales
                 summaryLabels[8].Text = cashFlow.BankSales.ToString("N2");    // Bank Transfers
@@ -4173,7 +4179,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 PrintCentered("SALES SUMMARY REPORT", output, true);
                 PrintCentered("STYLE NEWAGE", output);
                 PrintCentered("No.102, Negombo Rd, Narammala.", output);
-                PrintCentered("Tel: 077491913 / 0374545097", output);
+                PrintCentered("Tel: 0777491913 / 0374545097", output);
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
 
                 // Print date range

@@ -448,7 +448,6 @@ D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.Composition
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.Composition.TypedParts.dll
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.IdentityModel.Tokens.Jwt.dll
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.Memory.Data.dll
-D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.Security.Cryptography.ProtectedData.dll
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\Microsoft.Expression.Interactions.dll
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\System.Windows.Interactivity.dll
 D:\Projects\pos-system\bin\x86\Release\net9.0-windows\win-x86\cs\Microsoft.CodeAnalysis.resources.dll

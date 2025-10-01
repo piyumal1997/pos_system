@@ -73,50 +73,123 @@ namespace pos_system.pos.DAL.Repositories
                 SELECT COUNT(*) 
                 FROM ProductSize 
                 WHERE quantity > 0;
-                
+
                 -- Active Employees
                 SELECT COUNT(*) FROM Employee WHERE status = 'Active';
-                
+
                 -- Total Bills
                 SELECT COUNT(*) FROM Bill WHERE BillStatus = 'Completed';
-                
+
                 -- Total Returns
                 SELECT COUNT(*) FROM [Return];
-                
+
                 -- Total Categories
                 SELECT COUNT(*) FROM Category;
-                
+
                 -- Total Brands
                 SELECT COUNT(*) FROM Brand;
-                
-                -- Today's Sales Income
-                SELECT COALESCE(SUM(
-                    CASE 
-                        WHEN B.Discount_Method = 'PerItem' 
-                            THEN (BI.ItemSellingPrice - BI.Per_item_Discount) * BI.quantity
-                        WHEN B.Discount_Method = 'TotalBill' 
-                            THEN (BI.ItemSellingPrice * BI.quantity) - (BI.ItemSellingPrice * BI.quantity * (B.Discount / NULLIF(bt.SubTotal,0)))
-                        ELSE BI.ItemSellingPrice * BI.quantity
-                    END
-                ), 0) 
-                FROM Bill B
-                INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
-                INNER JOIN (
-                    SELECT Bill_ID, SUM(ItemSellingPrice * quantity) AS SubTotal
-                    FROM Bill_Item
-                    GROUP BY Bill_ID
-                ) bt ON B.Bill_ID = bt.Bill_ID
-                WHERE B.BillStatus = 'Completed' 
-                    AND CAST(B.[date] AS DATE) = CAST(GETDATE() AS DATE);
-                
-                -- Today's COGS (using unitCost from ProductSize)
-                SELECT COALESCE(SUM(PS.unitCost * BI.quantity), 0)
-                FROM Bill B
-                INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
-                INNER JOIN ProductSize PS ON BI.ProductSize_ID = PS.ProductSize_ID
-                WHERE B.BillStatus = 'Completed' 
-                    AND CAST(B.[date] AS DATE) = CAST(GETDATE() AS DATE);
-                
+
+                -- Today's Sales Income (ActualSales) - Updated with consistent calculation
+                ;WITH SalesData AS (
+                    SELECT 
+                        b.Bill_ID,
+                        b.Token_ReturnID,
+                        NetAmount = 
+                            CASE 
+                                WHEN b.Discount_Method = 'PerItem' 
+                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                WHEN b.Discount_Method = 'TotalBill' 
+                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                            END,
+                        Cost = SUM(ps.unitCost * bi.quantity),
+                        AdditionalPayment = 
+                            CASE 
+                                WHEN b.Token_ReturnID IS NOT NULL THEN
+                                    CASE 
+                                        WHEN b.Discount_Method = 'PerItem' 
+                                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                        WHEN b.Discount_Method = 'TotalBill' 
+                                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                                    END 
+                                    - ISNULL(r.TotalRefund, 0)
+                                ELSE 0
+                            END
+                    FROM Bill b
+                    JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+                    JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+                    WHERE b.BillStatus = 'Completed'
+                      AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                    GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
+                ),
+                BillCostAnalysis AS (
+                    SELECT
+                        CashInflow = SUM(
+                            CASE 
+                                WHEN Token_ReturnID IS NULL THEN NetAmount
+                                ELSE AdditionalPayment
+                            END
+                        )
+                    FROM SalesData
+                )
+                SELECT COALESCE(CashInflow, 0) AS TodaySales
+                FROM BillCostAnalysis;
+
+                -- Today's COGS (ActualCost) - Updated with consistent calculation
+                ;WITH SalesData AS (
+                    SELECT 
+                        b.Bill_ID,
+                        b.Token_ReturnID,
+                        NetAmount = 
+                            CASE 
+                                WHEN b.Discount_Method = 'PerItem' 
+                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                WHEN b.Discount_Method = 'TotalBill' 
+                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                            END,
+                        Cost = SUM(ps.unitCost * bi.quantity),
+                        AdditionalPayment = 
+                            CASE 
+                                WHEN b.Token_ReturnID IS NOT NULL THEN
+                                    CASE 
+                                        WHEN b.Discount_Method = 'PerItem' 
+                                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                        WHEN b.Discount_Method = 'TotalBill' 
+                                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                                    END 
+                                    - ISNULL(r.TotalRefund, 0)
+                                ELSE 0
+                            END
+                    FROM Bill b
+                    JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+                    JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+                    WHERE b.BillStatus = 'Completed'
+                      AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                    GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
+                ),
+                BillCostAnalysis AS (
+                    SELECT
+                        RegularBillCost = SUM(CASE WHEN Token_ReturnID IS NULL THEN Cost ELSE 0 END),
+                        TokenBillAdditionalPayment = SUM(AdditionalPayment),
+                        TokenBillFullCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
+                        TokenBillFullSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END),
+                        TokenBillCostRatio = 
+                            CASE 
+                                WHEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END) > 0
+                                THEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END) / 
+                                     SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END)
+                                ELSE 0
+                            END
+                    FROM SalesData
+                )
+                SELECT COALESCE(RegularBillCost + (TokenBillAdditionalPayment * TokenBillCostRatio), 0) AS TodayCOGS
+                FROM BillCostAnalysis;
+
                 -- Today's Sales Quantity
                 SELECT COALESCE(SUM(BI.quantity), 0)
                 FROM Bill B

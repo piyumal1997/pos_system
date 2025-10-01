@@ -1154,14 +1154,7 @@
         }
       },
       "System.Security.Cryptography.Pkcs/9.0.0": {},
-      "System.Security.Cryptography.ProtectedData/9.0.4": {
-        "runtime": {
-          "lib/net9.0/System.Security.Cryptography.ProtectedData.dll": {
-            "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
-          }
-        }
-      },
+      "System.Security.Cryptography.ProtectedData/9.0.4": {},
       "System.Text.Encoding.CodePages/5.0.0": {
         "dependencies": {
           "Microsoft.NETCore.Platforms": "5.0.0"

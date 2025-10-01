@@ -44,7 +44,11 @@ namespace pos_system.pos.DAL.Repositories
                             GrossItemsSold = GetSafeInt(reader, "GrossItemsSold"),
                             ReturnedItems = GetSafeInt(reader, "ReturnedItems"),
                             NetItemsSold = GetSafeInt(reader, "NetItemsSold"),
-                            BillCount = GetSafeInt(reader, "BillCount")
+                            BillCount = GetSafeInt(reader, "BillCount"),
+                            //ActualCost, ActualProfit & ActualSales
+                            ActualSales = GetSafeDecimal(reader, "ActualSales"),
+                            ActualCost = GetSafeDecimal(reader, "ActualCost"),
+                            ActualProfit = GetSafeDecimal(reader, "ActualProfit")
                         };
                     }
 
@@ -132,14 +136,14 @@ namespace pos_system.pos.DAL.Repositories
                             {
                                 Bill_ID = GetSafeInt(reader, "Bill_ID"),
                                 PaymentMethod = GetSafeString(reader, "PaymentMethod"),
-                                Employee_ID = GetSafeInt(reader, "Employee_ID"),
+                                //Employee_ID = GetSafeInt(reader, "Employee_ID"),
                                 Discount_Method = GetSafeString(reader, "Discount_Method"),
                                 CustomerContact = GetSafeString(reader, "CustomerContact"),
                                 Token_Value = GetSafeNullableDecimal(reader, "Token_Value"),
                                 SaleDate = GetSafeDateTime(reader, "SaleDate"),
                                 GrossAmount = GetSafeDecimal(reader, "GrossAmount"),
                                 NetAmount = GetSafeDecimal(reader, "NetAmount"),
-                                CashPayment = GetSafeDecimal(reader, "CashPayment")
+                                //CashPayment = GetSafeDecimal(reader, "CashPayment")
                             });
                         }
                     }

@@ -26,6 +26,9 @@ namespace pos_system.pos.Models
         public int ReturnedItems { get; set; }
         public int NetItemsSold { get; set; }
         public int BillCount { get; set; }
+        public decimal ActualCost { get; set; }
+        public decimal ActualProfit { get; set; }
+        public decimal ActualSales { get; set; }
     }
 
     public class CashFlowSummary
