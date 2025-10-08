@@ -444,11 +444,11 @@ namespace pos_system.pos.UI.Forms.Sales
                 lblBillDate.Text = _billDate.ToString("yyyy-MM-dd");
 
                 TimeSpan difference = DateTime.Now - _billDate;
-                _billExpired = difference.TotalDays > 30;
+                _billExpired = difference.TotalDays > 90;
 
                 if (_billExpired)
                 {
-                    ThemedMessageBox.Show($"This bill is from {_billDate:yyyy-MM-dd} and is more than 30 days old. Returns are not allowed.",
+                    ThemedMessageBox.Show($"This bill is from {_billDate:yyyy-MM-dd} and is more than 90 days old. Returns are not allowed.",
                         "Bill Expired", ThemedMessageBoxIcon.Warning);
                     btnProcessReturn.Enabled = false;
                     return;

@@ -7,6 +7,7 @@ using LiveCharts.Wpf;
 using LiveCharts.Wpf.Charts.Base;
 using Microsoft.Data.SqlClient;
 using Microsoft.Identity.Client;
+using OfficeOpenXml.Packaging.Ionic.Zlib;
 using pos_system.pos.BLL.Repositories;
 using pos_system.pos.BLL.Services;
 using pos_system.pos.Core;
@@ -102,14 +103,15 @@ namespace pos_system.pos.UI.Forms.Dashboard
             lblWelcome.MouseMove += headerPanel_MouseMove;
             lblWelcome.MouseUp += (s, e) => { _dragging = false; };
 
-            CreateSidebarButton("Dashboard", "🏠", 80);
-            CreateSidebarButton("Items", "📦", 140);
-            CreateSidebarButton("Employees", "👥", 200);
-            CreateSidebarButton("Reports", "📊", 260);
-            CreateSidebarButton("Brand && Category", "🏷️", 320);
-            CreateSidebarButton("Barcode Print", "🖨️", 380);
-            CreateSidebarButton("Sales", "💲", 440);
-            CreateSidebarButton("Bills", "📄", 500);
+            CreateSidebarButton("Dashboard", "🏠", 40);
+            CreateSidebarButton("Items", "📦", 100);
+            CreateSidebarButton("Employees", "👥", 160);
+            CreateSidebarButton("Reports", "📊", 220);
+            CreateSidebarButton("Brand && Category", "🏷️", 280);
+            CreateSidebarButton("Barcode Print", "🖨️", 340);
+            CreateSidebarButton("Sales", "💲", 400);
+            CreateSidebarButton("Bills", "📄", 460);
+            CreateSidebarButton("Return Checking", "🔄", 520);
             CreateSidebarButton("Logout", "🔒", 580);
 
             OpenChildForm(new DashboardForm(), _dashboardButton);
@@ -190,6 +192,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         break;
                     case "Bills":
                         OpenChildForm(new Bills(), btn);
+                        break;
+                    case "Return Checking":
+                        OpenChildForm(new ReturnChecking(), btn);
                         break;
                     case "Logout":
                         Logout();
@@ -393,7 +398,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                 dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
                 {
-                    LabelFormatter = value => value.ToString("0.00"),
+                    MinValue = 0,
+                    LabelFormatter = value => value.ToString("N2"),
                     Separator = new Separator
                     {
                         Stroke = new System.Windows.Media.SolidColorBrush(
@@ -600,6 +606,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 // Y-Axis Configuration (Fixed)
                 dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
                 {
+                    MinValue = 0,
                     // Remove hardcoded min/max to auto-scale
                     LabelFormatter = value => value.ToString("N2"),
                     Separator = new Separator
@@ -5992,27 +5999,109 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private TabControl tabControl;
             private CartesianChart billTimeChart;
             private CartesianChart categorySalesChart;
+
+            // Main chart controls
             private ComboBox cmbDateRange;
             private DateTimePicker dtpStartDate;
             private DateTimePicker dtpEndDate;
             private Button btnGenerate;
             private Label lblTo;
+
+            // Category chart controls
+            private ComboBox cmbCategoryDateRange;
+            private DateTimePicker dtpCategoryStartDate;
+            private DateTimePicker dtpCategoryEndDate;
+            private Button btnCategoryGenerate;
+            private Label lblCategoryTo;
+
             private bool isInitializing = true;
+            private SplitContainer mainHorizontalSplitContainer;
 
             public ReportsView()
             {
                 InitializeComponent();
+                this.Load += ReportsView_Load; // Use Load event instead of Shown
 
-                this.AutoScroll = true; // Enable automatic scrolling
-                this.AutoScrollMinSize = new Size(0, 1400); // Set minimum scroll area (adjust height as needed)
-                LoadDefaultCharts();
+                this.AutoScroll = true;
+                this.AutoScrollMinSize = new Size(0, 1800);
                 isInitializing = false;
+            }
+
+            private void ReportsView_Load(object sender, EventArgs e)
+            {
+                LoadDefaultCharts();
+                // Splitter distance will be set after controls are fully initialized
+                System.Windows.Forms.Application.Idle += Application_Idle; // Wait for idle to ensure layout is complete
+            }
+
+            private void Application_Idle(object sender, EventArgs e)
+            {
+                System.Windows.Forms.Application.Idle -= Application_Idle; // Only run once
+                SafeSetSplitterDistance();
+            }
+
+            private void SafeSetSplitterDistance()
+            {
+                if (mainHorizontalSplitContainer == null || mainHorizontalSplitContainer.Height <= 0)
+                    return;
+
+                try
+                {
+                    // Calculate the available height for panels (total height minus splitter width)
+                    int totalHeight = mainHorizontalSplitContainer.Height;
+                    int splitterWidth = mainHorizontalSplitContainer.SplitterWidth;
+                    int availableHeight = totalHeight - splitterWidth;
+
+                    // Calculate equal split
+                    int equalSplit = availableHeight / 2;
+
+                    // Get the minimum and maximum allowed values
+                    int minAllowed = mainHorizontalSplitContainer.Panel1MinSize;
+                    int maxAllowed = totalHeight - mainHorizontalSplitContainer.Panel2MinSize - splitterWidth;
+
+                    // Ensure the splitter distance is within valid bounds
+                    int safeSplitterDistance = equalSplit;
+
+                    if (safeSplitterDistance < minAllowed)
+                    {
+                        safeSplitterDistance = minAllowed;
+                    }
+                    else if (safeSplitterDistance > maxAllowed)
+                    {
+                        safeSplitterDistance = maxAllowed;
+                    }
+
+                    // Only set if it's different from current value and within valid range
+                    if (safeSplitterDistance >= minAllowed && safeSplitterDistance <= maxAllowed)
+                    {
+                        if (mainHorizontalSplitContainer.SplitterDistance != safeSplitterDistance)
+                        {
+                            mainHorizontalSplitContainer.SplitterDistance = safeSplitterDistance;
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: Use a percentage-based approach that's guaranteed to be valid
+                        int fallbackDistance = (int)(totalHeight * 0.45); // 45% for first panel
+                        fallbackDistance = Math.Max(minAllowed, Math.Min(fallbackDistance, maxAllowed));
+
+                        if (fallbackDistance >= minAllowed && fallbackDistance <= maxAllowed)
+                        {
+                            mainHorizontalSplitContainer.SplitterDistance = fallbackDistance;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error setting splitter distance: {ex.Message}");
+                    // Ignore the error - the splitter will use its default position
+                }
             }
 
             private void InitializeComponent()
             {
-                // Form setup - Increased height to 1400
-                this.Size = new Size(1200, 1400);
+                // Form setup
+                this.Size = new Size(1200, 900);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.Dock = DockStyle.Fill;
                 this.BackColor = BackgroundColor;
@@ -6096,105 +6185,39 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     Padding = new Padding(20, 0, 0, 0)
                 };
 
-                // Control panel
-                var controlPanel = new Panel
-                {
-                    Dock = DockStyle.Top,
-                    Height = 60,
-                    BackColor = HeaderColor,
-                    Padding = new Padding(20, 15, 20, 15)
-                };
-
-                // Date range combo box
-                var lblDateRange = new Label
-                {
-                    Text = "Date Range:",
-                    Location = new Point(0, 10),
-                    Size = new Size(100, 20),
-                    Font = new Font("Segoe UI", 10),
-                    ForeColor = ForegroundColor
-                };
-
-                cmbDateRange = new ComboBox
-                {
-                    Location = new Point(110, 7),
-                    Size = new Size(150, 25),
-                    DropDownStyle = ComboBoxStyle.DropDownList,
-                    Font = new Font("Segoe UI", 10)
-                };
-
-                cmbDateRange.Items.AddRange(new object[] {
-                "Today", "Yesterday", "This Week", "Last Week",
-                "This Month", "Last Month", "Custom"
-            });
-
-                // Date pickers (initially hidden)
-                dtpStartDate = new DateTimePicker
-                {
-                    Location = new Point(270, 7),
-                    Size = new Size(120, 25),
-                    Format = DateTimePickerFormat.Short,
-                    Visible = false
-                };
-
-                dtpEndDate = new DateTimePicker
-                {
-                    Location = new Point(400, 7),
-                    Size = new Size(120, 25),
-                    Format = DateTimePickerFormat.Short,
-                    Visible = false
-                };
-
-                // lblTo initialization
-                lblTo = new Label
-                {
-                    Text = "to",
-                    Location = new Point(395, 10),
-                    Size = new Size(20, 20),
-                    Font = new Font("Segoe UI", 10),
-                    ForeColor = ForegroundColor,
-                    Visible = false
-                };
-
-                // Generate button
-                btnGenerate = new Button
-                {
-                    Text = "GENERATE",
-                    Size = new Size(120, 35),
-                    Location = new Point(530, 5),
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = { BorderSize = 0 },
-                    BackColor = PrimaryColor,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    Cursor = Cursors.Hand
-                };
-                btnGenerate.Click += BtnGenerate_Click;
-
-                // Set selected index and attach event handler AFTER all controls are initialized
-                cmbDateRange.SelectedIndex = 0;
-                cmbDateRange.SelectedIndexChanged += CmbDateRange_SelectedIndexChanged;
-
-                controlPanel.Controls.AddRange(new Control[] {
-                    lblDateRange, cmbDateRange, dtpStartDate, dtpEndDate, lblTo, btnGenerate
-                });
-
-                // Split container for charts - Increased splitter distance to 400
-                var splitContainer = new SplitContainer
+                // Main horizontal split container for top-bottom charts (two rows)
+                mainHorizontalSplitContainer = new SplitContainer
                 {
                     Dock = DockStyle.Fill,
                     Orientation = Orientation.Horizontal,
-                    SplitterDistance = 300, // Increased from 350 to give more space to both charts
-                    SplitterWidth = 8, // Added some width to make the splitter more visible
-                    BackColor = Color.LightGray
+                    SplitterWidth = 8,
+                    BackColor = Color.LightGray,
+                    Panel1MinSize = 150,  // Correct property on the SplitContainer
+                    Panel2MinSize = 150   // Correct property on the SplitContainer
+                    //Panel1 = { MinSize = 150 },  // Increased minimum sizes
+                    //Panel2 = { MinSize = 150 }   // Increased minimum sizes
                 };
 
-                // Bill time chart
-                var billChartPanel = new Panel
+                // Handle resize to maintain reasonable sizes (but don't force equal)
+                mainHorizontalSplitContainer.Resize += (sender, e) =>
+                {
+                    // Don't automatically adjust on resize - let user have control
+                    // SafeSetSplitterDistance();
+                };
+
+                // --- TOP PANEL: Bill Time Chart ---
+                var topPanel = new Panel { Dock = DockStyle.Fill };
+
+                // Control panel for bill chart
+                var billControlPanel = CreateBillControlPanel();
+                billControlPanel.Dock = DockStyle.Top;
+
+                // Chart container for bill time chart
+                var billChartContainer = new Panel
                 {
                     Dock = DockStyle.Fill,
-                    Padding = new Padding(10),
-                    BackColor = BackgroundColor
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(10)
                 };
 
                 var lblBillChart = new Label
@@ -6210,19 +6233,28 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 billTimeChart = new CartesianChart
                 {
                     Dock = DockStyle.Fill,
-                    BackColor = BackgroundColor,
-                    MinimumSize = new Size(0, 200) // Added minimum height
+                    BackColor = BackgroundColor
                 };
 
-                billChartPanel.Controls.Add(billTimeChart);
-                billChartPanel.Controls.Add(lblBillChart);
+                billChartContainer.Controls.Add(billTimeChart);
+                billChartContainer.Controls.Add(lblBillChart);
 
-                // Category sales chart
-                var categoryChartPanel = new Panel
+                topPanel.Controls.Add(billChartContainer);
+                topPanel.Controls.Add(billControlPanel);
+
+                // --- BOTTOM PANEL: Category Sales Chart ---
+                var bottomPanel = new Panel { Dock = DockStyle.Fill };
+
+                // Control panel for category chart
+                var categoryControlPanel = CreateCategoryControlPanel();
+                categoryControlPanel.Dock = DockStyle.Top;
+
+                // Chart container for category sales chart
+                var categoryChartContainer = new Panel
                 {
                     Dock = DockStyle.Fill,
-                    Padding = new Padding(10),
-                    BackColor = BackgroundColor
+                    BackColor = BackgroundColor,
+                    Padding = new Padding(10)
                 };
 
                 var lblCategoryChart = new Label
@@ -6238,23 +6270,200 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 categorySalesChart = new CartesianChart
                 {
                     Dock = DockStyle.Fill,
-                    BackColor = BackgroundColor,
-                    MinimumSize = new Size(0, 200) // Added minimum height
+                    BackColor = BackgroundColor
                 };
 
-                categoryChartPanel.Controls.Add(categorySalesChart);
-                categoryChartPanel.Controls.Add(lblCategoryChart);
+                categoryChartContainer.Controls.Add(categorySalesChart);
+                categoryChartContainer.Controls.Add(lblCategoryChart);
 
-                splitContainer.Panel1.Controls.Add(billChartPanel);
-                splitContainer.Panel2.Controls.Add(categoryChartPanel);
+                bottomPanel.Controls.Add(categoryChartContainer);
+                bottomPanel.Controls.Add(categoryControlPanel);
+
+                // Assemble the main horizontal split container
+                mainHorizontalSplitContainer.Panel1.Controls.Add(topPanel);
+                mainHorizontalSplitContainer.Panel2.Controls.Add(bottomPanel);
 
                 // Layout
                 titlePanel.Controls.Add(lblTitle);
-                panel.Controls.Add(splitContainer);
-                panel.Controls.Add(controlPanel);
+                panel.Controls.Add(mainHorizontalSplitContainer);
                 panel.Controls.Add(titlePanel);
 
                 return panel;
+            }
+
+            private Panel CreateBillControlPanel()
+            {
+                var controlPanel = new Panel
+                {
+                    Height = 60,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(20, 15, 20, 15),
+                    Margin = new Padding(0, 0, 0, 5)
+                };
+
+                // Date range combo box
+                var lblDateRange = new Label
+                {
+                    Text = "Bill Chart Date Range:",
+                    Location = new Point(0, 15),
+                    Size = new Size(150, 20),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = ForegroundColor
+                };
+
+                cmbDateRange = new ComboBox
+                {
+                    Location = new Point(160, 12),
+                    Size = new Size(150, 25),
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 10)
+                };
+
+                cmbDateRange.Items.AddRange(new object[] {
+            "Today", "Yesterday", "This Week", "Last Week",
+            "This Month", "Last Month", "Custom"
+        });
+
+                // Date pickers (initially hidden)
+                dtpStartDate = new DateTimePicker
+                {
+                    Location = new Point(320, 12),
+                    Size = new Size(120, 25),
+                    Format = DateTimePickerFormat.Short,
+                    Visible = false
+                };
+
+                dtpEndDate = new DateTimePicker
+                {
+                    Location = new Point(450, 12),
+                    Size = new Size(120, 25),
+                    Format = DateTimePickerFormat.Short,
+                    Visible = false
+                };
+
+                // lblTo initialization
+                lblTo = new Label
+                {
+                    Text = "to",
+                    Location = new Point(445, 15),
+                    Size = new Size(20, 20),
+                    Font = new Font("Segoe UI", 10),
+                    ForeColor = ForegroundColor,
+                    Visible = false
+                };
+
+                // Generate button
+                btnGenerate = new Button
+                {
+                    Text = "GENERATE BILL CHART",
+                    Size = new Size(200, 35),
+                    Location = new Point(580, 10),
+                    FlatStyle = FlatStyle.Flat,
+                    FlatAppearance = { BorderSize = 0 },
+                    BackColor = PrimaryColor,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnGenerate.Click += BtnGenerate_Click;
+
+                // Set selected index and attach event handler
+                cmbDateRange.SelectedIndex = 0;
+                cmbDateRange.SelectedIndexChanged += CmbDateRange_SelectedIndexChanged;
+
+                controlPanel.Controls.AddRange(new Control[] {
+            lblDateRange, cmbDateRange, dtpStartDate, dtpEndDate, lblTo, btnGenerate
+        });
+
+                return controlPanel;
+            }
+
+            private Panel CreateCategoryControlPanel()
+            {
+                var categoryControlPanel = new Panel
+                {
+                    Height = 60,
+                    BackColor = HeaderColor,
+                    Padding = new Padding(20, 15, 20, 15),
+                    Margin = new Padding(0, 0, 0, 5)
+                };
+
+                // Label for the dropdown
+                var lblCategoryDateRange = new Label
+                {
+                    Text = "Category Chart Date Range:",
+                    Location = new Point(0, 15),
+                    Size = new Size(190, 20),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = ForegroundColor
+                };
+
+                // ComboBox for category chart date range
+                cmbCategoryDateRange = new ComboBox
+                {
+                    Location = new Point(200, 12),
+                    Size = new Size(150, 25),
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 10)
+                };
+                cmbCategoryDateRange.Items.AddRange(new object[] {
+            "Today", "Yesterday", "This Week", "Last Week",
+            "This Month", "Last Month", "Custom"
+        });
+                cmbCategoryDateRange.SelectedIndex = 0;
+
+                // Date pickers for category chart (initially hidden)
+                dtpCategoryStartDate = new DateTimePicker
+                {
+                    Location = new Point(360, 12),
+                    Size = new Size(120, 25),
+                    Format = DateTimePickerFormat.Short,
+                    Visible = false
+                };
+
+                dtpCategoryEndDate = new DateTimePicker
+                {
+                    Location = new Point(490, 12),
+                    Size = new Size(120, 25),
+                    Format = DateTimePickerFormat.Short,
+                    Visible = false
+                };
+
+                // Label for "to"
+                lblCategoryTo = new Label
+                {
+                    Text = "to",
+                    Location = new Point(485, 15),
+                    Size = new Size(20, 20),
+                    Font = new Font("Segoe UI", 10),
+                    ForeColor = ForegroundColor,
+                    Visible = false
+                };
+
+                // Generate button for category chart
+                btnCategoryGenerate = new Button
+                {
+                    Text = "GENERATE CATEGORY CHART",
+                    Size = new Size(240, 35),
+                    Location = new Point(620, 10),
+                    FlatStyle = FlatStyle.Flat,
+                    FlatAppearance = { BorderSize = 0 },
+                    BackColor = PrimaryColor,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnCategoryGenerate.Click += BtnCategoryGenerate_Click;
+
+                // Set event handler for category date range
+                cmbCategoryDateRange.SelectedIndexChanged += CmbCategoryDateRange_SelectedIndexChanged;
+
+                categoryControlPanel.Controls.AddRange(new Control[] {
+            lblCategoryDateRange, cmbCategoryDateRange, dtpCategoryStartDate,
+            dtpCategoryEndDate, lblCategoryTo, btnCategoryGenerate
+        });
+
+                return categoryControlPanel;
             }
 
             private Panel CreateReportsLayout()
@@ -6305,7 +6514,6 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
             private void CmbDateRange_SelectedIndexChanged(object sender, EventArgs e)
             {
-                // Check if we're still initializing or if controls are null
                 if (isInitializing || lblTo == null || dtpStartDate == null || dtpEndDate == null)
                     return;
 
@@ -6315,26 +6523,34 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 lblTo.Visible = isCustom;
             }
 
-            private void BtnGenerate_Click(object sender, EventArgs e)
+            private void CmbCategoryDateRange_SelectedIndexChanged(object sender, EventArgs e)
             {
-                LoadCharts();
+                if (isInitializing || lblCategoryTo == null || dtpCategoryStartDate == null || dtpCategoryEndDate == null)
+                    return;
+
+                bool isCustom = cmbCategoryDateRange.SelectedItem.ToString() == "Custom";
+                dtpCategoryStartDate.Visible = isCustom;
+                dtpCategoryEndDate.Visible = isCustom;
+                lblCategoryTo.Visible = isCustom;
             }
 
-            private void LoadDefaultCharts()
+            private void BtnGenerate_Click(object sender, EventArgs e)
             {
-                // Load default data (last 7 days)
-                DateTime endDate = DateTime.Today;
-                DateTime startDate = endDate.AddDays(-7);
-
+                DateTime startDate, endDate;
+                CalculateDateRange(cmbDateRange.SelectedItem.ToString(), dtpStartDate, dtpEndDate, out startDate, out endDate);
                 LoadBillTimeChart(startDate, endDate);
+            }
+
+            private void BtnCategoryGenerate_Click(object sender, EventArgs e)
+            {
+                DateTime startDate, endDate;
+                CalculateDateRange(cmbCategoryDateRange.SelectedItem.ToString(), dtpCategoryStartDate, dtpCategoryEndDate, out startDate, out endDate);
                 LoadCategorySalesChart(startDate, endDate);
             }
 
-            private void LoadCharts()
+            private void CalculateDateRange(string selectedRange, DateTimePicker startPicker, DateTimePicker endPicker, out DateTime startDate, out DateTime endDate)
             {
-                DateTime startDate, endDate;
-
-                switch (cmbDateRange.SelectedItem.ToString())
+                switch (selectedRange)
                 {
                     case "Today":
                         startDate = DateTime.Today;
@@ -6361,14 +6577,21 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         endDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddSeconds(-1);
                         break;
                     case "Custom":
-                        startDate = dtpStartDate.Value;
-                        endDate = dtpEndDate.Value.AddDays(1).AddSeconds(-1);
+                        startDate = startPicker.Value;
+                        endDate = endPicker.Value.AddDays(1).AddSeconds(-1);
                         break;
                     default:
                         startDate = DateTime.Today.AddDays(-7);
                         endDate = DateTime.Today.AddDays(1).AddSeconds(-1);
                         break;
                 }
+            }
+
+            private void LoadDefaultCharts()
+            {
+                // Load default data (last 7 days) for both charts
+                DateTime endDate = DateTime.Today;
+                DateTime startDate = endDate.AddDays(-7);
 
                 LoadBillTimeChart(startDate, endDate);
                 LoadCategorySalesChart(startDate, endDate);
@@ -6421,7 +6644,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                     billTimeChart.Series.Add(series);
 
-                    // Configure X-axis - Fixed: Use fully qualified name
+                    // Configure X-axis
                     billTimeChart.AxisX.Clear();
                     billTimeChart.AxisX.Add(new LiveCharts.Wpf.Axis
                     {
@@ -6431,10 +6654,11 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         LabelsRotation = 30
                     });
 
-                    // Configure Y-axis - Fixed: Use fully qualified name
+                    // Configure Y-axis
                     billTimeChart.AxisY.Clear();
                     billTimeChart.AxisY.Add(new LiveCharts.Wpf.Axis
                     {
+                        MinValue = 0,
                         Title = "Sales Amount",
                         LabelFormatter = value => value.ToString("N2")
                     });
@@ -6492,8 +6716,9 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                         categorySalesChart.AxisY.Add(new LiveCharts.Wpf.Axis
                         {
+                            MinValue = 0,
                             Title = "Sales Amount",
-                            LabelFormatter = value => value.ToString("C2")
+                            LabelFormatter = value => value.ToString("N2")
                         });
 
                         return;
@@ -6536,14 +6761,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
                     // Create series for each category
                     var colors = new[] {
-            System.Windows.Media.Color.FromRgb(41, 128, 185),   // Primary blue
-            System.Windows.Media.Color.FromRgb(231, 76, 60),    // Red
-            System.Windows.Media.Color.FromRgb(39, 174, 96),    // Green
-            System.Windows.Media.Color.FromRgb(241, 196, 15),   // Yellow
-            System.Windows.Media.Color.FromRgb(142, 68, 173),   // Purple
-            System.Windows.Media.Color.FromRgb(44, 62, 80),     // Dark blue
-            System.Windows.Media.Color.FromRgb(243, 156, 18)    // Orange
-        };
+                System.Windows.Media.Color.FromRgb(41, 128, 185),   // Primary blue
+                System.Windows.Media.Color.FromRgb(231, 76, 60),    // Red
+                System.Windows.Media.Color.FromRgb(39, 174, 96),    // Green
+                System.Windows.Media.Color.FromRgb(241, 196, 15),   // Yellow
+                System.Windows.Media.Color.FromRgb(142, 68, 173),   // Purple
+                System.Windows.Media.Color.FromRgb(44, 62, 80),     // Dark blue
+                System.Windows.Media.Color.FromRgb(243, 156, 18)    // Orange
+            };
 
                     int colorIndex = 0;
                     foreach (var category in categorySales.Keys)
@@ -6582,6 +6807,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     // Configure Y-axis
                     categorySalesChart.AxisY.Add(new LiveCharts.Wpf.Axis
                     {
+                        MinValue = 0,
                         Title = "Sales Amount",
                         LabelFormatter = value => value.ToString("N2")
                     });
@@ -6601,6 +6827,10 @@ namespace pos_system.pos.UI.Forms.Dashboard
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+        public partial class ReturnChecking : Form
+        {
+            
         }
     }
 }
