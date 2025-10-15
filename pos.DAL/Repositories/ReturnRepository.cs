@@ -173,6 +173,121 @@ namespace pos_system.pos.BLL.Repositories
                 throw new Exception($"Error getting receipt data: {ex.Message}", ex);
             }
         }
+
+        public DataTable GetReturns(int? returnId = null, int? billId = null, bool? isUsed = null, DateTime? returnDate = null)
+        {
+            try
+            {
+                string query = @"
+                    SELECT 
+                        r.Return_ID,
+                        r.OriginalBill_ID,
+                        r.ReturnDate,
+                        r.TotalRefund,
+                        r.IsUsed,
+                        b_used.Bill_ID AS UsedInBill_ID,
+                        e.firstName + ' ' + e.lastName AS EmployeeName
+                    FROM [Return] r
+                    JOIN Employee e ON r.Employee_ID = e.Employee_ID
+                    LEFT JOIN Bill b_used ON r.Return_ID = b_used.Token_ReturnID
+                    WHERE 1=1";
+
+                var parameters = new List<SqlParameter>();
+
+                if (returnId.HasValue)
+                {
+                    query += " AND r.Return_ID = @ReturnId";
+                    parameters.Add(new SqlParameter("@ReturnId", returnId.Value));
+                }
+
+                if (billId.HasValue)
+                {
+                    query += " AND r.OriginalBill_ID = @BillId";
+                    parameters.Add(new SqlParameter("@BillId", billId.Value));
+                }
+
+                if (isUsed.HasValue)
+                {
+                    query += " AND r.IsUsed = @IsUsed";
+                    parameters.Add(new SqlParameter("@IsUsed", isUsed.Value));
+                }
+
+                if (returnDate.HasValue)
+                {
+                    query += " AND CAST(r.ReturnDate AS DATE) = @ReturnDate";
+                    parameters.Add(new SqlParameter("@ReturnDate", returnDate.Value));
+                }
+
+                query += " ORDER BY r.ReturnDate DESC";
+
+                return DbHelper.GetDataTable(query, CommandType.Text, parameters.ToArray());
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting returns: {ex.Message}", ex);
+            }
+        }
+
+        public DataTable GetReturnItems(int returnId)
+        {
+            try
+            {
+                string query = @"
+                    SELECT 
+                        p.description AS Description,
+                        br.brandName AS BrandName,
+                        cat.categoryName AS CategoryName,
+                        s.SizeLabel,
+                        ri.Quantity,
+                        ri.RefundAmount,
+                        rr.Description AS ReasonDescription,
+                        ri.IsRestocked
+                    FROM ReturnItem ri
+                    JOIN ReturnReason rr ON ri.Reason_ID = rr.Reason_ID
+                    JOIN ProductSize ps ON ri.ProductSize_ID = ps.ProductSize_ID
+                    JOIN Product p ON ps.Product_ID = p.Product_ID
+                    LEFT JOIN Brand br ON p.Brand_ID = br.Brand_ID
+                    LEFT JOIN Category cat ON p.Category_ID = cat.Category_ID
+                    LEFT JOIN Size s ON ps.Size_ID = s.Size_ID
+                    WHERE ri.Return_ID = @ReturnId";
+
+                SqlParameter[] parameters = { new SqlParameter("@ReturnId", returnId) };
+
+                return DbHelper.GetDataTable(query, CommandType.Text, parameters);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting return items: {ex.Message}", ex);
+            }
+        }
+
+        public DataTable GetTokenUsageReport()
+        {
+            try
+            {
+                string query = @"
+                    SELECT 
+                        r.Return_ID,
+                        r.OriginalBill_ID,
+                        r.ReturnDate,
+                        r.TotalRefund AS TokenValue,
+                        r.IsUsed,
+                        b_used.Bill_ID AS UsedInBill_ID,
+                        b_used.[date] AS UsedDate,
+                        e_used.firstName + ' ' + e_used.lastName AS UsedByEmployee,
+                        DATEDIFF(DAY, r.ReturnDate, COALESCE(b_used.[date], GETDATE())) AS DaysSinceReturn
+                    FROM [Return] r
+                    LEFT JOIN Bill b_used ON r.Return_ID = b_used.Token_ReturnID
+                    LEFT JOIN Employee e_used ON b_used.Employee_ID = e_used.Employee_ID
+                    ORDER BY r.ReturnDate DESC";
+
+                return DbHelper.GetDataTable(query, CommandType.Text);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting token usage report: {ex.Message}", ex);
+            }
+        }
     }
 
     public class ReturnResult

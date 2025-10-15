@@ -14,6 +14,12 @@ namespace pos_system.pos.Models
         public string Reason { get; set; }
         public string RefundMethod { get; set; }
         public int? TokenUsedInBill { get; set; }
+        public bool IsUsed { get; set; }
+        public DateTime? UsedDate { get; set; }
+        public string ProcessedBy { get; set; }
+        public string BrandName { get; set; }
+        public string CategoryName { get; set; }
+        public bool IsRestocked { get; set; }
     }
 
 }
