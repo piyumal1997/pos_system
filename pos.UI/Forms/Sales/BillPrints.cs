@@ -1,19 +1,21 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using pos_system.pos.BLL.Services;
+using pos_system.pos.BLL.Utilities;
+using pos_system.pos.DAL;
+using pos_system.pos.Models;
+using pos_system.pos.UI.Forms.Common;
+using RetailPOS.DAL.Repositories;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using pos_system.pos.BLL.Utilities;
-using pos_system.pos.Models;
-using System.Drawing.Printing;
-using pos_system.pos.DAL;
-using System.Configuration;
-using Microsoft.Data.SqlClient;
-using pos_system.pos.UI.Forms.Common;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -56,9 +58,14 @@ namespace pos_system.pos.UI.Forms.Sales
         private string _cashierName;
         private int _selectedBillId;
 
+        // Services
+        private BillService _billService;
+        private BillSummary _currentBillSummary;
+
         public BillPrints(Employee currentUser)
         {
             InitializeForm();
+            _billService = new BillService();
         }
 
         private void InitializeForm()
@@ -97,7 +104,7 @@ namespace pos_system.pos.UI.Forms.Sales
             };
             titlePanel.Controls.Add(lblTitle);
 
-            // Search panel - Increased height to 80 to accommodate two rows
+            // Search panel
             var searchPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -115,14 +122,14 @@ namespace pos_system.pos.UI.Forms.Sales
                 Padding = new Padding(0),
                 Margin = new Padding(0)
             };
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // Start date label
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120)); // Start date picker
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // End date label
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120)); // End date picker
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60)); // Start date label
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120)); // Start date picker
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140)); // End date label
-            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80)); // End date picker
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
+            searchLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
             searchLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             searchLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
 
@@ -192,7 +199,6 @@ namespace pos_system.pos.UI.Forms.Sales
             btnClear.Click += (s, e) => ClearSearch();
 
             // Add controls to search layout
-            // First row
             searchLayout.Controls.Add(lblStartDate, 0, 0);
             searchLayout.Controls.Add(dtpStartDate, 1, 0);
             searchLayout.Controls.Add(lblEndDate, 2, 0);
@@ -201,8 +207,6 @@ namespace pos_system.pos.UI.Forms.Sales
             searchLayout.Controls.Add(txtBillId, 5, 0);
             searchLayout.Controls.Add(lblCustomer, 6, 0);
             searchLayout.Controls.Add(txtCustomerContact, 7, 0);
-
-            // Add buttons to the second row
             searchLayout.Controls.Add(btnSearch, 6, 1);
             searchLayout.Controls.Add(btnClear, 7, 1);
 
@@ -406,14 +410,14 @@ namespace pos_system.pos.UI.Forms.Sales
             };
 
             // Configure column widths
-            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));  // Printer label
-            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // ComboBox
-            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100)); // Reprint button
-            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110)); // Test button
+            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80));
+            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+            controlTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
 
             // Configure row heights
-            controlTable.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); // First row
-            controlTable.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); // Second row
+            controlTable.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            controlTable.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
 
             // Printer label (first row)
             var lblPrinter = new Label
@@ -435,16 +439,16 @@ namespace pos_system.pos.UI.Forms.Sales
                 Margin = new Padding(0, 5, 10, 5)
             };
             controlTable.Controls.Add(cboPrinters, 1, 0);
-            controlTable.SetColumnSpan(cboPrinters, 3); // Span across remaining columns
+            controlTable.SetColumnSpan(cboPrinters, 3);
 
             // Reprint button (second row, column 1)
-            btnReprint = CreateButton("REPRINT BILL", PrimaryColor, 0, 0); // Size handled by docking
+            btnReprint = CreateButton("REPRINT BILL", PrimaryColor, 0, 0);
             btnReprint.Dock = DockStyle.Fill;
             btnReprint.Click += BtnReprint_Click;
             controlTable.Controls.Add(btnReprint, 1, 1);
 
             // Test print button (second row, column 2)
-            btnDummyPrint = CreateButton("TEST", Color.Teal, 0, 0); // Size handled by docking
+            btnDummyPrint = CreateButton("TEST", Color.Teal, 0, 0);
             btnDummyPrint.Dock = DockStyle.Fill;
             btnDummyPrint.Click += BtnDummyPrint_Click;
             controlTable.Controls.Add(btnDummyPrint, 2, 1);
@@ -454,19 +458,14 @@ namespace pos_system.pos.UI.Forms.Sales
 
             // Build panels
             leftPanel.Controls.Add(dgvBills);
-
             rightPanel.Controls.Add(itemsGroup);
             rightPanel.Controls.Add(controlsPanel);
-
             titlePanel.Controls.Add(lblTitle);
-
             contentPanel.Controls.Add(rightPanel);
             contentPanel.Controls.Add(leftPanel);
-
             container.Controls.Add(contentPanel);
             container.Controls.Add(searchPanel);
             container.Controls.Add(titlePanel);
-
             this.Controls.Add(container);
 
             // Initialize data
@@ -525,15 +524,7 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                // Validate date range
-                TimeSpan dateDiff = dtpEndDate.Value.Date - dtpStartDate.Value.Date;
-                if (dateDiff.TotalDays > 7)
-                {
-                    MessageBox.Show("Date range cannot exceed 7 days", "Validation Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
+                // Parse parameters
                 int? billId = null;
                 if (int.TryParse(txtBillId.Text, out int parsedBillId) && parsedBillId > 0)
                 {
@@ -546,45 +537,11 @@ namespace pos_system.pos.UI.Forms.Sales
                     customerContact = null;
                 }
 
-                string query = @"
-                    SELECT 
-                        b.Bill_ID,
-                        b.[date] AS BillDate,
-                        b.PaymentMethod,
-                        b.Discount_Method,
-                        b.Discount AS BillDiscount,
-                        b.CustomerContact,
-                        b.CardLast4,
-                        b.BankAccountLast4,
-                        b.Token_ReturnID,
-                        r.TotalRefund AS TokenValue,
-                        (SELECT SUM(bi.ItemSellingPrice * bi.quantity) 
-                         FROM Bill_Item bi WHERE bi.Bill_ID = b.Bill_ID) AS Subtotal,
-                        (SELECT SUM(bi.Per_item_Discount * bi.quantity) 
-                         FROM Bill_Item bi WHERE bi.Bill_ID = b.Bill_ID) AS TotalPerItemDiscount,
-                        (SELECT SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity) 
-                         FROM Bill_Item bi WHERE bi.Bill_ID = b.Bill_ID) 
-                            - CASE WHEN b.Discount_Method = 'TotalBill' THEN b.Discount ELSE 0 END
-                            AS NetTotal
-                    FROM Bill b
-                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
-                    WHERE b.BillStatus = 'Completed'
-                        AND (@BillID IS NULL OR b.Bill_ID = @BillID)
-                        AND (b.[date] >= @StartDate AND b.[date] < DATEADD(DAY, 1, @EndDate))
-                        AND (@CustomerContact IS NULL OR b.CustomerContact LIKE '%' + @CustomerContact + '%')";
+                // Use service layer to search bills
+                var result = _billService.SearchBills(billId, dtpStartDate.Value.Date, dtpEndDate.Value.Date, customerContact);
+                dgvBills.DataSource = result;
 
-                var parameters = new SqlParameter[]
-                {
-                    new SqlParameter("@BillID", billId ?? (object)DBNull.Value),
-                    new SqlParameter("@StartDate", dtpStartDate.Value.Date),
-                    new SqlParameter("@EndDate", dtpEndDate.Value.Date),
-                    new SqlParameter("@CustomerContact", customerContact ?? (object)DBNull.Value)
-                };
-
-                var dt = DbHelper.GetDataTable(query, CommandType.Text, parameters);
-                dgvBills.DataSource = dt;
-
-                if (dt.Rows.Count == 0)
+                if (result.Rows.Count == 0)
                 {
                     ThemedMessageBox.Show("No bills found matching the criteria", "Search Results",
                         ThemedMessageBoxIcon.Warning);
@@ -594,13 +551,18 @@ namespace pos_system.pos.UI.Forms.Sales
                 else
                 {
                     // Automatically select first row if only one bill found
-                    if (dt.Rows.Count == 1)
+                    if (result.Rows.Count == 1)
                     {
                         dgvBills.Rows[0].Selected = true;
-                        DgvBills_SelectionChanged(null, null); // Manually trigger selection
+                        DgvBills_SelectionChanged(null, null);
                     }
-                    btnReprint.Enabled = dt.Rows.Count > 0;
+                    btnReprint.Enabled = result.Rows.Count > 0;
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show(ex.Message, "Validation Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
@@ -639,75 +601,33 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                // Get bill header
-                string headerQuery = @"
-                    SELECT 
-                        b.[date], 
-                        b.PaymentMethod,
-                        b.Discount_Method,
-                        b.Discount,
-                        b.CustomerContact,
-                        b.CardLast4,
-                        b.BankAccountLast4,
-                        b.Token_ReturnID,
-                        r.TotalRefund AS TokenValue,
-                        e.firstName + ' ' + e.lastName AS CashierName
-                    FROM Bill b
-                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
-                    INNER JOIN Employee e ON b.Employee_ID = e.Employee_ID
-                    WHERE b.Bill_ID = @BillID";
+                // Get bill summary from service layer
+                _currentBillSummary = _billService.GetBillSummary(_selectedBillId);
 
-                var headerParams = new SqlParameter[]
+                if (_currentBillSummary?.Header == null)
                 {
-                    new SqlParameter("@BillID", _selectedBillId)
-                };
-
-                var headerTable = DbHelper.GetDataTable(headerQuery, CommandType.Text, headerParams);
-
-                if (headerTable.Rows.Count > 0)
-                {
-                    DataRow row = headerTable.Rows[0];
-                    _billDate = Convert.ToDateTime(row["date"]);
-                    _paymentMethod = row["PaymentMethod"] as string ?? "Unknown";
-                    string discountMethod = row["Discount_Method"] as string;
-                    _billDiscount = discountMethod == "TotalBill" ? Convert.ToDecimal(row["Discount"]) : 0;
-                    _customerContact = row["CustomerContact"] as string;
-                    _cardLast4 = row["CardLast4"] as string;
-                    _bankLast4 = row["BankAccountLast4"] as string;
-                    _tokenValue = row["TokenValue"] as decimal?;
-                    _cashierName = row["CashierName"] as string;
+                    MessageBox.Show("Bill not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
-                // Get bill items
-                string itemsQuery = @"
-                    SELECT 
-                        p.description,
-                        bi.ItemSellingPrice,
-                        bi.quantity,
-                        bi.Per_item_Discount,
-                        (bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity AS NetPrice
-                    FROM Bill_Item bi
-                    INNER JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
-                    INNER JOIN Product p ON ps.Product_ID = p.Product_ID
-                    WHERE bi.Bill_ID = @BillID";
+                // Set header properties
+                var header = _currentBillSummary.Header;
+                _billDate = header.BillDate;
+                _paymentMethod = header.PaymentMethod;
+                _billDiscount = header.DiscountMethod == "TotalBill" ? header.BillDiscount : 0;
+                _customerContact = header.CustomerContact;
+                _cardLast4 = header.CardLast4;
+                _bankLast4 = header.BankLast4;
+                _tokenValue = header.TokenValue;
+                _cashierName = header.CashierName;
 
-                var itemsParams = new SqlParameter[]
-                {
-                    new SqlParameter("@BillID", _selectedBillId)
-                };
+                // Set calculated totals
+                _subtotal = _currentBillSummary.Subtotal;
+                _totalPerItemDiscount = _currentBillSummary.TotalPerItemDiscount;
+                _total = _currentBillSummary.Total;
 
-                _billItems = DbHelper.GetDataTable(itemsQuery, CommandType.Text, itemsParams);
-
-                // Calculate totals
-                _subtotal = _billItems.AsEnumerable()
-                    .Sum(row => Convert.ToDecimal(row["ItemSellingPrice"]) * Convert.ToInt32(row["quantity"]));
-
-                _totalPerItemDiscount = _billItems.AsEnumerable()
-                    .Sum(row => Convert.ToDecimal(row["Per_item_Discount"]) * Convert.ToInt32(row["quantity"]));
-
-                _total = _subtotal - _totalPerItemDiscount - _billDiscount;
-
-                // Update UI
+                // Update UI - get DataTable for grid binding
+                _billItems = _billService.GetBillItemsForDisplay(_selectedBillId);
                 dgvBillItems.DataSource = _billItems;
             }
             catch (Exception ex)

@@ -7,7 +7,22 @@
     <Compile Update="pos.UI\Forms\Common\ThemedMessageBoxYesNo.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Controls\EmployeesManagement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\BarcodePrint.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Inventory\BarcodePrintForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\BrandAndCategory.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\BrandFormEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\CategoryFormEditor.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Inventory\ImagePreviewDialog.cs">
@@ -19,19 +34,19 @@
     <Compile Update="pos.UI\Forms\Inventory\ItemSearchCashier.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\ItemsManagement.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Inventory\SizeFormEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Sales\BillDiscountForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Sales\BillingForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="pos.UI\Forms\Inventory\BrandForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Update="pos.UI\Forms\Dashboard\CashierForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="pos.UI\Forms\Inventory\CategoryForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Controls\EmployeeForm.cs">
@@ -52,6 +67,9 @@
     <Compile Update="pos.UI\Forms\Sales\BillPrints.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Sales\Bills.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Sales\BillSearchCashier.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -70,7 +88,16 @@
     <Compile Update="pos.UI\Forms\Sales\QuantityForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Sales\ReportsView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\ReturnChecking.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Sales\ReturnsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\SalesForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Sales\SizeSelectionForm.cs">

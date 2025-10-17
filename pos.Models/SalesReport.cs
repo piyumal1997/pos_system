@@ -1,4 +1,5 @@
-﻿// Updated SalesReport.cs
+﻿using pos_system.pos.Models;
+
 namespace pos_system.pos.Models
 {
     public class SalesReport
@@ -51,17 +52,17 @@ namespace pos_system.pos.Models
         public decimal TokenValueOutstanding { get; set; }
     }
 
-    public class BillSummary
-    {
-        public int Bill_ID { get; set; }
-        public string PaymentMethod { get; set; }
-        public int Employee_ID { get; set; }
-        public string Discount_Method { get; set; }
-        public string CustomerContact { get; set; }
-        public decimal? Token_Value { get; set; }
-        public DateTime SaleDate { get; set; }
-        public decimal GrossAmount { get; set; }
-        public decimal NetAmount { get; set; }
-        public decimal CashPayment { get; set; }
-    }
+    //public class BillSummary
+    //{
+    //    public int Bill_ID { get; set; }
+    //    public string PaymentMethod { get; set; }
+    //    public int Employee_ID { get; set; }
+    //    public string Discount_Method { get; set; }
+    //    public string CustomerContact { get; set; }
+    //    public decimal? Token_Value { get; set; }
+    //    public DateTime SaleDate { get; set; }
+    //    public decimal GrossAmount { get; set; }
+    //    public decimal NetAmount { get; set; }
+    //    public decimal CashPayment { get; set; }
+    //}
 }
