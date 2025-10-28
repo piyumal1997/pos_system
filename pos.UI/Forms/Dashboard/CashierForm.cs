@@ -32,11 +32,38 @@ namespace pos_system.pos.UI.Forms.Dashboard
         private bool _dragging = false;
         private Point _dragStartPosition;
 
+        //public CashierForm(Employee user)
+        //{
+        //    InitializeComponent();
+        //    _currentUser = user;
+        //    SetupUI();
+        //}
+
         public CashierForm(Employee user)
         {
             InitializeComponent();
             _currentUser = user;
-            SetupUI();
+
+            // Load the form first
+            this.Load += (s, e) =>
+            {
+                SetupUI();
+            };
+
+            // Ensure BillingForm loads after everything is initialized
+            this.Shown += (s, e) =>
+            {
+                // Small delay to ensure everything is rendered
+                System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+                timer.Interval = 100;
+                timer.Tick += (sender, args) =>
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    LoadDefaultForm();
+                };
+                timer.Start();
+            };
         }
 
         private void InitializeComponent()
@@ -81,7 +108,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 BackColor = Color.Transparent,
                 UseVisualStyleBackColor = false,
                 Font = new Font("Segoe UI", 14),
-                Location = new Point(1151 - 45, 12) // Position left of close button
+                Location = new Point(1151 - 45, 12)
             };
             btnMinimize.Click += (s, e) => this.WindowState = FormWindowState.Minimized;
 
@@ -134,39 +161,28 @@ namespace pos_system.pos.UI.Forms.Dashboard
             this.Controls.Add(headerPanel);
 
             // Create sidebar buttons
-            CreateSidebarButton("Dashboard", "🏠", 80);
-            CreateSidebarButton("Billing", "💰", 140);
-            CreateSidebarButton("Returns", "🔄", 200);
-            CreateSidebarButton("Search Items", "🔍", 260);
-            CreateSidebarButton("Bills", "📄", 320);
-            CreateSidebarButton("Bill Prints", "🖨️", 380);
-            CreateSidebarButton("Logout", "🔒", 540);
+            CreateSidebarButtons();
 
-            OpenChildForm(new BillingForm(_currentUser), _dashboardButton);
+            // Load BillingForm by default
+            LoadDefaultForm();
         }
 
-        // Form dragging implementation
-        private void HeaderPanel_MouseDown(object sender, MouseEventArgs e)
+        private void CreateSidebarButtons()
         {
-            _dragging = true;
-            _dragStartPosition = new Point(e.X, e.Y);
+            // Store references to buttons
+            Button dashboardButton = CreateSidebarButton("Dashboard", "🏠", 80);
+            Button billingButton = CreateSidebarButton("Billing", "💰", 140);
+            Button returnsButton = CreateSidebarButton("Returns", "🔄", 200);
+            Button searchButton = CreateSidebarButton("Search Items", "🔍", 260);
+            Button billsButton = CreateSidebarButton("Bills", "📄", 320);
+            Button billPrintsButton = CreateSidebarButton("Bill Prints", "🖨️", 380);
+            Button logoutButton = CreateSidebarButton("Logout", "🔒", 540);
+
+            // Set billing button as the default active button
+            _dashboardButton = billingButton;
         }
 
-        private void HeaderPanel_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (_dragging)
-            {
-                Point newPoint = PointToScreen(new Point(e.X, e.Y));
-                Location = new Point(newPoint.X - _dragStartPosition.X, newPoint.Y - _dragStartPosition.Y);
-            }
-        }
-
-        private void HeaderPanel_MouseUp(object sender, MouseEventArgs e)
-        {
-            _dragging = false;
-        }
-
-        private void CreateSidebarButton(string text, string icon, int yPos)
+        private Button CreateSidebarButton(string text, string icon, int yPos)
         {
             Button btn = new Button
             {
@@ -182,8 +198,6 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 Padding = new Padding(20, 0, 0, 0),
                 Cursor = Cursors.Hand
             };
-
-            if (text == "Billing") _dashboardButton = btn;
 
             // Hover Effects
             btn.MouseEnter += (s, e) =>
@@ -226,7 +240,109 @@ namespace pos_system.pos.UI.Forms.Dashboard
             };
 
             _leftPanel.Controls.Add(btn);
+            return btn;
         }
+
+        private void LoadDefaultForm()
+        {
+            try
+            {
+                // Create and show BillingForm by default
+                var billingForm = new BillingForm(_currentUser);
+                OpenChildForm(billingForm, _dashboardButton);
+
+                // Force activation and focus
+                ActivateButton(_dashboardButton);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading Billing Form: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Form dragging implementation
+        private void HeaderPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+            _dragging = true;
+            _dragStartPosition = new Point(e.X, e.Y);
+        }
+
+        private void HeaderPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                Point newPoint = PointToScreen(new Point(e.X, e.Y));
+                Location = new Point(newPoint.X - _dragStartPosition.X, newPoint.Y - _dragStartPosition.Y);
+            }
+        }
+
+        private void HeaderPanel_MouseUp(object sender, MouseEventArgs e)
+        {
+            _dragging = false;
+        }
+
+        //private void CreateSidebarButton(string text, string icon, int yPos)
+        //{
+        //    Button btn = new Button
+        //    {
+        //        Text = $"{icon}  {text}",
+        //        Tag = text,
+        //        ForeColor = Color.FromArgb(71, 71, 71),
+        //        FlatStyle = FlatStyle.Flat,
+        //        FlatAppearance = { BorderSize = 0 },
+        //        Font = new Font("Segoe UI", 11),
+        //        Size = new Size(220, 50),
+        //        Location = new Point(0, yPos),
+        //        TextAlign = ContentAlignment.MiddleLeft,
+        //        Padding = new Padding(20, 0, 0, 0),
+        //        Cursor = Cursors.Hand
+        //    };
+
+        //    if (text == "Billing") _dashboardButton = btn;
+
+        //    // Hover Effects
+        //    btn.MouseEnter += (s, e) =>
+        //    {
+        //        if (btn != _currentButton) btn.BackColor = Color.FromArgb(225, 225, 225);
+        //    };
+
+        //    btn.MouseLeave += (s, e) =>
+        //    {
+        //        if (btn != _currentButton) btn.BackColor = Color.Transparent;
+        //    };
+
+        //    btn.Click += (s, e) =>
+        //    {
+        //        ActivateButton(btn);
+        //        switch (text)
+        //        {
+        //            case "Dashboard":
+        //                OpenChildForm(new DashboardView(_currentUser), btn);
+        //                break;
+        //            case "Billing":
+        //                OpenChildForm(new BillingForm(_currentUser), btn);
+        //                break;
+        //            case "Returns":
+        //                OpenChildForm(new ReturnsForm(_currentUser), btn);
+        //                break;
+        //            case "Search Items":
+        //                OpenChildForm(new ItemSearchCashier(_currentUser), btn);
+        //                break;
+        //            case "Bills":
+        //                OpenChildForm(new BillSearchCashier(_currentUser), btn);
+        //                break;
+        //            case "Bill Prints":
+        //                OpenChildForm(new BillPrints(_currentUser), btn);
+        //                break;
+        //            case "Logout":
+        //                Logout();
+        //                break;
+        //        }
+        //    };
+
+        //    _leftPanel.Controls.Add(btn);
+        //}
 
         private void CloseOwnerDashboard()
         {
@@ -252,18 +368,57 @@ namespace pos_system.pos.UI.Forms.Dashboard
             _currentButton = btn;
         }
 
+        //private void OpenChildForm(Form childForm, Button btn)
+        //{
+        //    if (_activeForm != null) _activeForm.Close();
+        //    ActivateButton(btn);
+        //    _activeForm = childForm;
+        //    childForm.TopLevel = false;
+        //    childForm.FormBorderStyle = FormBorderStyle.None;
+        //    childForm.Dock = DockStyle.Fill;
+        //    _mainPanel.Controls.Add(childForm);
+        //    _mainPanel.Tag = childForm;
+        //    childForm.BringToFront();
+        //    childForm.Show();
+        //}
+
         private void OpenChildForm(Form childForm, Button btn)
         {
-            if (_activeForm != null) _activeForm.Close();
-            ActivateButton(btn);
-            _activeForm = childForm;
-            childForm.TopLevel = false;
-            childForm.FormBorderStyle = FormBorderStyle.None;
-            childForm.Dock = DockStyle.Fill;
-            _mainPanel.Controls.Add(childForm);
-            _mainPanel.Tag = childForm;
-            childForm.BringToFront();
-            childForm.Show();
+            try
+            {
+                Console.WriteLine($"Opening child form: {childForm.GetType().Name}");
+
+                if (_activeForm != null)
+                {
+                    Console.WriteLine($"Closing active form: {_activeForm.GetType().Name}");
+                    _activeForm.Close();
+                    _activeForm.Dispose();
+                }
+
+                ActivateButton(btn);
+                _activeForm = childForm;
+                childForm.TopLevel = false;
+                childForm.FormBorderStyle = FormBorderStyle.None;
+                childForm.Dock = DockStyle.Fill;
+
+                Console.WriteLine($"Adding form to main panel. Main panel size: {_mainPanel.Size}");
+
+                _mainPanel.Controls.Add(childForm);
+                _mainPanel.Tag = childForm;
+                childForm.BringToFront();
+                childForm.Show();
+
+                Console.WriteLine($"Child form visible: {childForm.Visible}, Main panel controls: {_mainPanel.Controls.Count}");
+
+                // Force refresh
+                _mainPanel.Refresh();
+                childForm.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening form: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         //private void Logout()

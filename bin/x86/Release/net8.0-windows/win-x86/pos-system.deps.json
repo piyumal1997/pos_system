@@ -23,6 +23,7 @@
           "Microsoft.EntityFrameworkCore.SqlServer": "9.0.4",
           "Microsoft.EntityFrameworkCore.Sqlite.Core": "9.0.4",
           "Microsoft.EntityFrameworkCore.Tools": "9.0.4",
+          "Newtonsoft.Json": "13.0.4",
           "Security.Cryptography": "1.7.2",
           "System.Security.Cryptography.Cng": "5.0.0",
           "System.Security.Cryptography.ProtectedData": "9.0.4",
@@ -991,6 +992,14 @@
           }
         }
       },
+      "Newtonsoft.Json/13.0.4": {
+        "runtime": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.4.30916"
+          }
+        }
+      },
       "RBush.Signed/4.0.0": {
         "runtime": {
           "lib/net8.0/RBush.dll": {
@@ -1712,6 +1721,13 @@
       "sha512": "sha512-SPOb0ArHlC+Vq8wUqPbL8m+LK8rzFnfe45465F9Wo0Yf7A5CjfQ2xwAcRNUZT+vp53ojJaVrwe/8KL0j8Os/Vg==",
       "path": "mschartwrapper/1.0.0.1",
       "hashPath": "mschartwrapper.1.0.0.1.nupkg.sha512"
+    },
+    "Newtonsoft.Json/13.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A==",
+      "path": "newtonsoft.json/13.0.4",
+      "hashPath": "newtonsoft.json.13.0.4.nupkg.sha512"
     },
     "RBush.Signed/4.0.0": {
       "type": "package",

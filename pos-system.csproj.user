@@ -64,6 +64,9 @@
     <Compile Update="pos.UI\Forms\Common\ThemedMessageBox.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Sales\BillingFormAllWindows.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="pos.UI\Forms\Sales\BillPrints.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -86,6 +89,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Sales\QuantityForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="pos.UI\Forms\Sales\QueuedBillsForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="pos.UI\Forms\Sales\ReportsView.cs">

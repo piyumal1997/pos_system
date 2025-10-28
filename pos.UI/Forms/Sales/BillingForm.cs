@@ -1,4 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using pos_system.pos.BLL.Utilities;
 using pos_system.pos.DAL;
 using pos_system.pos.Models;
@@ -14,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Menu;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -43,9 +46,8 @@ namespace pos_system.pos.UI.Forms.Sales
         private DateTime _lastScanTime = DateTime.MinValue;
         private bool _isEditingGrid = false;
 
-        private DataGridViewTextBoxColumn colDiscountAmountPerItem;
-        //private DataGridViewButtonColumn colDelete;
-        //private DataGridViewTextBoxColumn colQuantity;
+        // Queue Management
+        private List<QueuedBill> _queuedBills = new List<QueuedBill>();
 
         #endregion
 
@@ -56,18 +58,40 @@ namespace pos_system.pos.UI.Forms.Sales
             public decimal TotalRefund { get; set; }
         }
 
-        public class BillItem
-        {
-            public int ProductSize_ID { get; set; }
-            public int Quantity { get; set; }
-            public decimal SellingPrice { get; set; }
-            public decimal Per_item_Discount { get; set; }
-        }
         #endregion
 
         #region Constructor and Initialization
         public BillingForm(Employee user)
         {
+            //try
+            //{
+            //    _currentUser = user;
+            //    InitializeComponent();
+
+            //    // Initialize components first
+            //    InitializeBarcodeScanner();
+            //    InitializeDataGridView();
+            //    InitializeCartDataTable();
+            //    GenerateBillId();
+            //    InitializeDateTimeTimer();
+
+            //    // Then attach event handlers
+            //    AttachEventHandlers();
+
+            //    // Don't use Load event for critical initialization
+            //    AttachGridEventHandlers();
+            //    LoadQueuedBills();
+
+            //    SetupKeyboardShortcuts();
+
+            //    // Ensure the form is ready to be displayed
+            //    this.Visible = true;
+            //}
+            //catch (Exception ex)
+            //{
+            //    HandleUnexpectedError(ex, "Initialization");
+            //}
+
             try
             {
                 _currentUser = user;
@@ -81,12 +105,14 @@ namespace pos_system.pos.UI.Forms.Sales
                 InitializeDateTimeTimer();
                 AttachEventHandlers();
                 this.Load += (s, e) => AttachGridEventHandlers();
+                LoadQueuedBills();
                 SetupKeyboardShortcuts();
             }
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "Initialization");
             }
+
         }
 
         private void InitializeBarcodeScanner()
@@ -133,6 +159,372 @@ namespace pos_system.pos.UI.Forms.Sales
             this.KeyDown += BillingForm_KeyDown;
         }
 
+        #endregion
+
+        #region Queue Management Methods
+        private void LoadQueuedBills()
+        {
+            try
+            {
+                using (var conn = DbHelper.GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("sp_GetQueuedBills", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            _queuedBills.Clear();
+                            while (reader.Read())
+                            {
+                                try
+                                {
+                                    var queuedBill = new QueuedBill
+                                    {
+                                        Queue_ID = reader.GetInt32("Queue_ID"),
+                                        Bill_ID = reader.GetInt32("Bill_ID"),
+                                        QueuePosition = reader.GetInt32("QueuePosition"),
+                                        PausedAt = reader.GetDateTime("PausedAt"),
+                                        CartData = reader.GetString("CartData")
+                                    };
+
+                                    // Safely handle ItemCount conversion
+                                    var itemCountValue = reader["ItemCount"];
+                                    if (itemCountValue != DBNull.Value)
+                                    {
+                                        queuedBill.ItemCount = Convert.ToInt32(itemCountValue);
+                                    }
+                                    else
+                                    {
+                                        queuedBill.ItemCount = 0;
+                                    }
+
+                                    // Safely handle SubTotal conversion
+                                    var subTotalValue = reader["SubTotal"];
+                                    if (subTotalValue != DBNull.Value)
+                                    {
+                                        queuedBill.SubTotal = Convert.ToDecimal(subTotalValue);
+                                    }
+                                    else
+                                    {
+                                        queuedBill.SubTotal = 0m;
+                                    }
+
+                                    _queuedBills.Add(queuedBill);
+                                }
+                                catch (Exception rowEx)
+                                {
+                                    // Log the error but continue processing other rows
+                                    Console.WriteLine($"Error processing queued bill: {rowEx.Message}");
+                                    // Add a basic bill without the problematic fields
+                                    _queuedBills.Add(new QueuedBill
+                                    {
+                                        Queue_ID = reader.GetInt32("Queue_ID"),
+                                        Bill_ID = reader.GetInt32("Bill_ID"),
+                                        QueuePosition = reader.GetInt32("QueuePosition"),
+                                        PausedAt = reader.GetDateTime("PausedAt"),
+                                        CartData = reader.GetString("CartData"),
+                                        ItemCount = 0,
+                                        SubTotal = 0m
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                UpdateQueueBadge();
+            }
+            catch (SqlException ex) when (ex.Number == 2812) // Procedure not found
+            {
+                // If stored procedure doesn't exist, just clear the queue
+                _queuedBills.Clear();
+                UpdateQueueBadge();
+                Console.WriteLine("Queue procedure not found - continuing without queue functionality");
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Load Queued Bills");
+            }
+        }
+
+        private bool CheckStoredProcedureExists(string procedureName)
+        {
+            try
+            {
+                using (var conn = DbHelper.GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand(@"
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.ROUTINES 
+                WHERE ROUTINE_TYPE = 'PROCEDURE' 
+                AND ROUTINE_NAME = @ProcedureName", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@ProcedureName", procedureName);
+                        var result = Convert.ToInt32(cmd.ExecuteScalar());
+                        return result > 0;
+                    }
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void UpdateQueueBadge()
+        {
+            int queuedCount = _queuedBills.Count;
+            btnViewQueuedBills.Text = queuedCount > 0 ?
+                $"Queued Bills ({queuedCount}) (F3)" : "Queued Bills (F3)";
+        }
+
+        private void BtnPauseBill_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_cartItems.Rows.Count == 0)
+                {
+                    ThemedMessageBox.Show("Cannot pause an empty bill", "Warning",
+                        ThemedMessageBoxIcon.Warning);
+                    return;
+                }
+
+                var result = ThemedMessageBoxYesNo.Show(
+                    "Pause current bill and start new one? You can restore it later.",
+                    "Pause Bill");
+
+                if (result != DialogResult.Yes) return;
+
+                // Serialize cart data with proper values
+                var cartData = new CartData
+                {
+                    Items = new List<CartItem>(),
+                    Subtotal = _subtotal,
+                    TotalDiscount = _totalDiscount,
+                    BillDiscountPercentage = _billDiscountPercentage,
+                    IsBillDiscountApplied = _isBillDiscountApplied,
+                    AppliedToken = _appliedToken,
+                    TokenApplied = _tokenApplied,
+                    ItemCount = _totalItems  // Make sure this is set
+                };
+
+                foreach (DataRow row in _cartItems.Rows)
+                {
+                    cartData.Items.Add(new CartItem
+                    {
+                        ProductSize_ID = Convert.ToInt32(row["ProductSize_ID"]),
+                        Product_ID = Convert.ToInt32(row["Product_ID"]),
+                        Barcode = row["Barcode"]?.ToString() ?? string.Empty,
+                        Brand = row["Brand"]?.ToString() ?? string.Empty,
+                        Category = row["Category"]?.ToString() ?? string.Empty,
+                        Description = row["Description"]?.ToString() ?? string.Empty,
+                        Size = row["Size"]?.ToString() ?? string.Empty,
+                        Price = Convert.ToDecimal(row["Price"]),
+                        Quantity = Convert.ToInt32(row["Quantity"]),
+                        DiscountAmountPerItem = Convert.ToDecimal(row["DiscountAmountPerItem"]),
+                        MaxDiscount = Convert.ToDecimal(row["MaxDiscount"]),
+                        AvailableStock = Convert.ToInt32(row["AvailableStock"])
+                    });
+                }
+
+                string serializedCart = JsonConvert.SerializeObject(cartData,
+                    new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore,
+                        DefaultValueHandling = DefaultValueHandling.Include
+                    });
+
+                // Save to database
+                using (var conn = DbHelper.GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("sp_PauseCurrentBill", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+                        cmd.Parameters.AddWithValue("@CartData", serializedCart);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var queuePosition = Convert.ToInt32(reader["QueuePosition"]);
+                                var newBillId = Convert.ToInt32(reader["NewBillID"]);
+
+                                ThemedMessageBox.Show(
+                                    $"Bill #{_billId} paused and added to queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+                                    "Bill Paused", ThemedMessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                }
+
+                // Start new bill
+                ClearBill();
+                LoadQueuedBills();
+            }
+            catch (SqlException ex)
+            {
+                // Handle specific SQL errors
+                if (ex.Message.Contains("BillStatus"))
+                {
+                    ShowError("Database configuration error. Please contact administrator to fix BillStatus column.");
+                }
+                else
+                {
+                    HandleDatabaseError(ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Pause Bill");
+            }
+        }
+
+        private void BtnViewQueuedBills_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_queuedBills.Count == 0)
+                {
+                    ThemedMessageBox.Show("No queued bills found", "Information",
+                        ThemedMessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var queueForm = new QueuedBillsForm(_queuedBills))
+                {
+                    if (queueForm.ShowDialog() == DialogResult.OK && queueForm.SelectedBill != null)
+                    {
+                        RestoreQueuedBill(queueForm.SelectedBill);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "View Queued Bills");
+            }
+        }
+
+        private void RestoreQueuedBill(QueuedBill queuedBill)
+        {
+            try
+            {
+                if (_cartItems.Rows.Count > 0)
+                {
+                    var result = ThemedMessageBoxYesNo.Show(
+                        "Current bill will be paused. Restore selected bill?",
+                        "Confirm Restore");
+
+                    if (result != DialogResult.Yes) return;
+
+                    // Pause current bill first
+                    BtnPauseBill_Click(this, EventArgs.Empty);
+                }
+
+                using (var conn = DbHelper.GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("sp_RestorePausedBill", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@QueueID", queuedBill.Queue_ID);
+                        cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                int restoredBillId = reader.GetInt32("BillID");
+                                string cartDataJson = reader.GetString("CartData");
+
+                                // Load the restored bill
+                                LoadBillFromCartData(restoredBillId, cartDataJson);
+
+                                ThemedMessageBox.Show("Bill restored successfully", "Success",
+                                    ThemedMessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                }
+
+                LoadQueuedBills();
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Restore Queued Bill");
+            }
+        }
+
+        private void LoadBillFromCartData(int billId, string cartDataJson)
+        {
+            try
+            {
+                // Clear current bill
+                ClearBill();
+
+                // Deserialize cart data
+                var cartData = JsonConvert.DeserializeObject<CartData>(cartDataJson);
+
+                // Set bill ID
+                _billId = billId;
+                lblBillId.Text = $"Bill ID: {_billId}";
+
+                // Restore cart items
+                foreach (var item in cartData.Items)
+                {
+                    _cartItems.Rows.Add(
+                        item.ProductSize_ID,
+                        item.Product_ID,
+                        item.Barcode,
+                        item.Brand,
+                        item.Category,
+                        item.Description,
+                        item.Size,
+                        item.Price,
+                        item.Quantity,
+                        item.DiscountAmountPerItem,
+                        0, // DiscountAmount
+                        0, // NetPrice
+                        item.MaxDiscount,
+                        item.AvailableStock
+                    );
+                }
+
+                // Restore discounts and tokens
+                _subtotal = cartData.Subtotal;
+                _totalDiscount = cartData.TotalDiscount;
+                _billDiscountPercentage = cartData.BillDiscountPercentage;
+                _isBillDiscountApplied = cartData.IsBillDiscountApplied;
+                _appliedToken = cartData.AppliedToken;
+                _tokenApplied = cartData.TokenApplied;
+
+                // Update UI
+                UpdateSummary();
+
+                if (_isBillDiscountApplied)
+                {
+                    lblBillDiscount.Text = $"-Rs.{(_subtotal * (_billDiscountPercentage / 100)):0.00} ({_billDiscountPercentage}%)";
+                }
+
+                if (_tokenApplied)
+                {
+                    txtTokenId.Text = _appliedToken.ReturnId.ToString();
+                    txtTokenId.Enabled = false;
+                    btnApplyToken.Enabled = false;
+                }
+
+                FocusBarcodeScanner();
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Load Bill from Cart Data");
+            }
+        }
         #endregion
 
         #region Barcode Scanning Implementation
@@ -195,6 +587,16 @@ namespace pos_system.pos.UI.Forms.Sales
                 else if (e.KeyCode == Keys.F1) // Clear bill
                 {
                     btnClearBill.PerformClick();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.F2) // Pause bill
+                {
+                    btnPauseBill.PerformClick();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.F3) // View queued bills
+                {
+                    btnViewQueuedBills.PerformClick();
                     e.Handled = true;
                 }
                 else if (e.KeyCode == Keys.Escape) // Refocus scanner
@@ -276,20 +678,16 @@ namespace pos_system.pos.UI.Forms.Sales
         #region Form Components and Data Initialization
         private void InitializeDataGridView()
         {
-            dgvCart = new DataGridView
-            {
-                ReadOnly = false,
-                BackgroundColor = Color.White,
-                BorderStyle = BorderStyle.None,
-                AutoGenerateColumns = false,
-                AllowUserToAddRows = false,
-                RowHeadersVisible = false,
-                AllowUserToResizeRows = false,
-                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                GridColor = Color.FromArgb(240, 240, 240),
-                Dock = DockStyle.Fill
-            };
+            dgvCart.ReadOnly = false;
+            dgvCart.BackgroundColor = Color.White;
+            dgvCart.BorderStyle = BorderStyle.None;
+            dgvCart.AutoGenerateColumns = false;
+            dgvCart.AllowUserToAddRows = false;
+            dgvCart.RowHeadersVisible = false;
+            dgvCart.AllowUserToResizeRows = false;
+            dgvCart.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dgvCart.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvCart.GridColor = Color.FromArgb(240, 240, 240);
 
             dgvCart.CellBeginEdit += (s, e) => _isEditingGrid = true;
             dgvCart.CellEndEdit += (s, e) => {
@@ -298,7 +696,7 @@ namespace pos_system.pos.UI.Forms.Sales
             };
             dgvCart.DataError += DgvCart_DataError;
 
-            colDelete = new DataGridViewButtonColumn
+            var colDelete = new DataGridViewButtonColumn
             {
                 HeaderText = "Delete",
                 Text = "🗑️",
@@ -313,7 +711,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
             };
 
-            colQuantity = new DataGridViewTextBoxColumn
+            var colQuantity = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Quantity",
                 HeaderText = "Qty",
@@ -325,7 +723,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
             };
 
-            colDiscountAmountPerItem = new DataGridViewTextBoxColumn
+            var colDiscountAmountPerItem = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "DiscountAmountPerItem",
                 HeaderText = "Discount (Rs.)",
@@ -513,8 +911,15 @@ namespace pos_system.pos.UI.Forms.Sales
                 using (var conn = DbHelper.GetConnection())
                 {
                     conn.Open();
-                    var cmd = new SqlCommand("SELECT ISNULL(MAX(Bill_ID), 0) + 1 FROM Bill", conn);
-                    _billId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    // Use a more robust method to get the next Bill_ID
+                    var cmd = new SqlCommand(@"
+                SELECT ISNULL(MAX(Bill_ID), 0) + 1 
+                FROM Bill 
+                WHERE BillStatus IN ('Active', 'Completed', 'Paused')", conn);
+
+                    var result = cmd.ExecuteScalar();
+                    _billId = Convert.ToInt32(result);
                     lblBillId.Text = $"Bill ID: {_billId}";
                 }
             }
@@ -523,6 +928,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 HandleDatabaseError(sqlEx);
                 try
                 {
+                    // Fallback: use timestamp-based ID
                     _billId = int.Parse(DateTime.Now.ToString("MMddHHmmss"));
                     lblBillId.Text = $"Bill ID: {_billId}";
                     MessageBox.Show("Using fallback bill ID", "Warning",
@@ -555,6 +961,12 @@ namespace pos_system.pos.UI.Forms.Sales
                 btnApplyBillDiscount.Click += BtnApplyBillDiscount_Click;
                 btnClearDiscounts.Click += BtnClearDiscounts_Click;
                 btnApplyToken.Click += BtnApplyToken_Click;
+
+                // Queue management events
+                btnPauseBill.Click += BtnPauseBill_Click;
+                btnViewQueuedBills.Click += BtnViewQueuedBills_Click;
+                menuPauseBill.Click += (s, e) => BtnPauseBill_Click(s, e);
+                menuViewQueuedBills.Click += (s, e) => BtnViewQueuedBills_Click(s, e);
             }
             catch (Exception ex)
             {
@@ -571,60 +983,64 @@ namespace pos_system.pos.UI.Forms.Sales
                 _cartItems.RowDeleted += (s, e) => UpdateSummary();
                 _cartItems.TableNewRow += (s, e) => UpdateSummary();
 
-                dgvCart.CellValidating += (s, e) =>
+                var discountColumn = dgvCart.Columns["DiscountAmountPerItem"];
+                if (discountColumn != null)
                 {
-                    try
+                    dgvCart.CellValidating += (s, e) =>
                     {
-                        if (e.ColumnIndex == colDiscountAmountPerItem.Index)
+                        try
                         {
-                            DataRow dataRow = _cartItems.Rows[e.RowIndex];
-                            decimal maxDiscount = Convert.ToDecimal(dataRow["MaxDiscount"]);
-                            decimal price = Convert.ToDecimal(dataRow["Price"]);
-
-                            if (decimal.TryParse(e.FormattedValue.ToString(), out decimal newValue))
+                            if (e.ColumnIndex == discountColumn.Index)
                             {
-                                if (newValue > maxDiscount)
-                                {
-                                    e.Cancel = true;
-                                    dgvCart.Rows[e.RowIndex].ErrorText =
-                                        $"Discount cannot exceed Rs.{maxDiscount:N2}";
-                                }
-                                else if (newValue > price)
-                                {
-                                    e.Cancel = true;
-                                    dgvCart.Rows[e.RowIndex].ErrorText =
-                                        "Discount cannot exceed item price";
-                                }
+                                DataRow dataRow = _cartItems.Rows[e.RowIndex];
+                                decimal maxDiscount = Convert.ToDecimal(dataRow["MaxDiscount"]);
+                                decimal price = Convert.ToDecimal(dataRow["Price"]);
 
-                                if (_isBillDiscountApplied && newValue > 0 && !_discountConflictWarningShown)
+                                if (decimal.TryParse(e.FormattedValue.ToString(), out decimal newValue))
                                 {
-                                    MessageBox.Show("A bill discount is already applied. Per-item discounts will override it.",
-                                        "Discount Conflict", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                    _discountConflictWarningShown = true;
+                                    if (newValue > maxDiscount)
+                                    {
+                                        e.Cancel = true;
+                                        dgvCart.Rows[e.RowIndex].ErrorText =
+                                            $"Discount cannot exceed Rs.{maxDiscount:N2}";
+                                    }
+                                    else if (newValue > price)
+                                    {
+                                        e.Cancel = true;
+                                        dgvCart.Rows[e.RowIndex].ErrorText =
+                                            "Discount cannot exceed item price";
+                                    }
+
+                                    if (_isBillDiscountApplied && newValue > 0 && !_discountConflictWarningShown)
+                                    {
+                                        MessageBox.Show("A bill discount is already applied. Per-item discounts will override it.",
+                                            "Discount Conflict", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                        _discountConflictWarningShown = true;
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        HandleUnexpectedError(ex, "Grid Validation");
-                    }
-                };
-
-                dgvCart.CellEndEdit += (s, e) =>
-                {
-                    try
-                    {
-                        if (e.ColumnIndex == colDiscountAmountPerItem.Index)
+                        catch (Exception ex)
                         {
-                            dgvCart.Rows[e.RowIndex].ErrorText = string.Empty;
+                            HandleUnexpectedError(ex, "Grid Validation");
                         }
-                    }
-                    catch (Exception ex)
+                    };
+
+                    dgvCart.CellEndEdit += (s, e) =>
                     {
-                        HandleUnexpectedError(ex, "Grid Edit");
-                    }
-                };
+                        try
+                        {
+                            if (e.ColumnIndex == discountColumn.Index)
+                            {
+                                dgvCart.Rows[e.RowIndex].ErrorText = string.Empty;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            HandleUnexpectedError(ex, "Grid Edit");
+                        }
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -638,16 +1054,23 @@ namespace pos_system.pos.UI.Forms.Sales
             {
                 if (e.RowIndex < 0 || dgvCart == null) return;
 
-                if (e.ColumnIndex == colDelete.Index)
+                var deleteColumn = dgvCart.Columns.Cast<DataGridViewColumn>()
+                    .FirstOrDefault(col => col is DataGridViewButtonColumn && col.HeaderText == "Delete");
+                var quantityColumn = dgvCart.Columns.Cast<DataGridViewColumn>()
+                    .FirstOrDefault(col => col.HeaderText == "Qty");
+                var discountColumn = dgvCart.Columns.Cast<DataGridViewColumn>()
+                    .FirstOrDefault(col => col.HeaderText == "Discount (Rs.)");
+
+                if (deleteColumn != null && e.ColumnIndex == deleteColumn.Index)
                 {
                     _cartItems.Rows.RemoveAt(e.RowIndex);
                     FocusBarcodeScanner();
                 }
-                else if (e.ColumnIndex == colQuantity.Index)
+                else if (quantityColumn != null && e.ColumnIndex == quantityColumn.Index)
                 {
                     ShowQuantityEditor(e.RowIndex);
                 }
-                else if (e.ColumnIndex == colDiscountAmountPerItem.Index)
+                else if (discountColumn != null && e.ColumnIndex == discountColumn.Index)
                 {
                     ShowDiscountEditor(e.RowIndex);
                 }
@@ -843,7 +1266,7 @@ namespace pos_system.pos.UI.Forms.Sales
                             bankLast4: paymentForm.BankLastFour,
                             change: paymentForm.Change,
                             customerContact: paymentForm.CustomerContact,
-                            paymentForm.CustomerGender
+                            customerGender: paymentForm.CustomerGender
                         );
                     }
                 }
@@ -1046,67 +1469,6 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
-
-
-        //private void AddItemToCartInternal(DataRow itemRow, int quantity)
-        //{
-        //    try
-        //    {
-        //        int productSizeId = itemRow.Field<int>("ProductSize_ID");
-        //        int productId = itemRow.Field<int>("Product_ID");
-        //        int availableStock = itemRow.Field<int>("AvailableStock");
-        //        string size = itemRow["SizeLabel"] != DBNull.Value ?
-        //            itemRow.Field<string>("SizeLabel") : "N/A";
-
-        //        // Check if item already in cart
-        //        var existingRow = _cartItems.AsEnumerable()
-        //            .FirstOrDefault(row => row.Field<int>("ProductSize_ID") == productSizeId);
-
-        //        if (existingRow != null)
-        //        {
-        //            int currentQty = Convert.ToInt32(existingRow["Quantity"]);
-        //            int newQty = currentQty + quantity;
-
-        //            if (newQty > availableStock)
-        //            {
-        //                newQty = availableStock;
-        //                ShowError($"Cannot exceed available stock of {availableStock}");
-        //            }
-
-        //            existingRow["Quantity"] = newQty;
-        //        }
-        //        else
-        //        {
-        //            if (quantity > availableStock)
-        //            {
-        //                quantity = availableStock;
-        //                ShowError($"Cannot exceed available stock of {availableStock}");
-        //            }
-
-        //            _cartItems.Rows.Add(
-        //                productSizeId,
-        //                productId,
-        //                itemRow.Field<string>("barcode"),
-        //                itemRow.Field<string>("brandName"),
-        //                itemRow.Field<string>("categoryName"),
-        //                itemRow.Field<string>("description"),
-        //                size,
-        //                itemRow.Field<decimal>("RetailPrice"),
-        //                quantity,
-        //                0, // DiscountAmountPerItem
-        //                0, // DiscountAmount
-        //                0, // NetPrice
-        //                itemRow.Field<decimal>("maxDiscount"),
-        //                availableStock
-        //            );
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        HandleUnexpectedError(ex, "Add Item to Cart");
-        //    }
-        //}
-
         private void ShowQuantityEditor(int rowIndex)
         {
             try
@@ -1240,7 +1602,6 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void ClearBill()
         {
-            
             try
             {
                 _cartItems.Rows.Clear();
@@ -1334,7 +1695,7 @@ namespace pos_system.pos.UI.Forms.Sales
                             Convert.ToInt32(row["ProductSize_ID"]) : 0,
                         Quantity = row["Quantity"] != DBNull.Value ?
                             Convert.ToInt32(row["Quantity"]) : 0,
-                        SellingPrice = row["Price"] != DBNull.Value ?
+                        ItemSellingPrice = row["Price"] != DBNull.Value ?
                             Convert.ToDecimal(row["Price"]) : 0,
                         Per_item_Discount = row["DiscountAmountPerItem"] != DBNull.Value ?
                             Convert.ToDecimal(row["DiscountAmountPerItem"]) : 0
@@ -1387,7 +1748,6 @@ namespace pos_system.pos.UI.Forms.Sales
                         cmd.Parameters.AddWithValue("@BankAccountLast4", sqlBankLast4);
                         cmd.Parameters.AddWithValue("@Token_ReturnID", sqlToken);
                         cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
 
                         // Add items parameter
                         var dt = CreateItemsDataTable(items);
@@ -1414,7 +1774,6 @@ namespace pos_system.pos.UI.Forms.Sales
                 );
 
                 // Show success message
-                //ShowPaymentSuccess();
                 ShowPaymentSuccess(
                     paymentMethod: paymentMethod,
                     amountTendered: amountTendered,
@@ -1454,7 +1813,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 dt.Rows.Add(
                     item.ProductSize_ID,
                     item.Quantity,
-                    item.SellingPrice,
+                    item.ItemSellingPrice,
                     item.Per_item_Discount
                 );
             }
@@ -1757,8 +2116,6 @@ namespace pos_system.pos.UI.Forms.Sales
             }
 
             ThemedMessageBoxGreen.Show(message.ToString(), "Success");
-
-            //MessageBox.Show(message.ToString(), "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         #endregion
 
@@ -1828,12 +2185,5 @@ namespace pos_system.pos.UI.Forms.Sales
             base.Dispose(disposing);
         }
         #endregion
-
-        //#region UI Components (Auto-generated)
-        //private void InitializeComponent()
-        //{
-        //    // ... [The UI initialization code you provided earlier] ...
-        //}
-        //#endregion
     }
 }

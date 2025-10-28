@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "yu1hgwp5tRw=",
+  "dgSpecHash": "2+FskdNnY+M=",
   "success": true,
   "projectFilePath": "D:\\Projects\\pos-system\\pos-system.csproj",
   "expectedPackageFiles": [
@@ -69,6 +69,7 @@
     "C:\\Users\\piyum\\.nuget\\packages\\microsoft.win32.systemevents\\5.0.0\\microsoft.win32.systemevents.5.0.0.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\mono.texttemplating\\3.0.0\\mono.texttemplating.3.0.0.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\mschartwrapper\\1.0.0.1\\mschartwrapper.1.0.0.1.nupkg.sha512",
+    "C:\\Users\\piyum\\.nuget\\packages\\newtonsoft.json\\13.0.4\\newtonsoft.json.13.0.4.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\rbush.signed\\4.0.0\\rbush.signed.4.0.0.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\security.cryptography\\1.7.2\\security.cryptography.1.7.2.nupkg.sha512",
     "C:\\Users\\piyum\\.nuget\\packages\\sixlabors.fonts\\1.0.0\\sixlabors.fonts.1.0.0.nupkg.sha512",
