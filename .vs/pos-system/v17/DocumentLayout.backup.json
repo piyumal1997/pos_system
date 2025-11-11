@@ -3,32 +3,36 @@
   "WorkspaceRootPath": "D:\\Projects\\pos-system\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\billingformallwindows.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\billingformallwindows.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\billingform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\billingform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\billingform.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\billingform.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.models\\cartdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.models\\cartdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\dashboard\\cashierform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\dashboard\\cashierform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.models\\queuedbill.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.models\\queuedbill.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.bll\\services\\salesservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.bll\\services\\salesservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\dashboard\\ownerdashboard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\dashboard\\ownerdashboard.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.dal\\repositories\\salesrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.dal\\repositories\\salesrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.bll\\services\\billservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.bll\\services\\billservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\paymentform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\forms\\sales\\queuedbillsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\forms\\sales\\queuedbillsform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|solutionrelative:pos.ui\\app.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{97336C4A-131F-4EA1-A6FD-07233E951226}|pos-system.csproj|d:\\projects\\pos-system\\app.manifest||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
@@ -42,11 +46,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 7,
               "Title": "app.config",
               "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\app.config",
               "RelativeDocumentMoniker": "pos.UI\\app.config",
@@ -60,7 +64,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "app.manifest",
               "DocumentMoniker": "D:\\Projects\\pos-system\\app.manifest",
               "RelativeDocumentMoniker": "app.manifest",
@@ -73,80 +77,96 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "BillingFormAllWindows.Designer.cs",
-              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingFormAllWindows.Designer.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\BillingFormAllWindows.Designer.cs",
-              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingFormAllWindows.Designer.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\BillingFormAllWindows.Designer.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAnAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T07:38:04.352Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "BillingForm.Designer.cs",
-              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingForm.Designer.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\BillingForm.Designer.cs",
-              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingForm.Designer.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Sales\\BillingForm.Designer.cs",
-              "ViewState": "AgIAAIcCAAAAAAAAAAAuwJsCAAA5AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T06:39:44.574Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "CashierForm.cs",
-              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\CashierForm.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Dashboard\\CashierForm.cs",
-              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\CashierForm.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\CashierForm.cs",
-              "ViewState": "AgIAADcAAAAAAAAAAAAAwEMAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T06:32:48.199Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "OwnerDashboard.cs",
-              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "RelativeDocumentMoniker": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
-              "ViewState": "AgIAAPQAAAAAAAAAAAAMwP0AAAAiAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T06:25:14.993Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
               "Title": "SalesService.cs",
               "DocumentMoniker": "D:\\Projects\\pos-system\\pos.BLL\\Services\\SalesService.cs",
               "RelativeDocumentMoniker": "pos.BLL\\Services\\SalesService.cs",
               "ToolTip": "D:\\Projects\\pos-system\\pos.BLL\\Services\\SalesService.cs",
               "RelativeToolTip": "pos.BLL\\Services\\SalesService.cs",
-              "ViewState": "AgIAAAcAAAAAAAAAAADwvx0AAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAUwCgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T06:13:58.181Z",
+              "WhenOpened": "2025-11-06T03:31:46.262Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "SalesRepository.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\SalesRepository.cs",
+              "RelativeDocumentMoniker": "pos.DAL\\Repositories\\SalesRepository.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.DAL\\Repositories\\SalesRepository.cs",
+              "RelativeToolTip": "pos.DAL\\Repositories\\SalesRepository.cs",
+              "ViewState": "AgIAAL8AAAAAAAAAAAAQwNsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T03:24:25.515Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CartData.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.Models\\CartData.cs",
+              "RelativeDocumentMoniker": "pos.Models\\CartData.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.Models\\CartData.cs",
+              "RelativeToolTip": "pos.Models\\CartData.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABUAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T09:23:16.834Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "QueuedBill.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.Models\\QueuedBill.cs",
+              "RelativeDocumentMoniker": "pos.Models\\QueuedBill.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.Models\\QueuedBill.cs",
+              "RelativeToolTip": "pos.Models\\QueuedBill.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T09:19:54.147Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "BillingForm.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingForm.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\BillingForm.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\BillingForm.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Sales\\BillingForm.cs",
+              "ViewState": "AgIAALwCAAAAAAAAAAAmwFICAABBAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T07:26:52.23Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PaymentForm.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Sales\\PaymentForm.cs",
+              "ViewState": "AgIAAKEBAAAAAAAAAAAAALwBAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-06T07:14:35.827Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 6,
-              "Title": "BillService.cs",
-              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.BLL\\Services\\BillService.cs",
-              "RelativeDocumentMoniker": "pos.BLL\\Services\\BillService.cs",
-              "ToolTip": "D:\\Projects\\pos-system\\pos.BLL\\Services\\BillService.cs",
-              "RelativeToolTip": "pos.BLL\\Services\\BillService.cs",
-              "ViewState": "AgIAADcAAAAAAAAAAAAswFMAAAABAAAAAAAAAA==",
+              "Title": "QueuedBillsForm.cs",
+              "DocumentMoniker": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\QueuedBillsForm.cs",
+              "RelativeDocumentMoniker": "pos.UI\\Forms\\Sales\\QueuedBillsForm.cs",
+              "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\Forms\\Sales\\QueuedBillsForm.cs",
+              "RelativeToolTip": "pos.UI\\Forms\\Sales\\QueuedBillsForm.cs",
+              "ViewState": "AgIAAEQCAAAAAAAAAAAAAF8CAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T06:13:30.468Z"
+              "WhenOpened": "2025-11-06T07:14:24.165Z",
+              "EditorCaption": ""
             }
           ]
         }

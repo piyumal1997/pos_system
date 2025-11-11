@@ -109,5 +109,8 @@
     <Compile Update="pos.UI\Forms\Sales\SizeSelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="pos.UI\Forms\Sales\TokenForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
 </Project>

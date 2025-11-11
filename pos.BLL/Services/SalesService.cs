@@ -1,30 +1,40 @@
 ﻿using pos_system.pos.DAL.Repositories;
 using pos_system.pos.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace RetailPOS.BLL.Services
+namespace pos_system.pos.BLL.Services
 {
     public class SalesService
     {
-        private readonly ISalesRepository _salesRepository;
+        private readonly SalesRepository _salesRepository;
 
-        public SalesService(ISalesRepository salesRepository)
+        public SalesService()
         {
-            _salesRepository = salesRepository;
+            _salesRepository = new SalesRepository();
         }
 
-        public SalesReport GetSalesReport(SalesFilter filter)
+        public ReturnToken GetTokenDetails(int tokenId)
         {
-            return _salesRepository.GetSalesReport(filter);
+            return _salesRepository.GetTokenDetails(tokenId);
         }
 
-        public List<Brand> GetBrands()
+        public List<QueuedBill> GetQueuedBills(int employeeId)
         {
-            return _salesRepository.GetBrands();
+            return _salesRepository.GetQueuedBills(employeeId);
         }
 
-        public List<Category> GetCategories()
+        public bool DeleteQueuedBill(int queueId)
         {
-            return _salesRepository.GetCategories();
+            return _salesRepository.DeleteQueuedBill(queueId);
+        }
+
+        public bool RestorePausedBill(int queueId, int employeeId, out int billId, out string cartData)
+        {
+            return _salesRepository.RestorePausedBill(queueId, employeeId, out billId, out cartData);
         }
     }
 }

@@ -18,7 +18,7 @@ namespace pos_system.pos.UI.Forms.Sales
 {
     public partial class SalesForm : Form
     {
-        private readonly SalesService _salesService;
+        private readonly SalesReportService _salesService;
         private SalesReport _currentReport;
 
         // Theme colors
@@ -47,7 +47,7 @@ namespace pos_system.pos.UI.Forms.Sales
         public SalesForm()
         {
             InitializeComponent();
-            _salesService = new SalesService(new SalesRepository());
+            _salesService = new SalesReportService(new SalesReportRepository());
             LoadBrands();
             LoadCategories();
             InitializeSummaryControls();

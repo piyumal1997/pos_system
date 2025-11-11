@@ -18,5 +18,7 @@ namespace pos_system.pos.Models
         public ReturnToken AppliedToken { get; set; }
         public bool TokenApplied { get; set; }
         public int ItemCount { get; set; }
+        public bool IsRepause { get; set; }
+        public int? OriginalQueueId { get; set; }
     }
 }

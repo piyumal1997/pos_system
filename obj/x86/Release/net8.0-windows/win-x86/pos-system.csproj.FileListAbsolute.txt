@@ -63,6 +63,7 @@ D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Microsoft.IO.Recyc
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Microsoft.SqlServer.Server.dll
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Mono.TextTemplating.dll
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\MSChartWrapper.dll
+D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Newtonsoft.Json.dll
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\RBush.dll
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Security.Cryptography.dll
 D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\SixLabors.Fonts.dll
@@ -186,6 +187,7 @@ D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Inventory.SizeFormEditor.resources
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.BillDiscountForm.resources
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.BillingForm.resources
+D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.BillingFormAllWindows.resources
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.Bills.resources
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.DiscountAmountForm.resources
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.DiscountForm.resources
@@ -209,4 +211,4 @@ D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\refint\pos-system.
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos-system.pdb
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos-system.genruntimeconfig.cache
 D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\ref\pos-system.dll
-D:\Projects\pos-system\bin\x86\Release\net8.0-windows\win-x86\Newtonsoft.Json.dll
+D:\Projects\pos-system\obj\x86\Release\net8.0-windows\win-x86\pos_system.pos.UI.Forms.Sales.BillSearchCashier.resources

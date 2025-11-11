@@ -51,47 +51,9 @@ namespace pos_system.pos.UI.Forms.Sales
 
         #endregion
 
-        #region Helper Classes
-        public class ReturnToken
-        {
-            public int ReturnId { get; set; }
-            public decimal TotalRefund { get; set; }
-        }
-
-        #endregion
-
         #region Constructor and Initialization
         public BillingForm(Employee user)
         {
-            //try
-            //{
-            //    _currentUser = user;
-            //    InitializeComponent();
-
-            //    // Initialize components first
-            //    InitializeBarcodeScanner();
-            //    InitializeDataGridView();
-            //    InitializeCartDataTable();
-            //    GenerateBillId();
-            //    InitializeDateTimeTimer();
-
-            //    // Then attach event handlers
-            //    AttachEventHandlers();
-
-            //    // Don't use Load event for critical initialization
-            //    AttachGridEventHandlers();
-            //    LoadQueuedBills();
-
-            //    SetupKeyboardShortcuts();
-
-            //    // Ensure the form is ready to be displayed
-            //    this.Visible = true;
-            //}
-            //catch (Exception ex)
-            //{
-            //    HandleUnexpectedError(ex, "Initialization");
-            //}
-
             try
             {
                 _currentUser = user;
@@ -282,6 +244,273 @@ namespace pos_system.pos.UI.Forms.Sales
                 $"Queued Bills ({queuedCount}) (F3)" : "Queued Bills (F3)";
         }
 
+        //private void BtnPauseBill_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (_cartItems.Rows.Count == 0)
+        //        {
+        //            ThemedMessageBox.Show("Cannot pause an empty bill", "Warning",
+        //                ThemedMessageBoxIcon.Warning);
+        //            return;
+        //        }
+
+        //        var result = ThemedMessageBoxYesNo.Show(
+        //            "Pause current bill and start new one? You can restore it later.",
+        //            "Pause Bill");
+
+        //        if (result != DialogResult.Yes) return;
+
+        //        // Serialize cart data
+        //        var cartData = new CartData
+        //        {
+        //            Items = new List<CartItem>(),
+        //            Subtotal = _subtotal,
+        //            TotalDiscount = _totalDiscount,
+        //            BillDiscountPercentage = _billDiscountPercentage,
+        //            IsBillDiscountApplied = _isBillDiscountApplied,
+        //            AppliedToken = _appliedToken,
+        //            TokenApplied = _tokenApplied,
+        //            ItemCount = _totalItems
+        //        };
+
+        //        foreach (DataRow row in _cartItems.Rows)
+        //        {
+        //            cartData.Items.Add(new CartItem
+        //            {
+        //                ProductSize_ID = Convert.ToInt32(row["ProductSize_ID"]),
+        //                Product_ID = Convert.ToInt32(row["Product_ID"]),
+        //                Barcode = row["Barcode"]?.ToString() ?? string.Empty,
+        //                Brand = row["Brand"]?.ToString() ?? string.Empty,
+        //                Category = row["Category"]?.ToString() ?? string.Empty,
+        //                Description = row["Description"]?.ToString() ?? string.Empty,
+        //                Size = row["Size"]?.ToString() ?? string.Empty,
+        //                Price = Convert.ToDecimal(row["Price"]),
+        //                Quantity = Convert.ToInt32(row["Quantity"]),
+        //                DiscountAmountPerItem = Convert.ToDecimal(row["DiscountAmountPerItem"]),
+        //                MaxDiscount = Convert.ToDecimal(row["MaxDiscount"]),
+        //                AvailableStock = Convert.ToInt32(row["AvailableStock"])
+        //            });
+        //        }
+
+        //        string serializedCart = JsonConvert.SerializeObject(cartData,
+        //            new JsonSerializerSettings
+        //            {
+        //                NullValueHandling = NullValueHandling.Ignore,
+        //                DefaultValueHandling = DefaultValueHandling.Include
+        //            });
+
+        //        // Save to database with CURRENT Bill_ID
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+        //            using (var cmd = new SqlCommand("sp_PauseCurrentBill", conn))
+        //            {
+        //                cmd.CommandType = CommandType.StoredProcedure;
+        //                cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+        //                cmd.Parameters.AddWithValue("@BillID", _billId); // Use current Bill_ID
+        //                cmd.Parameters.AddWithValue("@CartData", serializedCart);
+
+        //                using (var reader = cmd.ExecuteReader())
+        //                {
+        //                    if (reader.Read())
+        //                    {
+        //                        var queuePosition = Convert.ToInt32(reader["QueuePosition"]);
+        //                        var newBillId = Convert.ToInt32(reader["NewBillID"]);
+
+        //                        ThemedMessageBox.Show(
+        //                            $"Bill #{_billId} paused and added to queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+        //                            "Bill Paused", ThemedMessageBoxIcon.Information);
+
+        //                        // Set the new bill ID for the next bill
+        //                        _billId = newBillId;
+        //                        lblBillId.Text = $"Bill ID: {_billId}";
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        // Clear current bill data but keep the new Bill_ID
+        //        _cartItems.Rows.Clear();
+        //        _billDiscountPercentage = 0;
+        //        _isBillDiscountApplied = false;
+        //        _discountConflictWarningShown = false;
+        //        _tokenApplied = false;
+        //        _appliedToken = null;
+        //        lblBillDiscount.Text = string.Empty;
+
+        //        // Reset token button
+        //        btnApplyToken.Text = "Apply Token";
+        //        btnApplyToken.BackColor = Color.MediumPurple;
+        //        btnApplyToken.Enabled = true;
+
+        //        UpdateSummary();
+        //        FocusBarcodeScanner();
+        //        LoadQueuedBills();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Pause Bill");
+        //    }
+        //}
+
+
+        //private void BtnPauseBill_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (_cartItems.Rows.Count == 0)
+        //        {
+        //            ThemedMessageBox.Show("Cannot pause an empty bill", "Warning",
+        //                ThemedMessageBoxIcon.Warning);
+        //            return;
+        //        }
+
+        //        var result = ThemedMessageBoxYesNo.Show(
+        //            "Pause current bill and start new one? You can restore it later.",
+        //            "Pause Bill");
+
+        //        if (result != DialogResult.Yes) return;
+
+        //        // Check if this is a re-pause scenario (previously restored bill)
+        //        int? originalQueueId = this.Tag as int?;
+        //        bool isRepause = originalQueueId.HasValue;
+
+        //        // Serialize cart data
+        //        var cartData = new CartData
+        //        {
+        //            Items = new List<CartItem>(),
+        //            Subtotal = _subtotal,
+        //            TotalDiscount = _totalDiscount,
+        //            BillDiscountPercentage = _billDiscountPercentage,
+        //            IsBillDiscountApplied = _isBillDiscountApplied,
+        //            AppliedToken = _appliedToken,
+        //            TokenApplied = _tokenApplied,
+        //            ItemCount = _totalItems,
+        //            IsRepause = isRepause, // Track if this is a re-pause
+        //            OriginalQueueId = originalQueueId // Store original queue ID
+        //        };
+
+        //        foreach (DataRow row in _cartItems.Rows)
+        //        {
+        //            cartData.Items.Add(new CartItem
+        //            {
+        //                ProductSize_ID = Convert.ToInt32(row["ProductSize_ID"]),
+        //                Product_ID = Convert.ToInt32(row["Product_ID"]),
+        //                Barcode = row["Barcode"]?.ToString() ?? string.Empty,
+        //                Brand = row["Brand"]?.ToString() ?? string.Empty,
+        //                Category = row["Category"]?.ToString() ?? string.Empty,
+        //                Description = row["Description"]?.ToString() ?? string.Empty,
+        //                Size = row["Size"]?.ToString() ?? string.Empty,
+        //                Price = Convert.ToDecimal(row["Price"]),
+        //                Quantity = Convert.ToInt32(row["Quantity"]),
+        //                DiscountAmountPerItem = Convert.ToDecimal(row["DiscountAmountPerItem"]),
+        //                MaxDiscount = Convert.ToDecimal(row["MaxDiscount"]),
+        //                AvailableStock = Convert.ToInt32(row["AvailableStock"])
+        //            });
+        //        }
+
+        //        string serializedCart = JsonConvert.SerializeObject(cartData,
+        //            new JsonSerializerSettings
+        //            {
+        //                NullValueHandling = NullValueHandling.Ignore,
+        //                DefaultValueHandling = DefaultValueHandling.Include
+        //            });
+
+        //        // Save to database
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+
+        //            if (isRepause)
+        //            {
+        //                // Update existing queue entry for re-pause scenario
+        //                using (var cmd = new SqlCommand("sp_RepauseBill", conn))
+        //                {
+        //                    cmd.CommandType = CommandType.StoredProcedure;
+        //                    cmd.Parameters.AddWithValue("@OriginalQueueID", originalQueueId);
+        //                    cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+        //                    cmd.Parameters.AddWithValue("@BillID", _billId);
+        //                    cmd.Parameters.AddWithValue("@CartData", serializedCart);
+
+        //                    using (var reader = cmd.ExecuteReader())
+        //                    {
+        //                        if (reader.Read())
+        //                        {
+        //                            var queuePosition = Convert.ToInt32(reader["QueuePosition"]);
+        //                            var newBillId = Convert.ToInt32(reader["NewBillID"]);
+
+        //                            ThemedMessageBox.Show(
+        //                                $"Bill #{_billId} re-paused and updated in queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+        //                                "Bill Re-paused", ThemedMessageBoxIcon.Information);
+
+        //                            _billId = newBillId;
+        //                            lblBillId.Text = $"Bill ID: {_billId}";
+
+        //                            // Clear the repause tracking
+        //                            this.Tag = null;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                // Normal pause for new bill
+        //                using (var cmd = new SqlCommand("sp_PauseCurrentBill", conn))
+        //                {
+        //                    cmd.CommandType = CommandType.StoredProcedure;
+        //                    cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+        //                    cmd.Parameters.AddWithValue("@BillID", _billId);
+        //                    cmd.Parameters.AddWithValue("@CartData", serializedCart);
+
+        //                    using (var reader = cmd.ExecuteReader())
+        //                    {
+        //                        if (reader.Read())
+        //                        {
+        //                            var queuePosition = Convert.ToInt32(reader["QueuePosition"]);
+        //                            var newBillId = Convert.ToInt32(reader["NewBillID"]);
+
+        //                            ThemedMessageBox.Show(
+        //                                $"Bill #{_billId} paused and added to queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+        //                                "Bill Paused", ThemedMessageBoxIcon.Information);
+
+        //                            _billId = newBillId;
+        //                            lblBillId.Text = $"Bill ID: {_billId}";
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        // Clear current bill data but keep the new Bill_ID
+        //        ClearCurrentBillData();
+        //        LoadQueuedBills();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Pause Bill");
+        //    }
+        //}
+
+        //private void ClearCurrentBillData()
+        //{
+        //    _cartItems.Rows.Clear();
+        //    _billDiscountPercentage = 0;
+        //    _isBillDiscountApplied = false;
+        //    _discountConflictWarningShown = false;
+        //    _tokenApplied = false;
+        //    _appliedToken = null;
+        //    lblBillDiscount.Text = string.Empty;
+
+        //    // Reset token button
+        //    btnApplyToken.Text = "Apply Token";
+        //    btnApplyToken.BackColor = Color.MediumPurple;
+        //    btnApplyToken.Enabled = true;
+
+        //    UpdateSummary();
+        //    FocusBarcodeScanner();
+        //}
+
         private void BtnPauseBill_Click(object sender, EventArgs e)
         {
             try
@@ -299,7 +528,11 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 if (result != DialogResult.Yes) return;
 
-                // Serialize cart data with proper values
+                // Check if this is a re-pause scenario (previously restored bill)
+                int? originalQueueId = this.Tag as int?;
+                bool isRepause = originalQueueId.HasValue;
+
+                // Serialize cart data
                 var cartData = new CartData
                 {
                     Items = new List<CartItem>(),
@@ -309,7 +542,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     IsBillDiscountApplied = _isBillDiscountApplied,
                     AppliedToken = _appliedToken,
                     TokenApplied = _tokenApplied,
-                    ItemCount = _totalItems  // Make sure this is set
+                    ItemCount = _totalItems
                 };
 
                 foreach (DataRow row in _cartItems.Rows)
@@ -338,46 +571,163 @@ namespace pos_system.pos.UI.Forms.Sales
                         DefaultValueHandling = DefaultValueHandling.Include
                     });
 
-                // Save to database
                 using (var conn = DbHelper.GetConnection())
                 {
                     conn.Open();
-                    using (var cmd = new SqlCommand("sp_PauseCurrentBill", conn))
+
+                    if (isRepause)
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
-                        cmd.Parameters.AddWithValue("@CartData", serializedCart);
+                        // RE-PAUSE SCENARIO: Handle foreign key constraint properly
 
-                        using (var reader = cmd.ExecuteReader())
+                        // 1. FIRST: Ensure the Bill record exists with the correct status
+                        string checkBillQuery = "SELECT COUNT(*) FROM Bill WHERE Bill_ID = @BillID";
+                        using (var cmd = new SqlCommand(checkBillQuery, conn))
                         {
-                            if (reader.Read())
-                            {
-                                var queuePosition = Convert.ToInt32(reader["QueuePosition"]);
-                                var newBillId = Convert.ToInt32(reader["NewBillID"]);
+                            cmd.Parameters.AddWithValue("@BillID", _billId);
+                            int billExists = Convert.ToInt32(cmd.ExecuteScalar());
 
-                                ThemedMessageBox.Show(
-                                    $"Bill #{_billId} paused and added to queue (Position: {queuePosition}). New Bill ID: {newBillId}",
-                                    "Bill Paused", ThemedMessageBoxIcon.Information);
+                            if (billExists > 0)
+                            {
+                                // Update existing bill status to Paused
+                                string updateBillQuery = @"
+                                        UPDATE Bill 
+                                        SET BillStatus = 'Paused', [date] = GETDATE()
+                                        WHERE Bill_ID = @BillID";
+                                using (var updateCmd = new SqlCommand(updateBillQuery, conn))
+                                {
+                                    updateCmd.Parameters.AddWithValue("@BillID", _billId);
+                                    updateCmd.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                // Insert new bill record FIRST
+                                string insertBillQuery = @"
+                                        INSERT INTO Bill (Bill_ID, Employee_ID, BillStatus, [date])
+                                        VALUES (@BillID, @EmployeeID, 'Paused', GETDATE())";
+                                using (var insertCmd = new SqlCommand(insertBillQuery, conn))
+                                {
+                                    insertCmd.Parameters.AddWithValue("@BillID", _billId);
+                                    insertCmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+                                    insertCmd.ExecuteNonQuery();
+                                }
                             }
                         }
+
+                        // 2. SECOND: Now update the BillQueue since the Bill record exists
+                        string updateQueueQuery = @"
+                                UPDATE BillQueue 
+                                SET 
+                                    Bill_ID = @BillID,
+                                    CartData = @CartData,
+                                    PausedAt = GETDATE(),
+                                    IsActive = 1
+                                WHERE Queue_ID = @OriginalQueueID AND Employee_ID = @EmployeeID";
+
+                        using (var cmd = new SqlCommand(updateQueueQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@BillID", _billId);
+                            cmd.Parameters.AddWithValue("@CartData", serializedCart);
+                            cmd.Parameters.AddWithValue("@OriginalQueueID", originalQueueId.Value);
+                            cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+
+                            int rowsAffected = cmd.ExecuteNonQuery();
+
+                            if (rowsAffected == 0)
+                            {
+                                throw new Exception("Failed to update existing queue entry");
+                            }
+                        }
+
+                        // Get the queue position for display
+                        string getPositionQuery = @"
+                                SELECT QueuePosition 
+                                FROM BillQueue 
+                                WHERE Queue_ID = @QueueID";
+
+                        int queuePosition;
+                        using (var cmd = new SqlCommand(getPositionQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@QueueID", originalQueueId.Value);
+                            queuePosition = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        // Generate new Bill_ID for next bill
+                        int newBillId = GenerateNewBillId(conn);
+
+                        ThemedMessageBox.Show(
+                            $"Bill #{_billId} re-paused and updated in queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+                            "Bill Re-paused", ThemedMessageBoxIcon.Information);
+
+                        _billId = newBillId;
+                        lblBillId.Text = $"Bill ID: {_billId}";
+
+                        // Clear the repause tracking
+                        this.Tag = null;
+                    }
+                    else
+                    {
+                        // NORMAL PAUSE SCENARIO: Create new queue entry
+
+                        // 1. FIRST: Insert the bill record
+                        string insertBillQuery = @"
+                                INSERT INTO Bill (Bill_ID, Employee_ID, BillStatus, [date])
+                                VALUES (@BillID, @EmployeeID, 'Paused', GETDATE())";
+
+                        using (var cmd = new SqlCommand(insertBillQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@BillID", _billId);
+                            cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 2. SECOND: Get next queue position
+                        string getPositionQuery = @"
+                                SELECT ISNULL(MAX(QueuePosition), 0) + 1 
+                                FROM BillQueue 
+                                WHERE Employee_ID = @EmployeeID AND IsActive = 1";
+
+                        int queuePosition;
+                        using (var cmd = new SqlCommand(getPositionQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+                            queuePosition = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        // 3. THIRD: Insert into queue (now the Bill_ID exists)
+                        string insertQueueQuery = @"
+                                INSERT INTO BillQueue (Bill_ID, Employee_ID, QueuePosition, CartData, PausedAt, IsActive)
+                                VALUES (@BillID, @EmployeeID, @QueuePosition, @CartData, GETDATE(), 1)";
+
+                        using (var cmd = new SqlCommand(insertQueueQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@BillID", _billId);
+                            cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+                            cmd.Parameters.AddWithValue("@QueuePosition", queuePosition);
+                            cmd.Parameters.AddWithValue("@CartData", serializedCart);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // Generate new Bill_ID for next bill
+                        int newBillId = GenerateNewBillId(conn);
+
+                        ThemedMessageBox.Show(
+                            $"Bill #{_billId} paused and added to queue (Position: {queuePosition}). New Bill ID: {newBillId}",
+                            "Bill Paused", ThemedMessageBoxIcon.Information);
+
+                        _billId = newBillId;
+                        lblBillId.Text = $"Bill ID: {_billId}";
                     }
                 }
 
-                // Start new bill
-                ClearBill();
+                // Clear current bill data but keep the new Bill_ID
+                ClearCurrentBillData();
                 LoadQueuedBills();
             }
-            catch (SqlException ex)
+            catch (SqlException sqlEx) when (sqlEx.Message.Contains("FOREIGN KEY constraint"))
             {
-                // Handle specific SQL errors
-                if (ex.Message.Contains("BillStatus"))
-                {
-                    ShowError("Database configuration error. Please contact administrator to fix BillStatus column.");
-                }
-                else
-                {
-                    HandleDatabaseError(ex);
-                }
+                // Handle foreign key constraint violation specifically
+                HandleForeignKeyConstraintError(sqlEx);
             }
             catch (Exception ex)
             {
@@ -385,30 +735,120 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        private void ClearCurrentBillData()
+        {
+            _cartItems.Rows.Clear();
+            _billDiscountPercentage = 0;
+            _isBillDiscountApplied = false;
+            _discountConflictWarningShown = false;
+            _tokenApplied = false;
+            _appliedToken = null;
+            lblBillDiscount.Text = string.Empty;
+
+            // Reset token button
+            btnApplyToken.Text = "Apply Token";
+            btnApplyToken.BackColor = Color.MediumPurple;
+            btnApplyToken.Enabled = true;
+
+            UpdateSummary();
+            FocusBarcodeScanner();
+        }
+
+
+
+        private int GenerateNewBillId(SqlConnection conn)
+        {
+            string query = @"
+                DECLARE @NextID INT;
+                SELECT @NextID = ISNULL(MAX(Bill_ID), 0) + 1 FROM Bill;
+        
+                -- Ensure the ID doesn't already exist
+                WHILE EXISTS (SELECT 1 FROM Bill WHERE Bill_ID = @NextID)
+                BEGIN
+                    SET @NextID = @NextID + 1;
+                END
+        
+                SELECT @NextID AS NextBillID;";
+
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+
         private void BtnViewQueuedBills_Click(object sender, EventArgs e)
         {
+
             try
             {
-                if (_queuedBills.Count == 0)
-                {
-                    ThemedMessageBox.Show("No queued bills found", "Information",
-                        ThemedMessageBoxIcon.Information);
-                    return;
-                }
-
-                using (var queueForm = new QueuedBillsForm(_queuedBills))
+                using (var queueForm = new QueuedBillsForm(_currentUser.Employee_ID))
                 {
                     if (queueForm.ShowDialog() == DialogResult.OK && queueForm.SelectedBill != null)
                     {
                         RestoreQueuedBill(queueForm.SelectedBill);
                     }
                 }
+
+                // Refresh the queue list after any operations
+                LoadQueuedBills();
             }
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "View Queued Bills");
             }
         }
+        //private void RestoreQueuedBill(QueuedBill queuedBill)
+        //{
+        //    try
+        //    {
+        //        if (_cartItems.Rows.Count > 0)
+        //        {
+        //            var result = ThemedMessageBoxYesNo.Show(
+        //                "Current bill will be paused. Restore selected bill?",
+        //                "Confirm Restore");
+
+        //            if (result != DialogResult.Yes) return;
+
+        //            // Pause current bill first
+        //            BtnPauseBill_Click(this, EventArgs.Empty);
+        //        }
+
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+        //            using (var cmd = new SqlCommand("sp_RestorePausedBill", conn))
+        //            {
+        //                cmd.CommandType = CommandType.StoredProcedure;
+        //                cmd.Parameters.AddWithValue("@QueueID", queuedBill.Queue_ID);
+        //                cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+
+        //                using (var reader = cmd.ExecuteReader())
+        //                {
+        //                    if (reader.Read())
+        //                    {
+        //                        int originalBillId = reader.GetInt32("BillID");
+        //                        string cartDataJson = reader.GetString("CartData");
+
+        //                        // Generate a NEW Bill_ID for the restored bill
+        //                        GenerateBillId();
+
+        //                        // Load the restored bill with the NEW Bill_ID
+        //                        LoadBillFromCartData(_billId, cartDataJson);
+
+        //                        ThemedMessageBox.Show("Bill restored successfully with new Bill ID", "Success",
+        //                            ThemedMessageBoxIcon.Information);
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        LoadQueuedBills();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Restore Queued Bill");
+        //    }
+        //}
 
         private void RestoreQueuedBill(QueuedBill queuedBill)
         {
@@ -439,13 +879,20 @@ namespace pos_system.pos.UI.Forms.Sales
                         {
                             if (reader.Read())
                             {
-                                int restoredBillId = reader.GetInt32("BillID");
+                                int originalBillId = reader.GetInt32("BillID");
                                 string cartDataJson = reader.GetString("CartData");
 
-                                // Load the restored bill
-                                LoadBillFromCartData(restoredBillId, cartDataJson);
+                                // Generate a NEW Bill_ID for the restored bill
+                                GenerateBillId();
 
-                                ThemedMessageBox.Show("Bill restored successfully", "Success",
+                                // Load the restored bill with the NEW Bill_ID
+                                LoadBillFromCartData(_billId, cartDataJson);
+
+                                // Store the original queue ID for re-pause scenario
+                                // We'll use Tag property or a field to track this
+                                this.Tag = queuedBill.Queue_ID; // Store original queue ID
+
+                                ThemedMessageBox.Show("Bill restored successfully with new Bill ID", "Success",
                                     ThemedMessageBoxIcon.Information);
                             }
                         }
@@ -513,8 +960,9 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 if (_tokenApplied)
                 {
-                    txtTokenId.Text = _appliedToken.ReturnId.ToString();
-                    txtTokenId.Enabled = false;
+                    btnApplyToken.Text = $"Token: Rs.{_appliedToken.TotalRefund:N2}";
+                    btnApplyToken.ForeColor = Color.White;
+                    btnApplyToken.BackColor = Color.MediumSeaGreen;
                     btnApplyToken.Enabled = false;
                 }
 
@@ -904,6 +1352,97 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        //private void GenerateBillId()
+        //{
+        //    try
+        //    {
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+
+        //            // Use a more robust method to get the next Bill_ID
+        //            var cmd = new SqlCommand(@"
+        //        SELECT ISNULL(MAX(Bill_ID), 0) + 1 
+        //        FROM Bill 
+        //        WHERE BillStatus IN ('Active', 'Completed', 'Paused')", conn);
+
+        //            var result = cmd.ExecuteScalar();
+        //            _billId = Convert.ToInt32(result);
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //        }
+        //    }
+        //    catch (SqlException sqlEx)
+        //    {
+        //        HandleDatabaseError(sqlEx);
+        //        try
+        //        {
+        //            // Fallback: use timestamp-based ID
+        //            _billId = int.Parse(DateTime.Now.ToString("MMddHHmmss"));
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //            MessageBox.Show("Using fallback bill ID", "Warning",
+        //                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        }
+        //        catch (Exception fallbackEx)
+        //        {
+        //            _billId = 1;
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //            HandleUnexpectedError(fallbackEx, "Bill ID Fallback");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Bill ID Generation");
+        //    }
+        //}
+
+        //private void GenerateBillId()
+        //{
+        //    try
+        //    {
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+
+        //            // Get the next available Bill_ID that doesn't exist in the Bill table
+        //            var cmd = new SqlCommand(@"
+        //        DECLARE @NextID INT;
+        //        SELECT @NextID = ISNULL(MAX(Bill_ID), 0) + 1 FROM Bill;
+
+        //        -- Ensure the ID doesn't already exist
+        //        WHILE EXISTS (SELECT 1 FROM Bill WHERE Bill_ID = @NextID)
+        //        BEGIN
+        //            SET @NextID = @NextID + 1;
+        //        END
+
+        //        SELECT @NextID AS NextBillID;", conn);
+
+        //            var result = cmd.ExecuteScalar();
+        //            _billId = Convert.ToInt32(result);
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //        }
+        //    }
+        //    catch (SqlException sqlEx)
+        //    {
+        //        HandleDatabaseError(sqlEx);
+        //        // Fallback: use timestamp-based ID
+        //        try
+        //        {
+        //            _billId = int.Parse(DateTime.Now.ToString("MMddHHmmss"));
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //        }
+        //        catch (Exception fallbackEx)
+        //        {
+        //            _billId = new Random().Next(1000, 9999);
+        //            lblBillId.Text = $"Bill ID: {_billId}";
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Bill ID Generation");
+        //    }
+        //}
+
+
         private void GenerateBillId()
         {
             try
@@ -911,34 +1450,23 @@ namespace pos_system.pos.UI.Forms.Sales
                 using (var conn = DbHelper.GetConnection())
                 {
                     conn.Open();
-
-                    // Use a more robust method to get the next Bill_ID
-                    var cmd = new SqlCommand(@"
-                SELECT ISNULL(MAX(Bill_ID), 0) + 1 
-                FROM Bill 
-                WHERE BillStatus IN ('Active', 'Completed', 'Paused')", conn);
-
-                    var result = cmd.ExecuteScalar();
-                    _billId = Convert.ToInt32(result);
+                    _billId = GenerateNewBillId(conn);
                     lblBillId.Text = $"Bill ID: {_billId}";
                 }
             }
             catch (SqlException sqlEx)
             {
                 HandleDatabaseError(sqlEx);
+                // Fallback: use timestamp-based ID
                 try
                 {
-                    // Fallback: use timestamp-based ID
                     _billId = int.Parse(DateTime.Now.ToString("MMddHHmmss"));
                     lblBillId.Text = $"Bill ID: {_billId}";
-                    MessageBox.Show("Using fallback bill ID", "Warning",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 catch (Exception fallbackEx)
                 {
-                    _billId = 1;
+                    _billId = new Random().Next(1000, 9999);
                     lblBillId.Text = $"Bill ID: {_billId}";
-                    HandleUnexpectedError(fallbackEx, "Bill ID Fallback");
                 }
             }
             catch (Exception ex)
@@ -946,6 +1474,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 HandleUnexpectedError(ex, "Bill ID Generation");
             }
         }
+
         #endregion
 
         #region Event Handlers
@@ -1173,57 +1702,26 @@ namespace pos_system.pos.UI.Forms.Sales
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(txtTokenId.Text))
+                using (var tokenForm = new TokenForm())
                 {
-                    ShowError("Please enter a token ID");
-                    return;
-                }
-
-                if (!int.TryParse(txtTokenId.Text, out int tokenId))
-                {
-                    ShowError("Invalid token format");
-                    return;
-                }
-
-                using (var conn = DbHelper.GetConnection())
-                {
-                    conn.Open();
-                    string query = @"
-                        SELECT Return_ID, TotalRefund, IsUsed 
-                        FROM [Return] 
-                        WHERE Return_ID = @TokenId";
-
-                    using (var cmd = new SqlCommand(query, conn))
+                    if (tokenForm.ShowDialog() == DialogResult.OK && tokenForm.SelectedToken != null)
                     {
-                        cmd.Parameters.AddWithValue("@TokenId", tokenId);
-                        using (var reader = cmd.ExecuteReader())
+                        _appliedToken = new ReturnToken
                         {
-                            if (reader.Read())
-                            {
-                                if (reader.GetBoolean(2))
-                                {
-                                    ShowError("Token has already been used");
-                                    return;
-                                }
+                            ReturnId = tokenForm.SelectedToken.ReturnId,
+                            TotalRefund = tokenForm.SelectedToken.TotalRefund
+                        };
 
-                                _appliedToken = new ReturnToken
-                                {
-                                    ReturnId = reader.GetInt32(0),
-                                    TotalRefund = reader.GetDecimal(1)
-                                };
+                        _tokenApplied = true;
 
-                                _tokenApplied = true;
-                                txtTokenId.Enabled = false;
-                                btnApplyToken.Enabled = false;
+                        // Update button appearance
+                        btnApplyToken.Text = $"Token: Rs.{_appliedToken.TotalRefund:N2}";
+                        btnApplyToken.ForeColor = Color.White;
+                        btnApplyToken.BackColor = Color.MediumSeaGreen; // Change color to indicate applied
+                        btnApplyToken.Enabled = false; // Disable button after applying
 
-                                MessageBox.Show($"Token applied successfully! Value: Rs.{_appliedToken.TotalRefund:N2}",
-                                    "Token Applied", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            }
-                            else
-                            {
-                                ShowError("Token not found");
-                            }
-                        }
+                        MessageBox.Show($"Token applied successfully! Value: Rs.{_appliedToken.TotalRefund:N2}",
+                            "Token Applied", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             }
@@ -1274,6 +1772,49 @@ namespace pos_system.pos.UI.Forms.Sales
             catch (Exception ex)
             {
                 HandleUnexpectedError(ex, "Payment Processing");
+            }
+        }
+
+        private void HandleForeignKeyConstraintError(SqlException sqlEx)
+        {
+            try
+            {
+                string errorMessage = "Database constraint error: The bill reference is invalid.\n\n";
+                errorMessage += "This usually happens when a bill reference doesn't exist.\n";
+                errorMessage += "The system will attempt to recover by creating a new bill.";
+
+                ThemedMessageBox.Show(errorMessage, "Constraint Error",
+                    ThemedMessageBoxIcon.Warning);
+
+                // Attempt recovery by creating a fresh pause
+                RecoverFromPauseError();
+            }
+            catch (Exception recoveryEx)
+            {
+                HandleUnexpectedError(recoveryEx, "Foreign Key Constraint Recovery");
+            }
+        }
+
+        private void RecoverFromPauseError()
+        {
+            try
+            {
+                // Clear any re-pause tracking
+                this.Tag = null;
+
+                // Generate a new bill ID
+                GenerateBillId();
+
+                // Show message to user
+                ThemedMessageBox.Show($"Recovery successful. New Bill ID: {_billId}",
+                    "Recovery Complete", ThemedMessageBoxIcon.Information);
+
+                // Reload queued bills to refresh state
+                LoadQueuedBills();
+            }
+            catch (Exception ex)
+            {
+                HandleUnexpectedError(ex, "Pause Error Recovery");
             }
         }
         #endregion
@@ -1571,6 +2112,35 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        //private void ClearBillButton()
+        //{
+        //    DialogResult result = ThemedMessageBoxYesNo.Show("Are you sure you want to clear the bill?", "Warning");
+
+        //    if (result == DialogResult.Yes)
+        //    {
+        //        try
+        //        {
+        //            _cartItems.Rows.Clear();
+        //            _billDiscountPercentage = 0;
+        //            _isBillDiscountApplied = false;
+        //            _discountConflictWarningShown = false;
+        //            _tokenApplied = false;
+        //            _appliedToken = null;
+        //            lblBillDiscount.Text = string.Empty;
+        //            txtTokenId.Enabled = true;
+        //            btnApplyToken.Enabled = true;
+        //            txtTokenId.Clear();
+        //            GenerateBillId();
+        //            FocusBarcodeScanner();
+        //            UpdateSummary();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            HandleUnexpectedError(ex, "Clear Bill");
+        //        }
+        //    }
+        //}
+
         private void ClearBillButton()
         {
             DialogResult result = ThemedMessageBoxYesNo.Show("Are you sure you want to clear the bill?", "Warning");
@@ -1586,9 +2156,12 @@ namespace pos_system.pos.UI.Forms.Sales
                     _tokenApplied = false;
                     _appliedToken = null;
                     lblBillDiscount.Text = string.Empty;
-                    txtTokenId.Enabled = true;
+
+                    // Reset token button
+                    btnApplyToken.Text = "Apply Token";
+                    btnApplyToken.BackColor = Color.MediumPurple;
                     btnApplyToken.Enabled = true;
-                    txtTokenId.Clear();
+
                     GenerateBillId();
                     FocusBarcodeScanner();
                     UpdateSummary();
@@ -1610,10 +2183,13 @@ namespace pos_system.pos.UI.Forms.Sales
                 _discountConflictWarningShown = false;
                 _tokenApplied = false;
                 _appliedToken = null;
-                lblBillDiscount.Text = string.Empty;
-                txtTokenId.Enabled = true;
+
+                // Reset token button
+                btnApplyToken.Text = "Apply Token";
+                btnApplyToken.BackColor = Color.MediumPurple; // Original color
                 btnApplyToken.Enabled = true;
-                txtTokenId.Clear();
+
+                lblBillDiscount.Text = string.Empty;
                 GenerateBillId();
                 txtBarcode.Focus();
                 UpdateSummary();

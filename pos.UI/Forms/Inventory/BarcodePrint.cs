@@ -1047,8 +1047,8 @@ namespace pos_system.pos.UI.Forms.Inventory
             {
                 "One Size" => "One",  // One Size
                 "XXXL" => "3XL",
-                "XXXXl" => "4XL",
-                "XXXXXl" => "5XL",
+                "XXXXL" => "4XL",
+                "XXXXXL" => "5XL",
                 "Free Size" => "Fr",
                 "Standard Size" => "SS",
                 "18ml" => "18",

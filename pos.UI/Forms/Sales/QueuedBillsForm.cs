@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Newtonsoft.Json;
+using pos_system.pos.BLL.Services;
 using pos_system.pos.Models;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,9 @@ namespace pos_system.pos.UI.Forms.Sales
 {
     public partial class QueuedBillsForm : Form
     {
+        private int _employeeId;
+        private SalesService _salesService;
+
         private List<QueuedBill> _queuedBills;
         public QueuedBill SelectedBill { get; private set; }
         private DataGridView dgvQueuedBills;
@@ -25,6 +29,8 @@ namespace pos_system.pos.UI.Forms.Sales
         private DataGridView dgvBillItems;
         private SplitContainer splitContainer1;
         private Label lblBillDetails;
+        private Button btnDelete;
+        
 
         // Theme colors matching ItemsManagement
         private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
@@ -34,10 +40,12 @@ namespace pos_system.pos.UI.Forms.Sales
         private static readonly Color SecondaryColor = Color.Gray;
         private static readonly Color DeleteColor = Color.FromArgb(231, 76, 60);
         private static readonly Color SelectionColor = Color.FromArgb(200, 230, 255);
+        private static readonly Color WarningColor = Color.FromArgb(255, 193, 7);
 
-        public QueuedBillsForm(List<QueuedBill> queuedBills)
+        public QueuedBillsForm(int employeeId)
         {
-            _queuedBills = queuedBills;
+            _employeeId = employeeId;
+            _salesService = new SalesService();
             InitializeComponent();
             InitializeDataGridView();
             LoadQueuedBills();
@@ -146,22 +154,26 @@ namespace pos_system.pos.UI.Forms.Sales
             this.tableLayoutPanel1 = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 RowCount = 1
             };
             this.tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             this.tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
             this.tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
 
             // Buttons with ItemsManagement styling
+            this.btnDelete = CreateToolbarButton("DELETE", DeleteColor); // Red color for delete
             this.btnRestore = CreateToolbarButton("RESTORE", PrimaryColor);
-            this.btnCancel = CreateToolbarButton("CANCEL", DeleteColor);
+            this.btnCancel = CreateToolbarButton("CANCEL", WarningColor);
 
+            this.btnDelete.Click += btnDelete_Click;
             this.btnRestore.Click += btnRestore_Click;
             this.btnCancel.Click += btnCancel_Click;
 
+            this.tableLayoutPanel1.Controls.Add(this.btnDelete, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnRestore, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.btnCancel, 2, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnCancel, 3, 0);
 
             // Layout
             this.splitContainer1.Panel1.Controls.Add(this.dgvQueuedBills);
@@ -389,17 +401,39 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        //private void LoadQueuedBills()
+        //{
+        //    dgvQueuedBills.DataSource = null;
+        //    dgvQueuedBills.DataSource = _queuedBills;
+
+        //    // Auto-select the first row if available
+        //    if (dgvQueuedBills.Rows.Count > 0)
+        //    {
+        //        dgvQueuedBills.Rows[0].Selected = true;
+        //        dgvQueuedBills.CurrentCell = dgvQueuedBills.Rows[0].Cells[0];
+        //        UpdateBillDetails();
+        //    }
+        //}
+
         private void LoadQueuedBills()
         {
-            dgvQueuedBills.DataSource = null;
-            dgvQueuedBills.DataSource = _queuedBills;
-
-            // Auto-select the first row if available
-            if (dgvQueuedBills.Rows.Count > 0)
+            try
             {
-                dgvQueuedBills.Rows[0].Selected = true;
-                dgvQueuedBills.CurrentCell = dgvQueuedBills.Rows[0].Cells[0];
-                UpdateBillDetails();
+                _queuedBills = _salesService.GetQueuedBills(_employeeId);
+                dgvQueuedBills.DataSource = _queuedBills;
+
+                // Auto-select the first row if available
+                if (dgvQueuedBills.Rows.Count > 0)
+                {
+                    dgvQueuedBills.Rows[0].Selected = true;
+                    dgvQueuedBills.CurrentCell = dgvQueuedBills.Rows[0].Cells[0];
+                    UpdateBillDetails();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading queued bills: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -502,6 +536,60 @@ namespace pos_system.pos.UI.Forms.Sales
             else
             {
                 MessageBox.Show("Please select a bill to restore", "Selection Required",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (dgvQueuedBills.SelectedRows.Count > 0)
+            {
+                var selectedBill = dgvQueuedBills.SelectedRows[0].DataBoundItem as QueuedBill;
+                if (selectedBill != null)
+                {
+                    var result = MessageBox.Show(
+                        $"Are you sure you want to delete Bill #{selectedBill.Bill_ID} from the queue?",
+                        "Confirm Deletion",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        try
+                        {
+                            var salesService = new SalesService();
+                            bool success = salesService.DeleteQueuedBill(selectedBill.Queue_ID);
+
+                            if (success)
+                            {
+                                MessageBox.Show("Queued bill deleted successfully", "Success",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                                // Reload the queued bills
+                                _queuedBills = salesService.GetQueuedBills(_employeeId);
+                                dgvQueuedBills.DataSource = _queuedBills;
+
+                                // Clear bill details
+                                lblBillDetails.Text = "Select a bill to view details";
+                                dgvBillItems.DataSource = null;
+                            }
+                            else
+                            {
+                                MessageBox.Show("Failed to delete queued bill", "Error",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Error deleting queued bill: {ex.Message}", "Error",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a bill to delete", "Selection Required",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }

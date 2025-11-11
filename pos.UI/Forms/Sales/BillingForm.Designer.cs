@@ -52,8 +52,7 @@ namespace pos_system.pos.UI.Forms.Sales
         private TableLayoutPanel paymentLayout;
         private TableLayoutPanel tableLayoutHeader;
 
-        // Token UI components
-        private TextBox txtTokenId;
+        // Token UI components (UPDATED - No TextBox, just Button)
         private Button btnApplyToken;
 
         // Queue Management UI Components
@@ -63,8 +62,6 @@ namespace pos_system.pos.UI.Forms.Sales
         private ToolStripMenuItem queueMenu;
         private ToolStripMenuItem menuPauseBill;
         private ToolStripMenuItem menuViewQueuedBills;
-
-
 
         private void InitializeComponent()
         {
@@ -83,10 +80,9 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnApplyBillDiscount = new System.Windows.Forms.Button();
             this.btnClearDiscounts = new System.Windows.Forms.Button();
             this.btnAddItem = new System.Windows.Forms.Button();
-            this.txtTokenId = new System.Windows.Forms.TextBox();
+            this.btnViewQueuedBills = new System.Windows.Forms.Button();
             this.btnApplyToken = new System.Windows.Forms.Button();
             this.btnPauseBill = new System.Windows.Forms.Button();
-            this.btnViewQueuedBills = new System.Windows.Forms.Button();
             this.summaryPanel = new System.Windows.Forms.Panel();
             this.summaryLayout = new System.Windows.Forms.TableLayoutPanel();
             this.itemsTotalPanel = new System.Windows.Forms.Panel();
@@ -140,7 +136,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.container.RowCount = 5;
             this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 120F));
+            this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 100F));
             this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.container.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.container.Size = new System.Drawing.Size(1200, 676);
@@ -227,7 +223,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.barcodePanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.barcodePanel.Location = new System.Drawing.Point(3, 83);
             this.barcodePanel.Name = "barcodePanel";
-            this.barcodePanel.Size = new System.Drawing.Size(1194, 114);
+            this.barcodePanel.Size = new System.Drawing.Size(1194, 80);
             this.barcodePanel.TabIndex = 2;
             // 
             // barcodeContainer
@@ -242,18 +238,16 @@ namespace pos_system.pos.UI.Forms.Sales
             this.barcodeContainer.Controls.Add(this.btnApplyBillDiscount, 2, 0);
             this.barcodeContainer.Controls.Add(this.btnClearDiscounts, 3, 0);
             this.barcodeContainer.Controls.Add(this.btnAddItem, 0, 1);
-            this.barcodeContainer.Controls.Add(this.txtTokenId, 1, 1);
+            this.barcodeContainer.Controls.Add(this.btnViewQueuedBills, 1, 1);
             this.barcodeContainer.Controls.Add(this.btnApplyToken, 2, 1);
             this.barcodeContainer.Controls.Add(this.btnPauseBill, 3, 1);
-            this.barcodeContainer.Controls.Add(this.btnViewQueuedBills, 0, 2);
             this.barcodeContainer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.barcodeContainer.Location = new System.Drawing.Point(0, 0);
             this.barcodeContainer.Name = "barcodeContainer";
-            this.barcodeContainer.RowCount = 3;
-            this.barcodeContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.barcodeContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.barcodeContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.barcodeContainer.Size = new System.Drawing.Size(1194, 114);
+            this.barcodeContainer.RowCount = 2;
+            this.barcodeContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.barcodeContainer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.barcodeContainer.Size = new System.Drawing.Size(1194, 80);
             this.barcodeContainer.TabIndex = 0;
             // 
             // txtBarcode
@@ -263,7 +257,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.txtBarcode.Location = new System.Drawing.Point(3, 3);
             this.txtBarcode.Name = "txtBarcode";
             this.txtBarcode.PlaceholderText = "Scan Barcode or Enter";
-            this.txtBarcode.Size = new System.Drawing.Size(471, 36);
+            this.txtBarcode.Size = new System.Drawing.Size(471, 40);
             this.txtBarcode.TabIndex = 0;
             // 
             // btnClearBill
@@ -276,7 +270,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnClearBill.ForeColor = System.Drawing.Color.White;
             this.btnClearBill.Location = new System.Drawing.Point(480, 3);
             this.btnClearBill.Name = "btnClearBill";
-            this.btnClearBill.Size = new System.Drawing.Size(232, 31);
+            this.btnClearBill.Size = new System.Drawing.Size(232, 40);
             this.btnClearBill.TabIndex = 2;
             this.btnClearBill.Text = "Clear Bill (F1)";
             this.btnClearBill.UseVisualStyleBackColor = false;
@@ -291,7 +285,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnApplyBillDiscount.ForeColor = System.Drawing.Color.Black;
             this.btnApplyBillDiscount.Location = new System.Drawing.Point(718, 3);
             this.btnApplyBillDiscount.Name = "btnApplyBillDiscount";
-            this.btnApplyBillDiscount.Size = new System.Drawing.Size(232, 31);
+            this.btnApplyBillDiscount.Size = new System.Drawing.Size(232, 40);
             this.btnApplyBillDiscount.TabIndex = 3;
             this.btnApplyBillDiscount.Text = "Apply Bill Disc";
             this.btnApplyBillDiscount.UseVisualStyleBackColor = false;
@@ -306,7 +300,7 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnClearDiscounts.ForeColor = System.Drawing.Color.Black;
             this.btnClearDiscounts.Location = new System.Drawing.Point(956, 3);
             this.btnClearDiscounts.Name = "btnClearDiscounts";
-            this.btnClearDiscounts.Size = new System.Drawing.Size(235, 31);
+            this.btnClearDiscounts.Size = new System.Drawing.Size(235, 40);
             this.btnClearDiscounts.TabIndex = 4;
             this.btnClearDiscounts.Text = "Clear Disc";
             this.btnClearDiscounts.UseVisualStyleBackColor = false;
@@ -319,22 +313,27 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnAddItem.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnAddItem.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnAddItem.ForeColor = System.Drawing.Color.White;
-            this.btnAddItem.Location = new System.Drawing.Point(3, 41);
+            this.btnAddItem.Location = new System.Drawing.Point(3, 59);
             this.btnAddItem.Name = "btnAddItem";
-            this.btnAddItem.Size = new System.Drawing.Size(471, 31);
+            this.btnAddItem.Size = new System.Drawing.Size(471, 40);
             this.btnAddItem.TabIndex = 1;
             this.btnAddItem.Text = "Add Item (F11)";
             this.btnAddItem.UseVisualStyleBackColor = false;
             // 
-            // txtTokenId
+            // btnViewQueuedBills
             // 
-            this.txtTokenId.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtTokenId.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.txtTokenId.Location = new System.Drawing.Point(480, 41);
-            this.txtTokenId.Name = "txtTokenId";
-            this.txtTokenId.PlaceholderText = "Enter Token ID";
-            this.txtTokenId.Size = new System.Drawing.Size(232, 29);
-            this.txtTokenId.TabIndex = 5;
+            this.btnViewQueuedBills.BackColor = System.Drawing.Color.Teal;
+            this.btnViewQueuedBills.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnViewQueuedBills.FlatAppearance.BorderSize = 0;
+            this.btnViewQueuedBills.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewQueuedBills.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnViewQueuedBills.ForeColor = System.Drawing.Color.White;
+            this.btnViewQueuedBills.Location = new System.Drawing.Point(480, 59);
+            this.btnViewQueuedBills.Name = "btnViewQueuedBills";
+            this.btnViewQueuedBills.Size = new System.Drawing.Size(232, 40);
+            this.btnViewQueuedBills.TabIndex = 8;
+            this.btnViewQueuedBills.Text = "Queued Bills (F3)";
+            this.btnViewQueuedBills.UseVisualStyleBackColor = false;
             // 
             // btnApplyToken
             // 
@@ -344,9 +343,9 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnApplyToken.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnApplyToken.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnApplyToken.ForeColor = System.Drawing.Color.White;
-            this.btnApplyToken.Location = new System.Drawing.Point(718, 41);
+            this.btnApplyToken.Location = new System.Drawing.Point(718, 59);
             this.btnApplyToken.Name = "btnApplyToken";
-            this.btnApplyToken.Size = new System.Drawing.Size(232, 31);
+            this.btnApplyToken.Size = new System.Drawing.Size(232, 40);
             this.btnApplyToken.TabIndex = 6;
             this.btnApplyToken.Text = "Apply Token";
             this.btnApplyToken.UseVisualStyleBackColor = false;
@@ -359,28 +358,12 @@ namespace pos_system.pos.UI.Forms.Sales
             this.btnPauseBill.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPauseBill.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnPauseBill.ForeColor = System.Drawing.Color.White;
-            this.btnPauseBill.Location = new System.Drawing.Point(956, 41);
+            this.btnPauseBill.Location = new System.Drawing.Point(956, 59);
             this.btnPauseBill.Name = "btnPauseBill";
-            this.btnPauseBill.Size = new System.Drawing.Size(235, 31);
+            this.btnPauseBill.Size = new System.Drawing.Size(235, 40);
             this.btnPauseBill.TabIndex = 7;
             this.btnPauseBill.Text = "Pause Bill (F2)";
             this.btnPauseBill.UseVisualStyleBackColor = false;
-            // 
-            // btnViewQueuedBills
-            // 
-            this.barcodeContainer.SetColumnSpan(this.btnViewQueuedBills, 4);
-            this.btnViewQueuedBills.BackColor = System.Drawing.Color.Teal;
-            this.btnViewQueuedBills.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnViewQueuedBills.FlatAppearance.BorderSize = 0;
-            this.btnViewQueuedBills.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewQueuedBills.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnViewQueuedBills.ForeColor = System.Drawing.Color.White;
-            this.btnViewQueuedBills.Location = new System.Drawing.Point(3, 79);
-            this.btnViewQueuedBills.Name = "btnViewQueuedBills";
-            this.btnViewQueuedBills.Size = new System.Drawing.Size(1188, 32);
-            this.btnViewQueuedBills.TabIndex = 8;
-            this.btnViewQueuedBills.Text = "Queued Bills (F3)";
-            this.btnViewQueuedBills.UseVisualStyleBackColor = false;
             // 
             // summaryPanel
             // 
