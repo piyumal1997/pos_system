@@ -12,7 +12,7 @@ namespace pos_system.pos.Models
         public decimal TotalBillDiscount { get; set; }
         public decimal Total { get; set; }
         public int Bill_ID { get; set; }
-        public string PaymentMethod { get; set; }
+        public string PaymentSummary { get; set; }
         public int Employee_ID { get; set; }
         public string Discount_Method { get; set; }
         public string CustomerContact { get; set; }
@@ -21,5 +21,6 @@ namespace pos_system.pos.Models
         public decimal GrossAmount { get; set; }
         public decimal NetAmount { get; set; }
         public decimal CashPayment { get; set; }
+        public string CashierName { get; set; } 
     }
 }

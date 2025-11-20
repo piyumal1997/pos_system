@@ -30,6 +30,12 @@ namespace pos_system.pos.Models
         public decimal ActualCost { get; set; }
         public decimal ActualProfit { get; set; }
         public decimal ActualSales { get; set; }
+
+        // NEW: Payment breakdown from accounting summary
+        public decimal CashSales { get; set; }
+        public decimal CardSales { get; set; }
+        public decimal BankSales { get; set; }
+        public decimal MixedSales { get; set; }
     }
 
     public class CashFlowSummary
@@ -40,6 +46,8 @@ namespace pos_system.pos.Models
         public decimal CashSales { get; set; }
         public decimal CardSales { get; set; }
         public decimal BankSales { get; set; }
+        public decimal MixedSales { get; set; } // NEW: Added for mixed payments
+        public decimal TokenRedemptions { get; set; }
     }
 
     public class TokenActivity

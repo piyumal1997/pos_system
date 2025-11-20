@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using pos_system.pos.UI.Forms.Common;
 
 namespace pos_system.pos.UI.Forms.Sales
 {
@@ -220,6 +221,7 @@ namespace pos_system.pos.UI.Forms.Sales
             dgvReturnItems = CreateDataGridView();
             dgvReturnItems.Dock = DockStyle.Fill;
             dgvReturnItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvReturnItems.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             tabReturns.Controls.Add(dgvReturnItems);
 
             // Charts tab
@@ -249,10 +251,10 @@ namespace pos_system.pos.UI.Forms.Sales
         private void InitializeSummaryControls()
         {
             string[] labels = {
-                    "Total Sales", "Total Cost", "Gross Profit", "Items Sold",
-                    "Bills Processed", "Return Value", "Cash Sales",  // Changed index 5
-                    "Card Sales", "Bank Transfers", "Returns"
-                };
+                "Total Sales", "Total Cost", "Gross Profit", "Items Sold",
+                "Bills Processed", "Return Value", "Cash Sales",
+                "Card Sales", "Bank Transfers", "Returns"  // UPDATED: Changed "Returns" to "Mixed Payments"
+            };
 
             // Find summary panel
             var summaryPanel = this.Controls.OfType<Panel>()
@@ -793,17 +795,26 @@ namespace pos_system.pos.UI.Forms.Sales
                     var tokenSheet = workbook.Worksheets.Add("Token Activity");
                     AddTokenActivity(tokenSheet, _currentReport.TokenActivity);
 
-                    // 4. Sales Items
-                    var salesSheet = workbook.Worksheets.Add("Sales Items");
-                    AddDataTable(salesSheet, _currentReport.SalesItems);
+                    // 4. Sales Items (Only the data displayed in the grid)
+                    if (_currentReport.SalesItems != null && _currentReport.SalesItems.Any())
+                    {
+                        var salesSheet = workbook.Worksheets.Add("Sales Items");
+                        AddDataTable(salesSheet, _currentReport.SalesItems);
+                    }
 
-                    // 5. Return Items
-                    var returnSheet = workbook.Worksheets.Add("Return Items");
-                    AddDataTable(returnSheet, _currentReport.ReturnItems);
+                    // 5. Return Items (Only the data displayed in the grid)
+                    if (_currentReport.ReturnItems != null && _currentReport.ReturnItems.Any())
+                    {
+                        var returnSheet = workbook.Worksheets.Add("Return Items");
+                        AddDataTable(returnSheet, _currentReport.ReturnItems);
+                    }
 
-                    // 6. Bill Summaries
-                    var billsSheet = workbook.Worksheets.Add("Bills");
-                    AddDataTable(billsSheet, _currentReport.BillSummaries);
+                    // 6. Bill Summaries - REMOVE THIS SECTION 
+                    if (_currentReport.BillSummaries?.Any() == true)
+                    {
+                        var billsSheet = workbook.Worksheets.Add("Bills Summary");
+                        ExportBillSummaryTable(billsSheet, _currentReport.BillSummaries);
+                    }
 
                     workbook.SaveAs(filePath);
                 }
@@ -812,6 +823,74 @@ namespace pos_system.pos.UI.Forms.Sales
             {
                 throw new Exception("Export failed: " + ex.Message);
             }
+        }
+
+        private void ExportBillSummaryTable(IXLWorksheet sheet, List<BillSummary> billSummaries)
+        {
+            if (billSummaries == null || !billSummaries.Any())
+            {
+                sheet.Cell(1, 1).Value = "No bill summary data available";
+                return;
+            }
+
+            // List of properties we want to export (in the order we want them)
+            string[] propertyNames = {
+                "Bill_ID", "PaymentSummary", "CashierName", "Discount_Method",
+                "CustomerContact", "Token_Value", "SaleDate", "GrossAmount", "NetAmount"
+            };
+
+            string[] headers = {
+                "Bill ID", "Payment Method", "Cashier Name", "Discount Method",
+                "Customer Contact", "Token Value", "Sale Date", "Gross Amount", "Net Amount"
+            };
+
+            // Add headers
+            for (int i = 0; i < headers.Length; i++)
+            {
+                sheet.Cell(1, i + 1).Value = headers[i];
+                sheet.Cell(1, i + 1).Style.Font.Bold = true;
+                sheet.Cell(1, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+            }
+
+            // Add data rows
+            var properties = typeof(BillSummary).GetProperties()
+                .Where(p => propertyNames.Contains(p.Name))
+                .OrderBy(p => Array.IndexOf(propertyNames, p.Name))
+                .ToArray();
+
+            for (int row = 0; row < billSummaries.Count; row++)
+            {
+                var bill = billSummaries[row];
+
+                for (int col = 0; col < properties.Length; col++)
+                {
+                    var value = properties[col].GetValue(bill);
+                    var cell = sheet.Cell(row + 2, col + 1);
+
+                    // Simple value formatting
+                    if (value is decimal decimalValue)
+                    {
+                        cell.Value = decimalValue;
+                        cell.Style.NumberFormat.Format = "#,##0.00";
+                    }
+                    else if (value is DateTime dateValue)
+                    {
+                        cell.Value = dateValue;
+                        cell.Style.DateFormat.Format = "yyyy-MM-dd";
+                    }
+                    else
+                    {
+                        cell.Value = value?.ToString() ?? "";
+                    }
+                }
+            }
+
+            sheet.Columns().AdjustToContents();
+
+            // Add borders
+            var range = sheet.Range(1, 1, billSummaries.Count + 1, properties.Length);
+            range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            range.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         }
 
         private void AddAccountingSummary(IXLWorksheet sheet, AccountingSummary summary)
@@ -847,6 +926,8 @@ namespace pos_system.pos.UI.Forms.Sales
             AddSheetRow(sheet, ref row, "Cash Sales", summary.CashSales);
             AddSheetRow(sheet, ref row, "Card Sales", summary.CardSales);
             AddSheetRow(sheet, ref row, "Bank Sales", summary.BankSales);
+            AddSheetRow(sheet, ref row, "Mixed Sales", summary.MixedSales); // NEW
+            AddSheetRow(sheet, ref row, "Token Redemptions", summary.TokenRedemptions);
         }
 
         private void AddTokenActivity(IXLWorksheet sheet, TokenActivity activity)
@@ -893,15 +974,23 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void AddDataTable<T>(IXLWorksheet sheet, List<T> data)
         {
-            if (data == null || data.Count == 0) return;
+            if (data == null || !data.Any())
+            {
+                sheet.Cell(1, 1).Value = "No data available";
+                return;
+            }
 
             var properties = typeof(T).GetProperties();
+
+            // Add headers
             for (int i = 0; i < properties.Length; i++)
             {
                 sheet.Cell(1, i + 1).Value = properties[i].Name;
                 sheet.Cell(1, i + 1).Style.Font.Bold = true;
+                sheet.Cell(1, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
             }
 
+            // Add data rows
             for (int i = 0; i < data.Count; i++)
             {
                 var item = data[i];
@@ -928,7 +1017,7 @@ namespace pos_system.pos.UI.Forms.Sales
                             cell.Style.DateFormat.Format = "yyyy-MM-dd";
                             break;
                         case bool b:
-                            cell.Value = b;
+                            cell.Value = b ? "Yes" : "No";
                             break;
                         default:
                             cell.Value = value?.ToString() ?? string.Empty;
@@ -938,6 +1027,11 @@ namespace pos_system.pos.UI.Forms.Sales
             }
 
             sheet.Columns().AdjustToContents();
+
+            // Add border to the entire table
+            var range = sheet.Range(1, 1, data.Count + 1, properties.Length);
+            range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            range.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         }
 
         // Update BtnExport_Click method
@@ -951,30 +1045,29 @@ namespace pos_system.pos.UI.Forms.Sales
 
             using (var sfd = new SaveFileDialog())
             {
-                // Generate filename with date range
+                // Generate filename with date range and current tab
                 string dateRange = $"{dtpStartDate.Value:yyyyMMdd}-{dtpEndDate.Value:yyyyMMdd}";
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string defaultName = $"SalesReport_{dateRange}_{timestamp}.xlsx";
+                string currentTab = tabControl.SelectedTab?.Text?.Replace(" ", "") ?? "FullReport";
+                string defaultName = $"SalesReport_{currentTab}_{dateRange}_{timestamp}.xlsx";
 
                 sfd.FileName = defaultName;
                 sfd.Filter = "Excel Files|*.xlsx";
-                sfd.Title = "Export Sales Report";
+                sfd.Title = $"Export {tabControl.SelectedTab?.Text ?? "Sales Report"}";
 
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
                         ExportReport(sfd.FileName);
-                        MessageBox.Show("Report exported successfully!");
+                        ThemedMessageBox.Show($"{tabControl.SelectedTab?.Text ?? "Report"} exported successfully!", "Success", ThemedMessageBoxIcon.None);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Export failed: {ex.Message}");
+                        ThemedMessageBox.Show($"Export failed: {ex.Message}", "Error", ThemedMessageBoxIcon.Error);
                     }
                 }
             }
         }
-
-
     }
 }

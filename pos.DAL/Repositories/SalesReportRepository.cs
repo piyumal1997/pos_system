@@ -27,7 +27,7 @@ namespace pos_system.pos.DAL.Repositories
                 conn.Open();
                 using (var reader = cmd.ExecuteReader())
                 {
-                    // 1. Accounting Summary
+                    // 1. Accounting Summary (UPDATED with mixed payments)
                     if (reader.Read())
                     {
                         report.AccountingSummary = new AccountingSummary
@@ -45,14 +45,18 @@ namespace pos_system.pos.DAL.Repositories
                             ReturnedItems = GetSafeInt(reader, "ReturnedItems"),
                             NetItemsSold = GetSafeInt(reader, "NetItemsSold"),
                             BillCount = GetSafeInt(reader, "BillCount"),
-                            //ActualCost, ActualProfit & ActualSales
                             ActualSales = GetSafeDecimal(reader, "ActualSales"),
                             ActualCost = GetSafeDecimal(reader, "ActualCost"),
-                            ActualProfit = GetSafeDecimal(reader, "ActualProfit")
+                            ActualProfit = GetSafeDecimal(reader, "ActualProfit"),
+                            // NEW: Payment breakdown
+                            CashSales = GetSafeDecimal(reader, "CashSales"),
+                            CardSales = GetSafeDecimal(reader, "CardSales"),
+                            BankSales = GetSafeDecimal(reader, "BankSales"),
+                            MixedSales = GetSafeDecimal(reader, "MixedSales")
                         };
                     }
 
-                    // 2. Cash Flow Summary
+                    // 2. Cash Flow Summary (UPDATED with mixed payments)
                     if (reader.NextResult() && reader.Read())
                     {
                         report.CashFlowSummary = new CashFlowSummary
@@ -62,11 +66,13 @@ namespace pos_system.pos.DAL.Repositories
                             NetCashFlow = GetSafeDecimal(reader, "NetCashFlow"),
                             CashSales = GetSafeDecimal(reader, "CashSales"),
                             CardSales = GetSafeDecimal(reader, "CardSales"),
-                            BankSales = GetSafeDecimal(reader, "BankSales")
+                            BankSales = GetSafeDecimal(reader, "BankSales"),
+                            MixedSales = GetSafeDecimal(reader, "MixedSales"), // NEW
+                            TokenRedemptions = GetSafeDecimal(reader, "TokenRedemptions")
                         };
                     }
 
-                    // 3. Token Activity
+                    // 3. Token Activity (UNCHANGED)
                     if (reader.NextResult() && reader.Read())
                     {
                         report.TokenActivity = new TokenActivity
@@ -80,7 +86,7 @@ namespace pos_system.pos.DAL.Repositories
                         };
                     }
 
-                    // 4. Sales Items
+                    // 4. Sales Items (Detailed) - UNCHANGED
                     if (reader.NextResult())
                     {
                         report.SalesItems = new List<SalesItemDetail>();
@@ -104,7 +110,7 @@ namespace pos_system.pos.DAL.Repositories
                         }
                     }
 
-                    // 5. Return Items
+                    // 5. Return Items (Detailed) - UNCHANGED
                     if (reader.NextResult())
                     {
                         report.ReturnItems = new List<ReturnItemDetail>();
@@ -126,7 +132,7 @@ namespace pos_system.pos.DAL.Repositories
                         }
                     }
 
-                    // 6. Bill Summaries
+                    // 6. Bill Summaries (UPDATED for mixed payments)
                     if (reader.NextResult())
                     {
                         report.BillSummaries = new List<BillSummary>();
@@ -135,17 +141,28 @@ namespace pos_system.pos.DAL.Repositories
                             report.BillSummaries.Add(new BillSummary
                             {
                                 Bill_ID = GetSafeInt(reader, "Bill_ID"),
-                                PaymentMethod = GetSafeString(reader, "PaymentMethod"),
-                                //Employee_ID = GetSafeInt(reader, "Employee_ID"),
+                                PaymentSummary = GetSafeString(reader, "PaymentSummary"), // UPDATED
+                                CashierName = GetSafeString(reader, "CashierName"),
                                 Discount_Method = GetSafeString(reader, "Discount_Method"),
                                 CustomerContact = GetSafeString(reader, "CustomerContact"),
                                 Token_Value = GetSafeNullableDecimal(reader, "Token_Value"),
                                 SaleDate = GetSafeDateTime(reader, "SaleDate"),
                                 GrossAmount = GetSafeDecimal(reader, "GrossAmount"),
                                 NetAmount = GetSafeDecimal(reader, "NetAmount"),
-                                //CashPayment = GetSafeDecimal(reader, "CashPayment")
                             });
                         }
+                    }
+
+                    // 7. Sales Items (Simplified) - NEW but optional
+                    if (reader.NextResult())
+                    {
+                        // We can skip this as we already have detailed sales items
+                    }
+
+                    // 8. Return Items (Simplified) - NEW but optional  
+                    if (reader.NextResult())
+                    {
+                        // We can skip this as we already have detailed return items
                     }
                 }
             }
