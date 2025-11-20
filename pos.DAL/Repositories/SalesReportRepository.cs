@@ -14,7 +14,7 @@ namespace pos_system.pos.DAL.Repositories
             var report = new SalesReport();
 
             using (var conn = DbHelper.GetConnection())
-            using (var cmd = new SqlCommand("sp_GetSalesReports", conn))
+            using (var cmd = new SqlCommand("sp_GetSalesReport", conn))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandTimeout = 120;

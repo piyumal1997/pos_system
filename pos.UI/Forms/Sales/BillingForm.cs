@@ -41,6 +41,17 @@ namespace pos_system.pos.UI.Forms.Sales
         private ReturnToken _appliedToken;
         private bool _tokenApplied;
 
+        //Mixed Payment Fields
+        private decimal _totalAmount;
+        private string _cardLastFour;
+        private string _bankLastFour;
+        private string _firstCardLastFour;
+        private string _firstBankLastFour;
+        private string _secondCardLastFour;
+        private string _secondBankLastFour;
+        private string _customerContact;
+        private string _customerGender;
+
         // Barcode scanning fields
         private TextBox _txtBarcodeInput;
         private DateTime _lastScanTime = DateTime.MinValue;
@@ -1764,7 +1775,16 @@ namespace pos_system.pos.UI.Forms.Sales
                             bankLast4: paymentForm.BankLastFour,
                             change: paymentForm.Change,
                             customerContact: paymentForm.CustomerContact,
-                            customerGender: paymentForm.CustomerGender
+                            customerGender: paymentForm.CustomerGender,
+                            // Mixed payment parameters
+                            firstPaymentMethod: paymentForm.FirstPaymentMethod,
+                            firstPaymentAmount: paymentForm.FirstPaymentAmount,
+                            firstCardLast4: paymentForm.FirstCardLastFour,
+                            firstBankLast4: paymentForm.FirstBankLastFour,
+                            secondPaymentMethod: paymentForm.SecondPaymentMethod,
+                            secondPaymentAmount: paymentForm.SecondPaymentAmount,
+                            secondCardLast4: paymentForm.SecondCardLastFour,
+                            secondBankLast4: paymentForm.SecondBankLastFour
                         );
                     }
                 }
@@ -2186,8 +2206,18 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 // Reset token button
                 btnApplyToken.Text = "Apply Token";
-                btnApplyToken.BackColor = Color.MediumPurple; // Original color
+                btnApplyToken.BackColor = Color.MediumPurple;
                 btnApplyToken.Enabled = true;
+
+                // Reset payment fields
+                _cardLastFour = null;
+                _bankLastFour = null;
+                _firstCardLastFour = null;
+                _firstBankLastFour = null;
+                _secondCardLastFour = null;
+                _secondBankLastFour = null;
+                _customerContact = null;
+                _customerGender = null;
 
                 lblBillDiscount.Text = string.Empty;
                 GenerateBillId();
@@ -2256,11 +2286,231 @@ namespace pos_system.pos.UI.Forms.Sales
         #endregion
 
         #region Payment Processing
-        private void ProcessConfirmedPayment(string paymentMethod, decimal amountTendered,
-            string cardLast4, string bankLast4, decimal change, string customerContact, string customerGender)
+        //private void ProcessConfirmedPayment(
+        //    string paymentMethod,
+        //    decimal amountTendered,
+        //    string cardLast4,
+        //    string bankLast4,
+        //    decimal change,
+        //    string customerContact,
+        //    string customerGender,
+        //    // Mixed payment parameters
+        //    string firstPaymentMethod = null,
+        //    decimal firstPaymentAmount = 0,
+        //    string firstCardLast4 = null,
+        //    string firstBankLast4 = null,
+        //    string secondPaymentMethod = null,
+        //    decimal secondPaymentAmount = 0,
+        //    string secondCardLast4 = null,
+        //    string secondBankLast4 = null)
+        //{
+        //    try
+        //    {
+        //        // Store payment details in fields for use in other methods
+        //        _cardLastFour = cardLast4;
+        //        _bankLastFour = bankLast4;
+        //        _customerContact = customerContact;
+        //        _customerGender = customerGender;
+        //        _firstCardLastFour = firstCardLast4;
+        //        _firstBankLastFour = firstBankLast4;
+        //        _secondCardLastFour = secondCardLast4;
+        //        _secondBankLastFour = secondBankLast4;
+
+        //        // Prepare items for stored procedure
+        //        var items = new List<BillItem>();
+        //        foreach (DataRow row in _cartItems.Rows)
+        //        {
+        //            items.Add(new BillItem
+        //            {
+        //                ProductSize_ID = row["ProductSize_ID"] != DBNull.Value ?
+        //                    Convert.ToInt32(row["ProductSize_ID"]) : 0,
+        //                Quantity = row["Quantity"] != DBNull.Value ?
+        //                    Convert.ToInt32(row["Quantity"]) : 0,
+        //                ItemSellingPrice = row["Price"] != DBNull.Value ?
+        //                    Convert.ToDecimal(row["Price"]) : 0,
+        //                Per_item_Discount = row["DiscountAmountPerItem"] != DBNull.Value ?
+        //                    Convert.ToDecimal(row["DiscountAmountPerItem"]) : 0
+        //            });
+        //        }
+
+        //        // Calculate total discount
+        //        decimal totalDiscount = CalculateTotalDiscount();
+
+        //        // Determine actual payment method for database
+        //        string dbPaymentMethod = paymentMethod;
+        //        object sqlCardLast4 = DBNull.Value;
+        //        object sqlBankLast4 = DBNull.Value;
+        //        object sqlToken = DBNull.Value;
+
+        //        // Mixed payment parameters
+        //        object sqlFirstPaymentMethod = DBNull.Value;
+        //        object sqlFirstPaymentAmount = DBNull.Value;
+        //        object sqlFirstCardLast4 = DBNull.Value;
+        //        object sqlFirstBankLast4 = DBNull.Value;
+        //        object sqlSecondPaymentMethod = DBNull.Value;
+        //        object sqlSecondPaymentAmount = DBNull.Value;
+        //        object sqlSecondCardLast4 = DBNull.Value;
+        //        object sqlSecondBankLast4 = DBNull.Value;
+
+        //        // Handle token payments
+        //        if (_tokenApplied)
+        //        {
+        //            sqlToken = _appliedToken.ReturnId;
+
+        //            // If token covers entire amount
+        //            if (amountTendered == 0 && change == 0 && paymentMethod == "Token")
+        //            {
+        //                dbPaymentMethod = null;
+        //            }
+        //        }
+
+        //        // Set payment details based on payment method
+        //        if (paymentMethod == "Mixed")
+        //        {
+        //            sqlFirstPaymentMethod = firstPaymentMethod;
+        //            sqlFirstPaymentAmount = firstPaymentAmount;
+        //            sqlFirstCardLast4 = firstCardLast4;
+        //            sqlFirstBankLast4 = firstBankLast4;
+        //            sqlSecondPaymentMethod = secondPaymentMethod;
+        //            sqlSecondPaymentAmount = secondPaymentAmount;
+        //            sqlSecondCardLast4 = secondCardLast4;
+        //            sqlSecondBankLast4 = secondBankLast4;
+        //        }
+        //        else
+        //        {
+        //            // Set single payment details
+        //            if (paymentMethod == "Card")
+        //            {
+        //                sqlCardLast4 = cardLast4;
+        //            }
+        //            else if (paymentMethod == "Bank Transfer")
+        //            {
+        //                sqlBankLast4 = bankLast4;
+        //            }
+        //        }
+
+        //        using (var conn = DbHelper.GetConnection())
+        //        {
+        //            conn.Open();
+        //            using (var transaction = conn.BeginTransaction(IsolationLevel.Serializable))
+        //            using (var cmd = new SqlCommand("sp_ProcessSale", conn, transaction))
+        //            {
+        //                cmd.CommandType = CommandType.StoredProcedure;
+        //                cmd.Parameters.AddWithValue("@BillID", _billId);
+        //                cmd.Parameters.AddWithValue("@EmployeeID", _currentUser.Employee_ID);
+        //                cmd.Parameters.AddWithValue("@PaymentMethod", dbPaymentMethod ?? (object)DBNull.Value);
+        //                cmd.Parameters.AddWithValue("@Discount", totalDiscount);
+        //                cmd.Parameters.AddWithValue("@CardLast4", sqlCardLast4);
+        //                cmd.Parameters.AddWithValue("@BankAccountLast4", sqlBankLast4);
+        //                cmd.Parameters.AddWithValue("@Token_ReturnID", sqlToken);
+        //                cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
+        //                cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
+
+        //                // Mixed payment parameters
+        //                cmd.Parameters.AddWithValue("@FirstPaymentMethod", sqlFirstPaymentMethod);
+        //                cmd.Parameters.AddWithValue("@FirstPaymentAmount", sqlFirstPaymentAmount);
+        //                cmd.Parameters.AddWithValue("@FirstCardLast4", sqlFirstCardLast4);
+        //                cmd.Parameters.AddWithValue("@FirstBankAccountLast4", sqlFirstBankLast4);
+        //                cmd.Parameters.AddWithValue("@SecondPaymentMethod", sqlSecondPaymentMethod);
+        //                cmd.Parameters.AddWithValue("@SecondPaymentAmount", sqlSecondPaymentAmount);
+        //                cmd.Parameters.AddWithValue("@SecondCardLast4", sqlSecondCardLast4);
+        //                cmd.Parameters.AddWithValue("@SecondBankAccountLast4", sqlSecondBankLast4);
+
+        //                // Add items parameter
+        //                var dt = CreateItemsDataTable(items);
+        //                var param = cmd.Parameters.AddWithValue("@Items", dt);
+        //                param.SqlDbType = SqlDbType.Structured;
+        //                param.TypeName = "BillItemType";
+
+        //                // Execute with transaction
+        //                cmd.ExecuteNonQuery();
+
+        //                // Commit transaction
+        //                transaction.Commit();
+        //            }
+        //        }
+
+        //        // Print the bill
+        //        PrintBill(
+        //            billId: _billId,
+        //            paymentMethod: paymentMethod,
+        //            amountTendered: amountTendered,
+        //            change: change,
+        //            cardLast4: cardLast4,
+        //            bankLast4: bankLast4,
+        //            // Mixed payment parameters
+        //            firstPaymentMethod: firstPaymentMethod,
+        //            firstPaymentAmount: firstPaymentAmount,
+        //            firstCardLast4: firstCardLast4,
+        //            firstBankLast4: firstBankLast4,
+        //            secondPaymentMethod: secondPaymentMethod,
+        //            secondPaymentAmount: secondPaymentAmount,
+        //            secondCardLast4: secondCardLast4,
+        //            secondBankLast4: secondBankLast4
+        //        );
+
+        //        // Show success message
+        //        ShowPaymentSuccess(
+        //            paymentMethod: paymentMethod,
+        //            amountTendered: amountTendered,
+        //            change: change,
+        //            totalItems: _totalItems,
+        //            totalAmount: _total,
+        //            // Mixed payment parameters
+        //            firstPaymentMethod: firstPaymentMethod,
+        //            firstPaymentAmount: firstPaymentAmount,
+        //            secondPaymentMethod: secondPaymentMethod,
+        //            secondPaymentAmount: secondPaymentAmount
+        //        );
+
+        //        // Reset for next bill
+        //        ClearBill();
+        //        FocusBarcodeScanner();
+        //    }
+        //    catch (SqlException ex) when (ex.Number == 50004)
+        //    {
+        //        ShowError("Invalid cash payment: " + ex.Message.Replace("Cash payment should not have card/bank details.", string.Empty));
+        //    }
+        //    catch (SqlException ex)
+        //    {
+        //        HandleDatabaseError(ex);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        HandleUnexpectedError(ex, "Payment Confirmation");
+        //    }
+        //}
+
+        private void ProcessConfirmedPayment(
+            string paymentMethod,
+            decimal amountTendered,
+            string cardLast4,
+            string bankLast4,
+            decimal change,
+            string customerContact,
+            string customerGender,
+            // Mixed payment parameters
+            string firstPaymentMethod = null,
+            decimal firstPaymentAmount = 0,
+            string firstCardLast4 = null,
+            string firstBankLast4 = null,
+            string secondPaymentMethod = null,
+            decimal secondPaymentAmount = 0,
+            string secondCardLast4 = null,
+            string secondBankLast4 = null)
         {
             try
             {
+                // Store payment details in fields for use in other methods
+                _cardLastFour = cardLast4;
+                _bankLastFour = bankLast4;
+                _customerContact = customerContact;
+                _customerGender = customerGender;
+                _firstCardLastFour = firstCardLast4;
+                _firstBankLastFour = firstBankLast4;
+                _secondCardLastFour = secondCardLast4;
+                _secondBankLastFour = secondBankLast4;
+
                 // Prepare items for stored procedure
                 var items = new List<BillItem>();
                 foreach (DataRow row in _cartItems.Rows)
@@ -2287,6 +2537,34 @@ namespace pos_system.pos.UI.Forms.Sales
                 object sqlBankLast4 = DBNull.Value;
                 object sqlToken = DBNull.Value;
 
+                // Handle payments parameter for mixed payment
+                DataTable paymentsDt = null;
+                if (paymentMethod == "Mixed")
+                {
+                    // Create payments data table for mixed payment
+                    paymentsDt = CreatePaymentsDataTable(
+                        _billId,
+                        firstPaymentMethod, firstPaymentAmount, firstCardLast4, firstBankLast4,
+                        secondPaymentMethod, secondPaymentAmount, secondCardLast4, secondBankLast4
+                    );
+
+                    // For mixed payments, we don't use the single payment parameters
+                    sqlCardLast4 = DBNull.Value;
+                    sqlBankLast4 = DBNull.Value;
+                }
+                else
+                {
+                    // Set single payment details
+                    if (paymentMethod == "Card")
+                    {
+                        sqlCardLast4 = cardLast4;
+                    }
+                    else if (paymentMethod == "Bank Transfer")
+                    {
+                        sqlBankLast4 = bankLast4;
+                    }
+                }
+
                 // Handle token payments
                 if (_tokenApplied)
                 {
@@ -2297,16 +2575,6 @@ namespace pos_system.pos.UI.Forms.Sales
                     {
                         dbPaymentMethod = null;
                     }
-                }
-
-                // Set card/bank details only for relevant payment methods
-                if (paymentMethod == "Card")
-                {
-                    sqlCardLast4 = cardLast4;
-                }
-                else if (paymentMethod == "Bank Transfer")
-                {
-                    sqlBankLast4 = bankLast4;
                 }
 
                 using (var conn = DbHelper.GetConnection())
@@ -2324,6 +2592,12 @@ namespace pos_system.pos.UI.Forms.Sales
                         cmd.Parameters.AddWithValue("@BankAccountLast4", sqlBankLast4);
                         cmd.Parameters.AddWithValue("@Token_ReturnID", sqlToken);
                         cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
+
+                        // Add the payments parameter for mixed payments
+                        var paymentsParam = cmd.Parameters.AddWithValue("@Payments", paymentsDt ?? (object)DBNull.Value);
+                        paymentsParam.SqlDbType = SqlDbType.Structured;
+                        paymentsParam.TypeName = "BillPaymentType";
 
                         // Add items parameter
                         var dt = CreateItemsDataTable(items);
@@ -2346,7 +2620,16 @@ namespace pos_system.pos.UI.Forms.Sales
                     amountTendered: amountTendered,
                     change: change,
                     cardLast4: cardLast4,
-                    bankLast4: bankLast4
+                    bankLast4: bankLast4,
+                    // Mixed payment parameters
+                    firstPaymentMethod: firstPaymentMethod,
+                    firstPaymentAmount: firstPaymentAmount,
+                    firstCardLast4: firstCardLast4,
+                    firstBankLast4: firstBankLast4,
+                    secondPaymentMethod: secondPaymentMethod,
+                    secondPaymentAmount: secondPaymentAmount,
+                    secondCardLast4: secondCardLast4,
+                    secondBankLast4: secondBankLast4
                 );
 
                 // Show success message
@@ -2355,7 +2638,12 @@ namespace pos_system.pos.UI.Forms.Sales
                     amountTendered: amountTendered,
                     change: change,
                     totalItems: _totalItems,
-                    totalAmount: _total
+                    totalAmount: _total,
+                    // Mixed payment parameters
+                    firstPaymentMethod: firstPaymentMethod,
+                    firstPaymentAmount: firstPaymentAmount,
+                    secondPaymentMethod: secondPaymentMethod,
+                    secondPaymentAmount: secondPaymentAmount
                 );
 
                 // Reset for next bill
@@ -2374,6 +2662,42 @@ namespace pos_system.pos.UI.Forms.Sales
             {
                 HandleUnexpectedError(ex, "Payment Confirmation");
             }
+        }
+
+        private DataTable CreatePaymentsDataTable(
+    int billId,
+    string firstPaymentMethod, decimal firstPaymentAmount, string firstCardLast4, string firstBankLast4,
+    string secondPaymentMethod, decimal secondPaymentAmount, string secondCardLast4, string secondBankLast4)
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Bill_ID", typeof(int));
+            dt.Columns.Add("PaymentMethod", typeof(string));
+            dt.Columns.Add("PaymentAmount", typeof(decimal));
+            dt.Columns.Add("CardLast4", typeof(string));
+            dt.Columns.Add("BankAccountLast4", typeof(string));
+            dt.Columns.Add("PaymentOrder", typeof(int));
+
+            // Add first payment
+            dt.Rows.Add(
+                billId,
+                firstPaymentMethod,
+                firstPaymentAmount,
+                firstCardLast4 ?? (object)DBNull.Value,
+                firstBankLast4 ?? (object)DBNull.Value,
+                1
+            );
+
+            // Add second payment
+            dt.Rows.Add(
+                billId,
+                secondPaymentMethod,
+                secondPaymentAmount,
+                secondCardLast4 ?? (object)DBNull.Value,
+                secondBankLast4 ?? (object)DBNull.Value,
+                2
+            );
+
+            return dt;
         }
 
         private DataTable CreateItemsDataTable(List<BillItem> items)
@@ -2417,7 +2741,9 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void PrintBill(int billId, string paymentMethod,
             decimal amountTendered, decimal change,
-            string cardLast4, string bankLast4)
+            string cardLast4, string bankLast4,
+            string firstPaymentMethod = null, decimal firstPaymentAmount = 0, string firstCardLast4 = null, string firstBankLast4 = null,
+            string secondPaymentMethod = null, decimal secondPaymentAmount = 0, string secondCardLast4 = null, string secondBankLast4 = null)
         {
             try
             {
@@ -2481,6 +2807,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
 
                 PrintSeparator(output);
+
                 // Discount summary
                 if (_totalDiscount > 0)
                 {
@@ -2504,25 +2831,65 @@ namespace pos_system.pos.UI.Forms.Sales
                     PrintLeftRight("RETURN VALUE:", $"Rs.{Math.Round(_appliedToken.TotalRefund, 2)}", output);
                 }
 
-                // Payment details
-                if (paymentMethod == "Cash")
+                // Payment details - Handle Mixed Payment
+                if (paymentMethod == "Mixed")
                 {
-                    PrintLeftRight("CASH TENDERED:", $"Rs.{amountTendered:0.00}", output);
-                    PrintLeftRight("CHANGE:", $"Rs.{change:0.00}", output);
+                    PrintLeftRight("MIXED PAYMENT", "SPLIT", output);
+                    PrintSeparator(output);
+
+                    // First Payment
+                    PrintLeftRight($"{firstPaymentMethod.ToUpper()}:", $"Rs.{firstPaymentAmount:0.00}", output);
+                    if (firstPaymentMethod == "Card" && !string.IsNullOrEmpty(firstCardLast4))
+                        PrintLeftRight("CARD LAST 4:", firstCardLast4, output);
+                    else if (firstPaymentMethod == "Bank Transfer" && !string.IsNullOrEmpty(firstBankLast4))
+                        PrintLeftRight("BANK LAST 4:", firstBankLast4, output);
+
+                    // Second Payment
+                    PrintLeftRight($"{secondPaymentMethod.ToUpper()}:", $"Rs.{secondPaymentAmount:0.00}", output);
+                    if (secondPaymentMethod == "Card" && !string.IsNullOrEmpty(secondCardLast4))
+                        PrintLeftRight("CARD LAST 4:", secondCardLast4, output);
+                    else if (secondPaymentMethod == "Bank Transfer" && !string.IsNullOrEmpty(secondBankLast4))
+                        PrintLeftRight("BANK LAST 4:", secondBankLast4, output);
+
+                    PrintSeparator(output);
+                    PrintLeftRight("TOTAL PAID:", $"Rs.{(firstPaymentAmount + secondPaymentAmount):0.00}", output);
+
+                    decimal totalPaid = firstPaymentAmount + secondPaymentAmount;
+                    if (totalPaid > _total)
+                    {
+                        PrintLeftRight("CHANGE:", $"Rs.{(totalPaid - _total):0.00}", output);
+                    }
                 }
-                else if (paymentMethod == "Card")
+                else
                 {
-                    PrintLeftRight("CARD PAYMENT:", $"Rs.{amountTendered:0.00}", output);
-                    PrintLeftRight("LAST 4 DIGITS:", cardLast4, output);
+                    // Single Payment Method
+                    if (paymentMethod == "Cash")
+                    {
+                        PrintLeftRight("CASH TENDERED:", $"Rs.{amountTendered:0.00}", output);
+                        PrintLeftRight("CHANGE:", $"Rs.{change:0.00}", output);
+                    }
+                    else if (paymentMethod == "Card")
+                    {
+                        PrintLeftRight("CARD PAYMENT:", $"Rs.{amountTendered:0.00}", output);
+                        PrintLeftRight("LAST 4 DIGITS:", cardLast4, output);
+                    }
+                    else if (paymentMethod == "Bank Transfer")
+                    {
+                        PrintLeftRight("BANK TRANSFER:", $"Rs.{amountTendered:0.00}", output);
+                        PrintLeftRight("LAST 4 DIGITS:", bankLast4, output);
+                    }
+                    else if (paymentMethod == "Token")
+                    {
+                        PrintLeftRight("FULLY PAID WITH TOKEN", $"Rs.{_appliedToken.TotalRefund:0.00}", output);
+                    }
                 }
-                else if (paymentMethod == "Bank Transfer")
+
+                output.AddRange(Encoding.ASCII.GetBytes("\n"));
+
+                // Customer contact if available
+                if (!string.IsNullOrEmpty(_customerContact))
                 {
-                    PrintLeftRight("BANK TRANSFER:", $"Rs.{amountTendered:0.00}", output);
-                    PrintLeftRight("LAST 4 DIGITS:", bankLast4, output);
-                }
-                else if (paymentMethod == "Token")
-                {
-                    PrintLeftRight("FULLY PAID WITH TOKEN", $"Rs.{_appliedToken.TotalRefund:0.00}", output);
+                    PrintLeftRight("CONTACT:", _customerContact, output);
                 }
 
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
@@ -2553,6 +2920,8 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+
+        // Helper methods for printing
         private void PrintCentered(string text, List<byte> output)
         {
             try
@@ -2651,7 +3020,11 @@ namespace pos_system.pos.UI.Forms.Sales
             decimal amountTendered,
             decimal change,
             int totalItems,
-            decimal totalAmount)
+            decimal totalAmount,
+            string firstPaymentMethod = null,
+            decimal firstPaymentAmount = 0,
+            string secondPaymentMethod = null,
+            decimal secondPaymentAmount = 0)
         {
             StringBuilder message = new StringBuilder();
             message.AppendLine("Payment processed successfully!\n");
@@ -2660,39 +3033,83 @@ namespace pos_system.pos.UI.Forms.Sales
             message.AppendLine($"Total Amount: Rs.{totalAmount:0.00}");
 
             // Add payment method specific details
-            switch (paymentMethod)
+            if (paymentMethod == "Mixed")
             {
-                case "Cash":
-                    message.AppendLine($"\nPayment Method: Cash");
-                    message.AppendLine($"Amount Tendered: Rs.{amountTendered:0.00}");
-                    message.AppendLine($"Change: Rs.{change:0.00}");
-                    break;
+                message.AppendLine($"\nPayment Method: Mixed Payment");
+                message.AppendLine($"First Payment ({firstPaymentMethod}): Rs.{firstPaymentAmount:0.00}");
 
-                case "Card":
-                    message.AppendLine($"\nPayment Method: Card");
-                    message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
-                    break;
+                if (firstPaymentMethod == "Card")
+                    message.AppendLine($"Card Last 4: {_firstCardLastFour}");
+                else if (firstPaymentMethod == "Bank Transfer")
+                    message.AppendLine($"Bank Last 4: {_firstBankLastFour}");
 
-                case "Bank Transfer":
-                    message.AppendLine($"\nPayment Method: Bank Transfer");
-                    message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
-                    break;
+                message.AppendLine($"Second Payment ({secondPaymentMethod}): Rs.{secondPaymentAmount:0.00}");
 
-                case "Token":
-                    message.AppendLine($"\nPayment Method: Token");
-                    message.AppendLine($"Token Value Applied: Rs.{_appliedToken.TotalRefund:0.00}");
-                    message.AppendLine($"Remaining Token Balance: Rs.0.00");
-                    break;
+                if (secondPaymentMethod == "Card")
+                    message.AppendLine($"Card Last 4: {_secondCardLastFour}");
+                else if (secondPaymentMethod == "Bank Transfer")
+                    message.AppendLine($"Bank Last 4: {_secondBankLastFour}");
+
+                decimal totalPaid = firstPaymentAmount + secondPaymentAmount;
+                message.AppendLine($"Total Paid: Rs.{totalPaid:0.00}");
+
+                if (totalPaid > totalAmount)
+                {
+                    message.AppendLine($"Change Given: Rs.{(totalPaid - totalAmount):0.00}");
+                }
+            }
+            else
+            {
+                switch (paymentMethod)
+                {
+                    case "Cash":
+                        message.AppendLine($"\nPayment Method: Cash");
+                        message.AppendLine($"Amount Tendered: Rs.{amountTendered:0.00}");
+                        message.AppendLine($"Change: Rs.{change:0.00}");
+                        break;
+
+                    case "Card":
+                        message.AppendLine($"\nPayment Method: Card");
+                        message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
+                        message.AppendLine($"Card Last 4: {_cardLastFour}");
+                        break;
+
+                    case "Bank Transfer":
+                        message.AppendLine($"\nPayment Method: Bank Transfer");
+                        message.AppendLine($"Amount Paid: Rs.{totalAmount:0.00}");
+                        message.AppendLine($"Bank Last 4: {_bankLastFour}");
+                        break;
+
+                    case "Token":
+                        message.AppendLine($"\nPayment Method: Token");
+                        message.AppendLine($"Token Value Applied: Rs.{_appliedToken.TotalRefund:0.00}");
+                        message.AppendLine($"Remaining Token Balance: Rs.0.00");
+                        break;
+                }
             }
 
-            // Always show remaining balance (change) if any
-            if (change > 0)
+            // Token information if applied
+            if (_tokenApplied && paymentMethod != "Token")
             {
-                message.AppendLine($"\nBalance Returned: Rs.{change:0.00}");
+                message.AppendLine($"\nToken Applied: Rs.{_appliedToken.TotalRefund:0.00}");
             }
 
-            ThemedMessageBoxGreen.Show(message.ToString(), "Success");
+            // Customer contact information if available
+            if (!string.IsNullOrEmpty(_customerContact))
+            {
+                message.AppendLine($"\nCustomer Contact: {_customerContact}");
+                if (!string.IsNullOrEmpty(_customerGender))
+                {
+                    message.AppendLine($"Customer Gender: {_customerGender}");
+                }
+            }
+
+            ThemedMessageBoxGreen.Show(message.ToString(), "Payment Success");
+
+            // Optional: Play success sound or other feedback
+            System.Media.SystemSounds.Exclamation.Play();
         }
+
         #endregion
 
         #region Error Handling

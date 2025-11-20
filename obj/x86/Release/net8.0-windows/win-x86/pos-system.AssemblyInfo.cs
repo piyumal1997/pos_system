@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3c191c1eca2fd3e858b3d56086fc7f8347af6f1b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+42840c5037c68f8446e263310a2a95d40cffc3ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyTitleAttribute("pos-system")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
