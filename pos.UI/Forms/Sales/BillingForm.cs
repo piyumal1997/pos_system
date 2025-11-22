@@ -2342,39 +2342,20 @@ namespace pos_system.pos.UI.Forms.Sales
         //        object sqlBankLast4 = DBNull.Value;
         //        object sqlToken = DBNull.Value;
 
-        //        // Mixed payment parameters
-        //        object sqlFirstPaymentMethod = DBNull.Value;
-        //        object sqlFirstPaymentAmount = DBNull.Value;
-        //        object sqlFirstCardLast4 = DBNull.Value;
-        //        object sqlFirstBankLast4 = DBNull.Value;
-        //        object sqlSecondPaymentMethod = DBNull.Value;
-        //        object sqlSecondPaymentAmount = DBNull.Value;
-        //        object sqlSecondCardLast4 = DBNull.Value;
-        //        object sqlSecondBankLast4 = DBNull.Value;
-
-        //        // Handle token payments
-        //        if (_tokenApplied)
-        //        {
-        //            sqlToken = _appliedToken.ReturnId;
-
-        //            // If token covers entire amount
-        //            if (amountTendered == 0 && change == 0 && paymentMethod == "Token")
-        //            {
-        //                dbPaymentMethod = null;
-        //            }
-        //        }
-
-        //        // Set payment details based on payment method
+        //        // Handle payments parameter for mixed payment
+        //        DataTable paymentsDt = null;
         //        if (paymentMethod == "Mixed")
         //        {
-        //            sqlFirstPaymentMethod = firstPaymentMethod;
-        //            sqlFirstPaymentAmount = firstPaymentAmount;
-        //            sqlFirstCardLast4 = firstCardLast4;
-        //            sqlFirstBankLast4 = firstBankLast4;
-        //            sqlSecondPaymentMethod = secondPaymentMethod;
-        //            sqlSecondPaymentAmount = secondPaymentAmount;
-        //            sqlSecondCardLast4 = secondCardLast4;
-        //            sqlSecondBankLast4 = secondBankLast4;
+        //            // Create payments data table for mixed payment
+        //            paymentsDt = CreatePaymentsDataTable(
+        //                _billId,
+        //                firstPaymentMethod, firstPaymentAmount, firstCardLast4, firstBankLast4,
+        //                secondPaymentMethod, secondPaymentAmount, secondCardLast4, secondBankLast4
+        //            );
+
+        //            // For mixed payments, we don't use the single payment parameters
+        //            sqlCardLast4 = DBNull.Value;
+        //            sqlBankLast4 = DBNull.Value;
         //        }
         //        else
         //        {
@@ -2386,6 +2367,18 @@ namespace pos_system.pos.UI.Forms.Sales
         //            else if (paymentMethod == "Bank Transfer")
         //            {
         //                sqlBankLast4 = bankLast4;
+        //            }
+        //        }
+
+        //        // Handle token payments
+        //        if (_tokenApplied)
+        //        {
+        //            sqlToken = _appliedToken.ReturnId;
+
+        //            // If token covers entire amount
+        //            if (amountTendered == 0 && change == 0 && paymentMethod == "Token")
+        //            {
+        //                dbPaymentMethod = null;
         //            }
         //        }
 
@@ -2406,15 +2399,10 @@ namespace pos_system.pos.UI.Forms.Sales
         //                cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
         //                cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
 
-        //                // Mixed payment parameters
-        //                cmd.Parameters.AddWithValue("@FirstPaymentMethod", sqlFirstPaymentMethod);
-        //                cmd.Parameters.AddWithValue("@FirstPaymentAmount", sqlFirstPaymentAmount);
-        //                cmd.Parameters.AddWithValue("@FirstCardLast4", sqlFirstCardLast4);
-        //                cmd.Parameters.AddWithValue("@FirstBankAccountLast4", sqlFirstBankLast4);
-        //                cmd.Parameters.AddWithValue("@SecondPaymentMethod", sqlSecondPaymentMethod);
-        //                cmd.Parameters.AddWithValue("@SecondPaymentAmount", sqlSecondPaymentAmount);
-        //                cmd.Parameters.AddWithValue("@SecondCardLast4", sqlSecondCardLast4);
-        //                cmd.Parameters.AddWithValue("@SecondBankAccountLast4", sqlSecondBankLast4);
+        //                // Add the payments parameter for mixed payments
+        //                var paymentsParam = cmd.Parameters.AddWithValue("@Payments", paymentsDt ?? (object)DBNull.Value);
+        //                paymentsParam.SqlDbType = SqlDbType.Structured;
+        //                paymentsParam.TypeName = "BillPaymentType";
 
         //                // Add items parameter
         //                var dt = CreateItemsDataTable(items);
@@ -2482,22 +2470,22 @@ namespace pos_system.pos.UI.Forms.Sales
         //}
 
         private void ProcessConfirmedPayment(
-            string paymentMethod,
-            decimal amountTendered,
-            string cardLast4,
-            string bankLast4,
-            decimal change,
-            string customerContact,
-            string customerGender,
-            // Mixed payment parameters
-            string firstPaymentMethod = null,
-            decimal firstPaymentAmount = 0,
-            string firstCardLast4 = null,
-            string firstBankLast4 = null,
-            string secondPaymentMethod = null,
-            decimal secondPaymentAmount = 0,
-            string secondCardLast4 = null,
-            string secondBankLast4 = null)
+    string paymentMethod,
+    decimal amountTendered,
+    string cardLast4,
+    string bankLast4,
+    decimal change,
+    string customerContact,
+    string customerGender,
+    // Mixed payment parameters
+    string firstPaymentMethod = null,
+    decimal firstPaymentAmount = 0,
+    string firstCardLast4 = null,
+    string firstBankLast4 = null,
+    string secondPaymentMethod = null,
+    decimal secondPaymentAmount = 0,
+    string secondCardLast4 = null,
+    string secondBankLast4 = null)
         {
             try
             {
@@ -2537,8 +2525,9 @@ namespace pos_system.pos.UI.Forms.Sales
                 object sqlBankLast4 = DBNull.Value;
                 object sqlToken = DBNull.Value;
 
-                // Handle payments parameter for mixed payment
-                DataTable paymentsDt = null;
+                // Handle payments parameter for ALL payment methods
+                DataTable paymentsDt = CreateEmptyPaymentsDataTable(); // Always create a DataTable, never null
+
                 if (paymentMethod == "Mixed")
                 {
                     // Create payments data table for mixed payment
@@ -2554,6 +2543,9 @@ namespace pos_system.pos.UI.Forms.Sales
                 }
                 else
                 {
+                    // For single payment methods, create a DataTable with the single payment
+                    paymentsDt = CreateSinglePaymentDataTable(_billId, paymentMethod, amountTendered, cardLast4, bankLast4);
+
                     // Set single payment details
                     if (paymentMethod == "Card")
                     {
@@ -2594,8 +2586,8 @@ namespace pos_system.pos.UI.Forms.Sales
                         cmd.Parameters.AddWithValue("@CustomerContact", customerContact ?? (object)DBNull.Value);
                         cmd.Parameters.AddWithValue("@ContactGender", customerGender ?? (object)DBNull.Value);
 
-                        // Add the payments parameter for mixed payments
-                        var paymentsParam = cmd.Parameters.AddWithValue("@Payments", paymentsDt ?? (object)DBNull.Value);
+                        // Add the payments parameter for ALL payment methods (never DBNull)
+                        var paymentsParam = cmd.Parameters.AddWithValue("@Payments", paymentsDt);
                         paymentsParam.SqlDbType = SqlDbType.Structured;
                         paymentsParam.TypeName = "BillPaymentType";
 
@@ -2664,10 +2656,41 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        private DataTable CreateEmptyPaymentsDataTable()
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Bill_ID", typeof(int));
+            dt.Columns.Add("PaymentMethod", typeof(string));
+            dt.Columns.Add("PaymentAmount", typeof(decimal));
+            dt.Columns.Add("CardLast4", typeof(string));
+            dt.Columns.Add("BankAccountLast4", typeof(string));
+            dt.Columns.Add("PaymentOrder", typeof(int));
+            return dt;
+        }
+
+        private DataTable CreateSinglePaymentDataTable(int billId, string paymentMethod, decimal amount, string cardLast4, string bankLast4)
+        {
+            DataTable dt = CreateEmptyPaymentsDataTable();
+
+            if (amount > 0) // Only add payment if amount is positive
+            {
+                dt.Rows.Add(
+                    billId,
+                    paymentMethod,
+                    amount,
+                    paymentMethod == "Card" ? cardLast4 ?? (object)DBNull.Value : DBNull.Value,
+                    paymentMethod == "Bank Transfer" ? bankLast4 ?? (object)DBNull.Value : DBNull.Value,
+                    1
+                );
+            }
+
+            return dt;
+        }
+
         private DataTable CreatePaymentsDataTable(
-    int billId,
-    string firstPaymentMethod, decimal firstPaymentAmount, string firstCardLast4, string firstBankLast4,
-    string secondPaymentMethod, decimal secondPaymentAmount, string secondCardLast4, string secondBankLast4)
+            int billId,
+            string firstPaymentMethod, decimal firstPaymentAmount, string firstCardLast4, string firstBankLast4,
+            string secondPaymentMethod, decimal secondPaymentAmount, string secondCardLast4, string secondBankLast4)
         {
             DataTable dt = new DataTable();
             dt.Columns.Add("Bill_ID", typeof(int));
