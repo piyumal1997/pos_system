@@ -15,7 +15,7 @@ namespace pos_system.pos.UI.Forms.Common
         Error,
         Information,
         Warning,
-        Question
+        Success
     }
 
     public partial class ThemedMessageBox : Form
@@ -58,7 +58,7 @@ namespace pos_system.pos.UI.Forms.Common
                 case ThemedMessageBoxIcon.Warning:
                     lblTitle.BackColor = Color.FromArgb(255, 193, 7);    // Amber
                     break;
-                case ThemedMessageBoxIcon.Question:
+                case ThemedMessageBoxIcon.Success:
                     lblTitle.BackColor = Color.FromArgb(106, 176, 76);   // Green
                     break;
                 default:

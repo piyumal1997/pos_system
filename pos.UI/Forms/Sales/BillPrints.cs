@@ -44,7 +44,7 @@ namespace pos_system.pos.UI.Forms.Sales
         private TableLayoutPanel searchLayout;
 
         // Data
-        private DataTable _billItems = new DataTable();
+        private DataTable _billItems;
         private decimal _subtotal;
         private decimal _totalPerItemDiscount;
         private decimal _billDiscount;
@@ -64,11 +64,11 @@ namespace pos_system.pos.UI.Forms.Sales
 
         public BillPrints(Employee currentUser)
         {
-            InitializeForm();
+            InitializeComponent();
             _billService = new BillService();
         }
 
-        private void InitializeForm()
+        private void InitializeComponent()
         {
             // Form setup
             this.Text = "BILL SEARCH AND REPRINT";
@@ -330,7 +330,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 ReadOnly = true,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                AutoGenerateColumns = false // IMPORTANT: Prevent auto-generation
             };
 
             // Style bill items grid
@@ -350,44 +350,8 @@ namespace pos_system.pos.UI.Forms.Sales
                 SelectionForeColor = ForegroundColor
             };
 
-            // Configure bill items columns
-            dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "Description",
-                DataPropertyName = "description",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-            });
-
-            dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "Price",
-                DataPropertyName = "ItemSellingPrice",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
-                Width = 70
-            });
-
-            dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "Qty",
-                DataPropertyName = "quantity",
-                Width = 50
-            });
-
-            dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "Discount",
-                DataPropertyName = "Per_item_Discount",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
-                Width = 70
-            });
-
-            dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                HeaderText = "Total",
-                DataPropertyName = "NetPrice",
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" },
-                Width = 80
-            });
+            // Configure bill items columns MANUALLY
+            InitializeBillItemsGrid();
 
             itemsGroup.Controls.Add(dgvBillItems);
 
@@ -473,8 +437,122 @@ namespace pos_system.pos.UI.Forms.Sales
             dtpEndDate.Value = DateTime.Today;
             LoadPrinters();
 
+            // Initialize bill items data table
+            InitializeBillItemsDataTable();
+
             // Add selection changed event
             dgvBills.SelectionChanged += DgvBills_SelectionChanged;
+        }
+
+        private void InitializeBillItemsGrid()
+        {
+            try
+            {
+                // Clear any existing columns
+                dgvBillItems.Columns.Clear();
+
+                // IMPORTANT: Disable auto-generated columns
+                dgvBillItems.AutoGenerateColumns = false;
+
+                // Manually create columns with fixed header text
+                var colDescription = new DataGridViewTextBoxColumn
+                {
+                    Name = "description",
+                    DataPropertyName = "description",
+                    HeaderText = "Description",
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                    ReadOnly = true
+                };
+                dgvBillItems.Columns.Add(colDescription);
+
+                var colPrice = new DataGridViewTextBoxColumn
+                {
+                    Name = "ItemSellingPrice",
+                    DataPropertyName = "ItemSellingPrice",
+                    HeaderText = "Price",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70,
+                    ReadOnly = true
+                };
+                dgvBillItems.Columns.Add(colPrice);
+
+                var colQuantity = new DataGridViewTextBoxColumn
+                {
+                    Name = "quantity",
+                    DataPropertyName = "quantity",
+                    HeaderText = "Qty",
+                    Width = 50,
+                    ReadOnly = true
+                };
+                dgvBillItems.Columns.Add(colQuantity);
+
+                var colDiscount = new DataGridViewTextBoxColumn
+                {
+                    Name = "Per_item_Discount",
+                    DataPropertyName = "Per_item_Discount",
+                    HeaderText = "Discount",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 70,
+                    ReadOnly = true
+                };
+                dgvBillItems.Columns.Add(colDiscount);
+
+                var colNetPrice = new DataGridViewTextBoxColumn
+                {
+                    Name = "NetPrice",
+                    DataPropertyName = "NetPrice",
+                    HeaderText = "Total",
+                    DefaultCellStyle = new DataGridViewCellStyle
+                    {
+                        Format = "N2",
+                        Alignment = DataGridViewContentAlignment.MiddleRight
+                    },
+                    Width = 80,
+                    ReadOnly = true
+                };
+                dgvBillItems.Columns.Add(colNetPrice);
+
+                // Set grid properties to prevent column changes
+                dgvBillItems.AllowUserToAddRows = false;
+                dgvBillItems.AllowUserToDeleteRows = false;
+                dgvBillItems.AllowUserToOrderColumns = false;
+                dgvBillItems.AllowUserToResizeColumns = true;
+                dgvBillItems.EditMode = DataGridViewEditMode.EditProgrammatically;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error initializing bill items grid: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InitializeBillItemsDataTable()
+        {
+            try
+            {
+                _billItems = new DataTable();
+                _billItems.Columns.Add("description", typeof(string));
+                _billItems.Columns.Add("ItemSellingPrice", typeof(decimal));
+                _billItems.Columns.Add("quantity", typeof(int));
+                _billItems.Columns.Add("Per_item_Discount", typeof(decimal));
+                _billItems.Columns.Add("NetPrice", typeof(decimal));
+
+                // Set the data source - this will now use our manual columns
+                dgvBillItems.DataSource = _billItems;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error initializing bill items table: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private Button CreateButton(string text, Color backColor, int width, int height)
@@ -539,6 +617,8 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 // Use service layer to search bills
                 var result = _billService.SearchBills(billId, dtpStartDate.Value.Date, dtpEndDate.Value.Date, customerContact);
+
+                // Set the data source
                 dgvBills.DataSource = result;
 
                 if (result.Rows.Count == 0)
@@ -546,7 +626,9 @@ namespace pos_system.pos.UI.Forms.Sales
                     ThemedMessageBox.Show("No bills found matching the criteria", "Search Results",
                         ThemedMessageBoxIcon.Warning);
                     btnReprint.Enabled = false;
-                    dgvBillItems.DataSource = null;
+
+                    // Clear bill items but maintain structure
+                    ClearBillItemsData();
                 }
                 else
                 {
@@ -573,13 +655,58 @@ namespace pos_system.pos.UI.Forms.Sales
 
         private void ClearSearch()
         {
-            txtBillId.Clear();
-            txtCustomerContact.Clear();
-            dtpStartDate.Value = DateTime.Today.AddDays(-7);
-            dtpEndDate.Value = DateTime.Today;
-            dgvBills.DataSource = null;
-            dgvBillItems.DataSource = null;
-            btnReprint.Enabled = false;
+            try
+            {
+                txtBillId.Clear();
+                txtCustomerContact.Clear();
+                dtpStartDate.Value = DateTime.Today.AddDays(-7);
+                dtpEndDate.Value = DateTime.Today;
+
+                // Clear the bills data source but maintain structure
+                if (dgvBills.DataSource != null)
+                {
+                    dgvBills.DataSource = null;
+                }
+                dgvBills.Rows.Clear();
+
+                // Clear bill items data but maintain column structure
+                ClearBillItemsData();
+
+                btnReprint.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error clearing search: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ClearBillItemsData()
+        {
+            try
+            {
+                // Clear the data but maintain the DataTable structure
+                if (_billItems != null)
+                {
+                    _billItems.Clear();
+                }
+                else
+                {
+                    // Re-initialize if for some reason it's null
+                    InitializeBillItemsDataTable();
+                }
+
+                // Ensure the data source is set to our maintained DataTable
+                dgvBillItems.DataSource = _billItems;
+
+                // Force refresh
+                dgvBillItems.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error clearing bill items: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void DgvBills_SelectionChanged(object sender, EventArgs e)
@@ -593,7 +720,7 @@ namespace pos_system.pos.UI.Forms.Sales
             else
             {
                 btnReprint.Enabled = false;
-                dgvBillItems.DataSource = null;
+                ClearBillItemsData();
             }
         }
 
@@ -607,17 +734,38 @@ namespace pos_system.pos.UI.Forms.Sales
                 if (_currentBillSummary?.Header == null)
                 {
                     MessageBox.Show("Bill not found", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    // Clear bill items but maintain structure
+                    ClearBillItemsData();
                     return;
                 }
 
                 // Set header properties
                 var header = _currentBillSummary.Header;
                 _billDate = header.BillDate;
-                _paymentMethod = header.PaymentMethod;
+
+                // Use the new payment information
+                if (header.Payments != null && header.Payments.Count > 0)
+                {
+                    if (header.Payments.Count > 1)
+                    {
+                        _paymentMethod = "Mixed Payment";
+                    }
+                    else
+                    {
+                        _paymentMethod = header.Payments[0].PaymentMethod;
+                        // Set legacy properties for single payments
+                        _cardLast4 = header.Payments[0].CardLast4;
+                        _bankLast4 = header.Payments[0].BankAccountLast4;
+                    }
+                }
+                else
+                {
+                    _paymentMethod = header.PaymentMethod ?? "Cash"; // Fallback
+                }
+
                 _billDiscount = header.DiscountMethod == "TotalBill" ? header.BillDiscount : 0;
                 _customerContact = header.CustomerContact;
-                _cardLast4 = header.CardLast4;
-                _bankLast4 = header.BankLast4;
                 _tokenValue = header.TokenValue;
                 _cashierName = header.CashierName;
 
@@ -627,13 +775,40 @@ namespace pos_system.pos.UI.Forms.Sales
                 _total = _currentBillSummary.Total;
 
                 // Update UI - get DataTable for grid binding
-                _billItems = _billService.GetBillItemsForDisplay(_selectedBillId);
-                dgvBillItems.DataSource = _billItems;
+                var billItemsData = _billService.GetBillItemsForDisplay(_selectedBillId);
+
+                if (billItemsData.Rows.Count == 0)
+                {
+                    // Clear existing data but maintain structure
+                    _billItems.Clear();
+                }
+                else
+                {
+                    // Replace the data but maintain the same DataTable reference
+                    _billItems.Clear();
+                    foreach (DataRow row in billItemsData.Rows)
+                    {
+                        // Create a new row in our maintained DataTable structure
+                        DataRow newRow = _billItems.NewRow();
+                        newRow["description"] = row["description"];
+                        newRow["ItemSellingPrice"] = row["ItemSellingPrice"];
+                        newRow["quantity"] = row["quantity"];
+                        newRow["Per_item_Discount"] = row["Per_item_Discount"];
+                        newRow["NetPrice"] = row["NetPrice"];
+                        _billItems.Rows.Add(newRow);
+                    }
+                }
+
+                // Refresh the grid to show the data
+                dgvBillItems.Refresh();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error loading bill: {ex.Message}", "Database Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // Clear bill items but maintain structure
+                ClearBillItemsData();
             }
         }
 
@@ -768,6 +943,17 @@ namespace pos_system.pos.UI.Forms.Sales
                 {
                     PrintLeftRight("PAYMENT METHOD:", "TOKEN", output);
                     PrintLeftRight("TOKEN VALUE:", $"{_tokenValue:0.00}", output);
+                }
+                else if (_paymentMethod == "Mixed Payment")
+                {
+                    PrintLeftRight("PAYMENT METHOD:", "MIXED PAYMENT", output);
+                    if (_currentBillSummary?.Header?.Payments != null)
+                    {
+                        foreach (var payment in _currentBillSummary.Header.Payments)
+                        {
+                            PrintLeftRight($"{payment.PaymentMethod}:", $"{payment.PaymentAmount:0.00}", output);
+                        }
+                    }
                 }
 
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));

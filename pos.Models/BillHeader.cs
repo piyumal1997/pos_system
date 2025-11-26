@@ -12,5 +12,11 @@
         public int? TokenReturnID { get; set; }
         public decimal? TokenValue { get; set; }
         public string CashierName { get; set; }
+        public decimal TotalAmount { get; set; }
+
+        // New properties for mixed payments
+        public List<BillPaymentDetail> Payments { get; set; } = new List<BillPaymentDetail>();
+        public int PaymentCount { get; set; }
+        public string PaymentSummary { get; set; }
     }
 }

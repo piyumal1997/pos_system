@@ -54,8 +54,8 @@ namespace pos_system.pos.UI.Forms.Common
                 case ThemedMessageBoxIcon.Warning:
                     iconPicture.Image = SystemIcons.Warning.ToBitmap();
                     break;
-                case ThemedMessageBoxIcon.Question:
-                    iconPicture.Image = SystemIcons.Question.ToBitmap();
+                case ThemedMessageBoxIcon.Success:
+                    iconPicture.Image = SystemIcons.WinLogo.ToBitmap();
                     break;
                 default:
                     iconPicture.Visible = false;

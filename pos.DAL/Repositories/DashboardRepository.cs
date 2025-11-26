@@ -59,6 +59,278 @@ namespace pos_system.pos.DAL.Repositories
             return metrics;
         }
 
+        //public DashboardMetrics GetDashboardMetrics()
+        //{
+        //    var metrics = new DashboardMetrics();
+
+        //    using (var conn = DbHelper.GetConnection())
+        //    {
+        //        conn.Open();
+
+        //        // Updated SQL queries for new schema
+        //        string query = @"
+        //        -- Total Items (with quantity > 0)
+        //        SELECT COUNT(*) 
+        //        FROM ProductSize 
+        //        WHERE quantity > 0;
+
+        //        -- Active Employees
+        //        SELECT COUNT(*) FROM Employee WHERE status = 'Active';
+
+        //        -- Total Bills
+        //        SELECT COUNT(*) FROM Bill WHERE BillStatus = 'Completed';
+
+        //        -- Total Returns
+        //        SELECT COUNT(*) FROM [Return];
+
+        //        -- Total Categories
+        //        SELECT COUNT(*) FROM Category;
+
+        //        -- Total Brands
+        //        SELECT COUNT(*) FROM Brand;
+
+        //        -- Today's Sales Income (ActualSales) - Updated with consistent calculation
+        //        ;WITH SalesData AS (
+        //            SELECT 
+        //                b.Bill_ID,
+        //                b.Token_ReturnID,
+        //                NetAmount = 
+        //                    CASE 
+        //                        WHEN b.Discount_Method = 'PerItem' 
+        //                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+        //                        WHEN b.Discount_Method = 'TotalBill' 
+        //                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+        //                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+        //                    END,
+        //                Cost = SUM(ps.unitCost * bi.quantity),
+        //                AdditionalPayment = 
+        //                    CASE 
+        //                        WHEN b.Token_ReturnID IS NOT NULL THEN
+        //                            CASE 
+        //                                WHEN b.Discount_Method = 'PerItem' 
+        //                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+        //                                WHEN b.Discount_Method = 'TotalBill' 
+        //                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+        //                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+        //                            END 
+        //                            - ISNULL(r.TotalRefund, 0)
+        //                        ELSE 0
+        //                    END
+        //            FROM Bill b
+        //            JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+        //            JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+        //            LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+        //            WHERE b.BillStatus = 'Completed'
+        //              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+        //            GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
+        //        ),
+        //        BillCostAnalysis AS (
+        //            SELECT
+        //                CashInflow = SUM(
+        //                    CASE 
+        //                        WHEN Token_ReturnID IS NULL THEN NetAmount
+        //                        ELSE AdditionalPayment
+        //                    END
+        //                )
+        //            FROM SalesData
+        //        )
+        //        SELECT COALESCE(CashInflow, 0) AS TodaySales
+        //        FROM BillCostAnalysis;
+
+        //        -- Today's COGS (ActualCost) - Updated with consistent calculation
+        //        ;WITH SalesData AS (
+        //            SELECT 
+        //                b.Bill_ID,
+        //                b.Token_ReturnID,
+        //                NetAmount = 
+        //                    CASE 
+        //                        WHEN b.Discount_Method = 'PerItem' 
+        //                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+        //                        WHEN b.Discount_Method = 'TotalBill' 
+        //                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+        //                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+        //                    END,
+        //                Cost = SUM(ps.unitCost * bi.quantity),
+        //                AdditionalPayment = 
+        //                    CASE 
+        //                        WHEN b.Token_ReturnID IS NOT NULL THEN
+        //                            CASE 
+        //                                WHEN b.Discount_Method = 'PerItem' 
+        //                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+        //                                WHEN b.Discount_Method = 'TotalBill' 
+        //                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+        //                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+        //                            END 
+        //                            - ISNULL(r.TotalRefund, 0)
+        //                        ELSE 0
+        //                    END
+        //            FROM Bill b
+        //            JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+        //            JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+        //            LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+        //            WHERE b.BillStatus = 'Completed'
+        //              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+        //            GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
+        //        ),
+        //        BillCostAnalysis AS (
+        //            SELECT
+        //                RegularBillCost = SUM(CASE WHEN Token_ReturnID IS NULL THEN Cost ELSE 0 END),
+        //                TokenBillAdditionalPayment = SUM(AdditionalPayment),
+        //                TokenBillFullCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
+        //                TokenBillFullSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END),
+        //                TokenBillCostRatio = 
+        //                    CASE 
+        //                        WHEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END) > 0
+        //                        THEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END) / 
+        //                             SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END)
+        //                        ELSE 0
+        //                    END
+        //            FROM SalesData
+        //        )
+        //        SELECT COALESCE(RegularBillCost + (TokenBillAdditionalPayment * TokenBillCostRatio), 0) AS TodayCOGS
+        //        FROM BillCostAnalysis;
+
+        //        -- Today's Sales Quantity
+        //        SELECT COALESCE(SUM(BI.quantity), 0)
+        //        FROM Bill B
+        //        INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
+        //        WHERE B.BillStatus = 'Completed' 
+        //            AND CAST(B.[date] AS DATE) = CAST(GETDATE() AS DATE);";
+
+        //        using (var cmd = new SqlCommand(query, conn))
+        //        using (var reader = cmd.ExecuteReader())
+        //        {
+        //            metrics.TotalItems = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.ActiveEmployees = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TotalBills = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TotalReturns = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TotalCategories = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TotalBrands = ReadIntResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TodaysSales = ReadDecimalResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TodaysCOGS = ReadDecimalResult(reader);
+        //            reader.NextResult();
+
+        //            metrics.TodaysQuantity = ReadIntResult(reader);
+        //        }
+
+        //        // Get sales data for charts
+        //        metrics.DailySales = GetSalesData(
+        //            @"SELECT CONVERT(VARCHAR(10), CAST(B.[date] AS DATE), 120) AS SaleDate, 
+        //                 SUM(
+        //                    CASE 
+        //                        WHEN B.Discount_Method = 'PerItem' 
+        //                            THEN (BI.ItemSellingPrice - BI.Per_item_Discount) * BI.quantity
+        //                        WHEN B.Discount_Method = 'TotalBill' 
+        //                            THEN (BI.ItemSellingPrice * BI.quantity) - (BI.ItemSellingPrice * BI.quantity * (B.Discount / NULLIF(bt.SubTotal,0)))
+        //                        ELSE BI.ItemSellingPrice * BI.quantity
+        //                    END
+        //                 ) AS TotalSales
+        //          FROM Bill B
+        //          INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
+        //          INNER JOIN (
+        //              SELECT Bill_ID, SUM(ItemSellingPrice * quantity) AS SubTotal
+        //              FROM Bill_Item
+        //              GROUP BY Bill_ID
+        //          ) bt ON B.Bill_ID = bt.Bill_ID
+        //          WHERE B.BillStatus = 'Completed' 
+        //            AND B.[date] >= DATEADD(DAY, -30, GETDATE())
+        //          GROUP BY CAST(B.[date] AS DATE)
+        //          ORDER BY CAST(B.[date] AS DATE)");
+
+        //        metrics.MonthlySales = GetSalesData(
+        //            @"SELECT FORMAT(B.[date], 'yyyy-MM') AS SaleMonth, 
+        //                 SUM(
+        //                    CASE 
+        //                        WHEN B.Discount_Method = 'PerItem' 
+        //                            THEN (BI.ItemSellingPrice - BI.Per_item_Discount) * BI.quantity
+        //                        WHEN B.Discount_Method = 'TotalBill' 
+        //                            THEN (BI.ItemSellingPrice * BI.quantity) - (BI.ItemSellingPrice * BI.quantity * (B.Discount / NULLIF(bt.SubTotal,0)))
+        //                        ELSE BI.ItemSellingPrice * BI.quantity
+        //                    END
+        //                 ) AS TotalSales
+        //          FROM Bill B
+        //          INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
+        //          INNER JOIN (
+        //              SELECT Bill_ID, SUM(ItemSellingPrice * quantity) AS SubTotal
+        //              FROM Bill_Item
+        //              GROUP BY Bill_ID
+        //          ) bt ON B.Bill_ID = bt.Bill_ID
+        //          WHERE B.BillStatus = 'Completed' 
+        //            AND B.[date] >= DATEADD(MONTH, -12, GETDATE())
+        //          GROUP BY FORMAT(B.[date], 'yyyy-MM')
+        //          ORDER BY FORMAT(B.[date], 'yyyy-MM')");
+        //    }
+
+        //    return metrics;
+        //}
+
+        //private int ReadIntResult(SqlDataReader reader)
+        //{
+        //    if (reader.Read())
+        //    {
+        //        return reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
+        //    }
+        //    return 0;
+        //}
+
+        //private decimal ReadDecimalResult(SqlDataReader reader)
+        //{
+        //    if (reader.Read())
+        //    {
+        //        return reader.IsDBNull(0) ? 0 : reader.GetDecimal(0);
+        //    }
+        //    return 0;
+        //}
+
+        //private List<SalesData> GetSalesData(string query)
+        //{
+        //    var salesData = new List<SalesData>();
+
+        //    using (var conn = DbHelper.GetConnection())
+        //    {
+        //        conn.Open();
+        //        using (var cmd = new SqlCommand(query, conn))
+        //        using (var reader = cmd.ExecuteReader())
+        //        {
+        //            while (reader.Read())
+        //            {
+        //                string period;
+        //                if (reader[0] is DateTime dateValue)
+        //                {
+        //                    period = dateValue.ToString("yyyy-MM-dd");
+        //                }
+        //                else
+        //                {
+        //                    period = reader.GetString(0);
+        //                }
+
+        //                salesData.Add(new SalesData
+        //                {
+        //                    Period = period,
+        //                    TotalSales = reader.GetDecimal(1)
+        //                });
+        //            }
+        //        }
+        //    }
+
+        //    return salesData;
+        //}
+
+
         public DashboardMetrics GetDashboardMetrics()
         {
             var metrics = new DashboardMetrics();
@@ -67,135 +339,97 @@ namespace pos_system.pos.DAL.Repositories
             {
                 conn.Open();
 
-                // Updated SQL queries for new schema
+                // Updated SQL queries for new schema with BillPayment table
                 string query = @"
-                -- Total Items (with quantity > 0)
-                SELECT COUNT(*) 
-                FROM ProductSize 
-                WHERE quantity > 0;
+                        -- Total Items (with quantity > 0)
+                        SELECT COUNT(*) 
+                        FROM ProductSize 
+                        WHERE quantity > 0;
 
-                -- Active Employees
-                SELECT COUNT(*) FROM Employee WHERE status = 'Active';
+                        -- Active Employees
+                        SELECT COUNT(*) FROM Employee WHERE status = 'Active';
 
-                -- Total Bills
-                SELECT COUNT(*) FROM Bill WHERE BillStatus = 'Completed';
+                        -- Total Bills
+                        SELECT COUNT(*) FROM Bill WHERE BillStatus = 'Completed';
 
-                -- Total Returns
-                SELECT COUNT(*) FROM [Return];
+                        -- Total Returns
+                        SELECT COUNT(*) FROM [Return];
 
-                -- Total Categories
-                SELECT COUNT(*) FROM Category;
+                        -- Total Categories
+                        SELECT COUNT(*) FROM Category;
 
-                -- Total Brands
-                SELECT COUNT(*) FROM Brand;
+                        -- Total Brands
+                        SELECT COUNT(*) FROM Brand;
 
-                -- Today's Sales Income (ActualSales) - Updated with consistent calculation
-                ;WITH SalesData AS (
-                    SELECT 
-                        b.Bill_ID,
-                        b.Token_ReturnID,
-                        NetAmount = 
-                            CASE 
-                                WHEN b.Discount_Method = 'PerItem' 
-                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
-                                WHEN b.Discount_Method = 'TotalBill' 
-                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
-                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
-                            END,
-                        Cost = SUM(ps.unitCost * bi.quantity),
-                        AdditionalPayment = 
-                            CASE 
-                                WHEN b.Token_ReturnID IS NOT NULL THEN
-                                    CASE 
-                                        WHEN b.Discount_Method = 'PerItem' 
-                                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
-                                        WHEN b.Discount_Method = 'TotalBill' 
-                                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
-                                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
-                                    END 
-                                    - ISNULL(r.TotalRefund, 0)
-                                ELSE 0
-                            END
-                    FROM Bill b
-                    JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
-                    JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
-                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
-                    WHERE b.BillStatus = 'Completed'
-                      AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
-                    GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
-                ),
-                BillCostAnalysis AS (
-                    SELECT
-                        CashInflow = SUM(
-                            CASE 
-                                WHEN Token_ReturnID IS NULL THEN NetAmount
-                                ELSE AdditionalPayment
-                            END
+                        -- Today's Sales Income (CashInflow from sp_GetSalesReports logic)
+                        ;WITH CashInflows AS (
+                            SELECT
+                                CashInflow = ISNULL(SUM(bp.PaymentAmount), 0),
+                                CashSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Cash' THEN bp.PaymentAmount ELSE 0 END), 0),
+                                CardSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Card' THEN bp.PaymentAmount ELSE 0 END), 0),
+                                BankSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Bank Transfer' THEN bp.PaymentAmount ELSE 0 END), 0),
+                                MixedSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Mixed' THEN bp.PaymentAmount ELSE 0 END), 0)
+                            FROM BillPayment bp
+                            INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID
+                            WHERE b.BillStatus = 'Completed'
+                              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
                         )
-                    FROM SalesData
-                )
-                SELECT COALESCE(CashInflow, 0) AS TodaySales
-                FROM BillCostAnalysis;
+                        SELECT COALESCE(CashInflow, 0) AS TodaySales
+                        FROM CashInflows;
 
-                -- Today's COGS (ActualCost) - Updated with consistent calculation
-                ;WITH SalesData AS (
-                    SELECT 
-                        b.Bill_ID,
-                        b.Token_ReturnID,
-                        NetAmount = 
-                            CASE 
-                                WHEN b.Discount_Method = 'PerItem' 
-                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
-                                WHEN b.Discount_Method = 'TotalBill' 
-                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
-                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
-                            END,
-                        Cost = SUM(ps.unitCost * bi.quantity),
-                        AdditionalPayment = 
-                            CASE 
-                                WHEN b.Token_ReturnID IS NOT NULL THEN
+                        -- Today's COGS (Updated calculation using BillPayment)
+                        ;WITH SalesData AS (
+                            SELECT 
+                                b.Bill_ID,
+                                b.Token_ReturnID,
+                                NetAmount = b.TotalAmount,
+                                Cost = SUM(ps.unitCost * bi.quantity),
+                                AdditionalPayment = 
                                     CASE 
-                                        WHEN b.Discount_Method = 'PerItem' 
-                                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
-                                        WHEN b.Discount_Method = 'TotalBill' 
-                                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
-                                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
-                                    END 
-                                    - ISNULL(r.TotalRefund, 0)
-                                ELSE 0
-                            END
-                    FROM Bill b
-                    JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
-                    JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
-                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
-                    WHERE b.BillStatus = 'Completed'
-                      AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
-                    GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
-                ),
-                BillCostAnalysis AS (
-                    SELECT
-                        RegularBillCost = SUM(CASE WHEN Token_ReturnID IS NULL THEN Cost ELSE 0 END),
-                        TokenBillAdditionalPayment = SUM(AdditionalPayment),
-                        TokenBillFullCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
-                        TokenBillFullSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END),
-                        TokenBillCostRatio = 
-                            CASE 
-                                WHEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END) > 0
-                                THEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END) / 
-                                     SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END)
-                                ELSE 0
-                            END
-                    FROM SalesData
-                )
-                SELECT COALESCE(RegularBillCost + (TokenBillAdditionalPayment * TokenBillCostRatio), 0) AS TodayCOGS
-                FROM BillCostAnalysis;
+                                        WHEN b.Token_ReturnID IS NOT NULL THEN
+                                            b.TotalAmount - ISNULL(r.TotalRefund, 0)
+                                        ELSE 0
+                                    END
+                            FROM Bill b
+                            JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+                            JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                            LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+                            WHERE b.BillStatus = 'Completed'
+                              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                            GROUP BY b.Bill_ID, b.Token_ReturnID, b.TotalAmount, r.TotalRefund
+                        ),
+                        BillCostAnalysis AS (
+                            SELECT
+                                RegularBillCost = SUM(CASE WHEN Token_ReturnID IS NULL THEN Cost ELSE 0 END),
+                                TokenBillAdditionalPayment = SUM(AdditionalPayment),
+                                TokenBillFullCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
+                                TokenBillFullSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END),
+                                TokenBillCostRatio = 
+                                    CASE 
+                                        WHEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END) > 0
+                                        THEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END) / 
+                                             SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END)
+                                        ELSE 0
+                                    END
+                            FROM SalesData
+                        )
+                        SELECT COALESCE(RegularBillCost + (TokenBillAdditionalPayment * TokenBillCostRatio), 0) AS TodayCOGS
+                        FROM BillCostAnalysis;
 
-                -- Today's Sales Quantity
-                SELECT COALESCE(SUM(BI.quantity), 0)
-                FROM Bill B
-                INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
-                WHERE B.BillStatus = 'Completed' 
-                    AND CAST(B.[date] AS DATE) = CAST(GETDATE() AS DATE);";
+                        -- Today's Sales Quantity
+                        SELECT COALESCE(SUM(BI.quantity), 0)
+                        FROM Bill B
+                        INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
+                        WHERE B.BillStatus = 'Completed' 
+                            AND CAST(B.[date] AS DATE) = CAST(GETDATE() AS DATE);
+
+                        -- Today's Mixed Payments
+                        SELECT COALESCE(SUM(bp.PaymentAmount), 0)
+                        FROM BillPayment bp
+                        INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID
+                        WHERE b.BillStatus = 'Completed'
+                          AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                          AND bp.PaymentMethod = 'Mixed';";
 
                 using (var cmd = new SqlCommand(query, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -225,57 +459,81 @@ namespace pos_system.pos.DAL.Repositories
                     reader.NextResult();
 
                     metrics.TodaysQuantity = ReadIntResult(reader);
+                    reader.NextResult();
+
+                    metrics.TodaysMixedSales = ReadDecimalResult(reader);
                 }
 
-                // Get sales data for charts
+                // Get sales data for charts using new BillPayment table
                 metrics.DailySales = GetSalesData(
-                    @"SELECT CONVERT(VARCHAR(10), CAST(B.[date] AS DATE), 120) AS SaleDate, 
-                         SUM(
-                            CASE 
-                                WHEN B.Discount_Method = 'PerItem' 
-                                    THEN (BI.ItemSellingPrice - BI.Per_item_Discount) * BI.quantity
-                                WHEN B.Discount_Method = 'TotalBill' 
-                                    THEN (BI.ItemSellingPrice * BI.quantity) - (BI.ItemSellingPrice * BI.quantity * (B.Discount / NULLIF(bt.SubTotal,0)))
-                                ELSE BI.ItemSellingPrice * BI.quantity
-                            END
-                         ) AS TotalSales
-                  FROM Bill B
-                  INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
-                  INNER JOIN (
-                      SELECT Bill_ID, SUM(ItemSellingPrice * quantity) AS SubTotal
-                      FROM Bill_Item
-                      GROUP BY Bill_ID
-                  ) bt ON B.Bill_ID = bt.Bill_ID
-                  WHERE B.BillStatus = 'Completed' 
-                    AND B.[date] >= DATEADD(DAY, -30, GETDATE())
-                  GROUP BY CAST(B.[date] AS DATE)
-                  ORDER BY CAST(B.[date] AS DATE)");
+                        @"SELECT CONVERT(VARCHAR(10), CAST(B.[date] AS DATE), 120) AS SaleDate, 
+                             SUM(BP.PaymentAmount) AS TotalSales
+                      FROM Bill B
+                      INNER JOIN BillPayment BP ON B.Bill_ID = BP.Bill_ID
+                      WHERE B.BillStatus = 'Completed' 
+                        AND B.[date] >= DATEADD(DAY, -30, GETDATE())
+                      GROUP BY CAST(B.[date] AS DATE)
+                      ORDER BY CAST(B.[date] AS DATE)");
 
                 metrics.MonthlySales = GetSalesData(
-                    @"SELECT FORMAT(B.[date], 'yyyy-MM') AS SaleMonth, 
-                         SUM(
-                            CASE 
-                                WHEN B.Discount_Method = 'PerItem' 
-                                    THEN (BI.ItemSellingPrice - BI.Per_item_Discount) * BI.quantity
-                                WHEN B.Discount_Method = 'TotalBill' 
-                                    THEN (BI.ItemSellingPrice * BI.quantity) - (BI.ItemSellingPrice * BI.quantity * (B.Discount / NULLIF(bt.SubTotal,0)))
-                                ELSE BI.ItemSellingPrice * BI.quantity
-                            END
-                         ) AS TotalSales
-                  FROM Bill B
-                  INNER JOIN Bill_Item BI ON B.Bill_ID = BI.Bill_ID
-                  INNER JOIN (
-                      SELECT Bill_ID, SUM(ItemSellingPrice * quantity) AS SubTotal
-                      FROM Bill_Item
-                      GROUP BY Bill_ID
-                  ) bt ON B.Bill_ID = bt.Bill_ID
-                  WHERE B.BillStatus = 'Completed' 
-                    AND B.[date] >= DATEADD(MONTH, -12, GETDATE())
-                  GROUP BY FORMAT(B.[date], 'yyyy-MM')
-                  ORDER BY FORMAT(B.[date], 'yyyy-MM')");
+                        @"SELECT FORMAT(B.[date], 'yyyy-MM') AS SaleMonth, 
+                             SUM(BP.PaymentAmount) AS TotalSales
+                      FROM Bill B
+                      INNER JOIN BillPayment BP ON B.Bill_ID = BP.Bill_ID
+                      WHERE B.BillStatus = 'Completed' 
+                        AND B.[date] >= DATEADD(MONTH, -12, GETDATE())
+                      GROUP BY FORMAT(B.[date], 'yyyy-MM')
+                      ORDER BY FORMAT(B.[date], 'yyyy-MM')");
+
+                // Get payment method breakdown for today
+                GetPaymentMethodBreakdown(metrics);
             }
 
             return metrics;
+        }
+
+        private void GetPaymentMethodBreakdown(DashboardMetrics metrics)
+        {
+            using (var conn = DbHelper.GetConnection())
+            {
+                conn.Open();
+
+                string query = @"
+                    SELECT 
+                        PaymentMethod,
+                        SUM(PaymentAmount) as Amount
+                    FROM BillPayment bp
+                    INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID
+                    WHERE b.BillStatus = 'Completed'
+                      AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                    GROUP BY PaymentMethod";
+
+                using (var cmd = new SqlCommand(query, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string paymentMethod = reader.GetString(0);
+                        decimal amount = reader.GetDecimal(1);
+
+                        switch (paymentMethod)
+                        {
+                            case "Cash":
+                                metrics.DailyCashPayments = amount;
+                                break;
+                            case "Card":
+                                metrics.DailyCardPayments = amount;
+                                break;
+                            case "Bank Transfer":
+                                metrics.DailyBankPayments = amount;
+                                break;
+                            case "Mixed":
+                                metrics.DailyMixedPayments = amount;
+                                break;
+                        }
+                    }
+                }
+            }
         }
 
         private int ReadIntResult(SqlDataReader reader)

@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Printing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Configuration;
 
@@ -38,7 +39,7 @@ namespace pos_system.pos.UI.Forms.Sales
         private Button btnExportContacts;
         private int _selectedBillId;
         private Panel container;
-        private TableLayoutPanel mainContentLayout; // For layout management
+        private TableLayoutPanel mainContentLayout;
 
         public Bills()
         {
@@ -230,9 +231,9 @@ namespace pos_system.pos.UI.Forms.Sales
             };
 
             // Configure rows:
-            // - Bills grid: 60% of space
-            // - Bill items grid: 30% of space
-            // - Action panel: Fixed 60px
+            // - Bills grid: 50% of space
+            // - Bill items grid: 40% of space
+            // - Action panel: Fixed 70px
             mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             mainContentLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F));
@@ -261,7 +262,7 @@ namespace pos_system.pos.UI.Forms.Sales
             // Configure grid style
             FormatDataGrid(dgvBills);
 
-            // Configure grid columns
+            // Configure grid columns - UPDATED FOR MIXED PAYMENTS
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "Bill_ID",
@@ -278,15 +279,56 @@ namespace pos_system.pos.UI.Forms.Sales
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     Format = "dd-MMM-yyyy HH:mm"
-                }
+                },
+                Width = 120
+            });
+
+            // Payment columns for mixed payments
+            dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "PaymentSummary",
+                HeaderText = "PAYMENT",
+                Name = "PaymentSummary",
+                Width = 120
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "PaymentMethod",
-                HeaderText = "PAYMENT",
-                Name = "PaymentMethod",
-                Width = 80
+                DataPropertyName = "CashAmount",
+                HeaderText = "CASH",
+                Name = "CashAmount",
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Format = "N2",
+                    Alignment = DataGridViewContentAlignment.MiddleRight
+                },
+                Width = 70
+            });
+
+            dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "CardAmount",
+                HeaderText = "CARD",
+                Name = "CardAmount",
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Format = "N2",
+                    Alignment = DataGridViewContentAlignment.MiddleRight
+                },
+                Width = 70
+            });
+
+            dgvBills.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "BankAmount",
+                HeaderText = "BANK",
+                Name = "BankAmount",
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Format = "N2",
+                    Alignment = DataGridViewContentAlignment.MiddleRight
+                },
+                Width = 70
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
@@ -294,7 +336,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 DataPropertyName = "CustomerContact",
                 HeaderText = "CONTACT",
                 Name = "CustomerContact",
-                Width = 150
+                Width = 120
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
@@ -302,7 +344,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 DataPropertyName = "ContactGender",
                 HeaderText = "GENDER",
                 Name = "ContactGender",
-                Width = 80
+                Width = 70
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
@@ -310,7 +352,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 DataPropertyName = "CashierName",
                 HeaderText = "CASHIER",
                 Name = "CashierName",
-                Width = 150
+                Width = 120
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
@@ -323,7 +365,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     Format = "N2",
                     Alignment = DataGridViewContentAlignment.MiddleRight
                 },
-                Width = 70
+                Width = 80
             });
 
             dgvBills.Columns.Add(new DataGridViewTextBoxColumn
@@ -336,20 +378,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     Format = "N2",
                     Alignment = DataGridViewContentAlignment.MiddleRight
                 },
-                Width = 70
-            });
-
-            dgvBills.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "TotalPerItemDiscount",
-                HeaderText = "TOTALDISCOUNT",
-                Name = "TotalPerItemDiscount",
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    Format = "N2",
-                    Alignment = DataGridViewContentAlignment.MiddleRight
-                },
-                Width = 70
+                Width = 80
             });
 
             billsPanel.Controls.Add(dgvBills);
@@ -446,6 +475,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 DataPropertyName = "brandName",
                 Width = 80
             });
+
             dgvBillItems.Columns.Add(new DataGridViewTextBoxColumn
             {
                 HeaderText = "BARCODE",
@@ -601,7 +631,10 @@ namespace pos_system.pos.UI.Forms.Sales
                 // Add columns to match the expected structure
                 emptyBillsTable.Columns.Add("Bill_ID", typeof(int));
                 emptyBillsTable.Columns.Add("BillDate", typeof(DateTime));
-                emptyBillsTable.Columns.Add("PaymentMethod", typeof(string));
+                emptyBillsTable.Columns.Add("PaymentSummary", typeof(string));
+                emptyBillsTable.Columns.Add("CashAmount", typeof(decimal));
+                emptyBillsTable.Columns.Add("CardAmount", typeof(decimal));
+                emptyBillsTable.Columns.Add("BankAmount", typeof(decimal));
                 emptyBillsTable.Columns.Add("CustomerContact", typeof(string));
                 emptyBillsTable.Columns.Add("ContactGender", typeof(string));
                 emptyBillsTable.Columns.Add("CashierName", typeof(string));
@@ -672,7 +705,43 @@ namespace pos_system.pos.UI.Forms.Sales
                         DataTable dt = new DataTable();
                         da.Fill(dt);
 
-                        dgvBills.DataSource = dt;
+                        // FILTER COLUMNS - Only show the columns we've defined
+                        var filteredTable = new DataTable();
+
+                        // Add only the columns we want to display
+                        filteredTable.Columns.Add("Bill_ID", typeof(int));
+                        filteredTable.Columns.Add("BillDate", typeof(DateTime));
+                        filteredTable.Columns.Add("PaymentSummary", typeof(string));
+                        filteredTable.Columns.Add("CashAmount", typeof(decimal));
+                        filteredTable.Columns.Add("CardAmount", typeof(decimal));
+                        filteredTable.Columns.Add("BankAmount", typeof(decimal));
+                        filteredTable.Columns.Add("CustomerContact", typeof(string));
+                        filteredTable.Columns.Add("ContactGender", typeof(string));
+                        filteredTable.Columns.Add("CashierName", typeof(string));
+                        filteredTable.Columns.Add("Subtotal", typeof(decimal));
+                        filteredTable.Columns.Add("NetTotal", typeof(decimal));
+                        filteredTable.Columns.Add("TotalPerItemDiscount", typeof(decimal));
+
+                        // Copy data from original table to filtered table
+                        foreach (DataRow row in dt.Rows)
+                        {
+                            DataRow newRow = filteredTable.NewRow();
+                            newRow["Bill_ID"] = row["Bill_ID"];
+                            newRow["BillDate"] = row["BillDate"];
+                            newRow["PaymentSummary"] = row["PaymentSummary"];
+                            newRow["CashAmount"] = row["CashAmount"];
+                            newRow["CardAmount"] = row["CardAmount"];
+                            newRow["BankAmount"] = row["BankAmount"];
+                            newRow["CustomerContact"] = row["CustomerContact"];
+                            newRow["ContactGender"] = row["ContactGender"];
+                            newRow["CashierName"] = row["CashierName"];
+                            newRow["Subtotal"] = row["Subtotal"];
+                            newRow["NetTotal"] = row["NetTotal"];
+                            newRow["TotalPerItemDiscount"] = row["TotalPerItemDiscount"];
+                            filteredTable.Rows.Add(newRow);
+                        }
+
+                        dgvBills.DataSource = filteredTable;
 
                         if (dt.Rows.Count == 0)
                         {
@@ -738,22 +807,48 @@ namespace pos_system.pos.UI.Forms.Sales
             try
             {
                 string printerName = ConfigurationManager.AppSettings["ReceiptPrinter"];
+
+                // Validate printer configuration
                 if (string.IsNullOrEmpty(printerName))
                 {
-                    MessageBox.Show("Receipt printer not configured", "Printer Error",
+                    MessageBox.Show("Receipt printer not configured in application settings.", "Printer Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                // Get bill header using the new stored procedure
+                // Check if printer exists
+                bool printerExists = false;
+                foreach (string installedPrinter in PrinterSettings.InstalledPrinters)
+                {
+                    if (installedPrinter.Equals(printerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        printerExists = true;
+                        printerName = installedPrinter; // Use exact case from system
+                        break;
+                    }
+                }
+
+                if (!printerExists)
+                {
+                    MessageBox.Show($"Printer '{printerName}' not found.\n\nAvailable printers:\n{string.Join("\n", PrinterSettings.InstalledPrinters.Cast<string>())}",
+                        "Printer Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Get bill data
                 DataTable header = GetBillHeader(billId);
-                if (header.Rows.Count == 0) return;
+                if (header.Rows.Count == 0)
+                {
+                    MessageBox.Show("Bill header not found", "Print Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 DataRow bill = header.Rows[0];
-
-                // Get bill items
                 DataTable items = GetBillItems(billId);
+                DataTable payments = GetBillPayments(billId);
 
-                // Build receipt
+                // Build receipt content
                 List<byte> output = new List<byte> { 0x1B, 0x40 }; // Init printer
 
                 // Shop header
@@ -775,7 +870,7 @@ namespace pos_system.pos.UI.Forms.Sales
                 PrintSeparator(output);
 
                 // Customer info
-                if (!string.IsNullOrEmpty(bill["CustomerContact"].ToString()))
+                if (!string.IsNullOrEmpty(bill["CustomerContact"]?.ToString()))
                 {
                     PrintCentered($"Customer: {bill["CustomerContact"]}", output);
                     PrintSeparator(output);
@@ -828,38 +923,46 @@ namespace pos_system.pos.UI.Forms.Sales
                 // Token information
                 if (bill["Token_ReturnID"] != DBNull.Value && bill["TokenValue"] != DBNull.Value)
                 {
-                    PrintLeftRight("RETURN VALUE:", $"{Convert.ToDecimal(bill["TokenValue"]):0.00}", output);
+                    decimal tokenValue = Convert.ToDecimal(bill["TokenValue"]);
+                    PrintLeftRight("RETURN VALUE:", $"{tokenValue:0.00}", output);
+                    PrintLeftRight("AMOUNT DUE:", $"{netTotal - tokenValue:0.00}", output);
+                    PrintSeparator(output);
                 }
 
-                // Payment details
-                string paymentMethod = bill["PaymentMethod"].ToString();
-                if (paymentMethod == "Cash")
+                // Payment details - MIXED PAYMENTS SUPPORT
+                if (payments.Rows.Count > 0)
                 {
-                    PrintLeftRight("PAYMENT METHOD:", "CASH", output);
-                    PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
-                }
-                else if (paymentMethod == "Card")
-                {
-                    PrintLeftRight("PAYMENT METHOD:", "CARD", output);
-                    PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
-                    if (bill["CardLast4"] != DBNull.Value)
+                    PrintLeft("PAYMENT DETAILS:", output);
+                    PrintSeparator(output);
+
+                    decimal totalPaid = 0;
+                    foreach (DataRow payment in payments.Rows)
                     {
-                        PrintLeftRight("LAST 4 DIGITS:", bill["CardLast4"].ToString(), output);
+                        string paymentMethod = payment["PaymentMethod"].ToString();
+                        decimal paymentAmount = Convert.ToDecimal(payment["PaymentAmount"]);
+                        totalPaid += paymentAmount;
+
+                        string paymentLine = $"{paymentMethod}: {paymentAmount:0.00}";
+                        if (paymentMethod == "Card" && payment["CardLast4"] != DBNull.Value)
+                        {
+                            paymentLine += $" (Card: {payment["CardLast4"]})";
+                        }
+                        else if (paymentMethod == "Bank Transfer" && payment["BankAccountLast4"] != DBNull.Value)
+                        {
+                            paymentLine += $" (Acc: {payment["BankAccountLast4"]})";
+                        }
+
+                        PrintLeft(paymentLine, output);
                     }
-                }
-                else if (paymentMethod == "Bank Transfer")
-                {
-                    PrintLeftRight("PAYMENT METHOD:", "BANK TRANSFER", output);
-                    PrintLeftRight("AMOUNT PAID:", $"{netTotal:0.00}", output);
-                    if (bill["BankAccountLast4"] != DBNull.Value)
+
+                    PrintSeparator(output);
+                    PrintLeftRight("TOTAL PAID:", $"{totalPaid:0.00}", output);
+
+                    // Calculate change if cash payment exists
+                    if (payments.Select("PaymentMethod = 'Cash'").Length > 0 && totalPaid > netTotal)
                     {
-                        PrintLeftRight("LAST 4 DIGITS:", bill["BankAccountLast4"].ToString(), output);
+                        PrintLeftRight("CHANGE:", $"{(totalPaid - netTotal):0.00}", output);
                     }
-                }
-                else if (paymentMethod == "Token")
-                {
-                    PrintLeftRight("PAYMENT METHOD:", "TOKEN", output);
-                    PrintLeftRight("TOKEN VALUE:", $"{Convert.ToDecimal(bill["TokenValue"]):0.00}", output);
                 }
 
                 output.AddRange(Encoding.ASCII.GetBytes("\n"));
@@ -875,11 +978,34 @@ namespace pos_system.pos.UI.Forms.Sales
                 output.AddRange(new byte[] { 0x1B, 0x64, 0x02 }); // Feed 2 lines
                 output.AddRange(new byte[] { 0x1B, 0x69 }); // Cut paper
 
-                // Send to printer
-                RawPrinterHelper.SendBytesToPrinter(printerName, output.ToArray());
-
-                MessageBox.Show("Bill reprinted successfully!", "Reprint Complete",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Send to printer with additional error handling
+                try
+                {
+                    bool success = RawPrinterHelper.SendBytesToPrinter(printerName, output.ToArray());
+                    if (success)
+                    {
+                        MessageBox.Show("Bill reprinted successfully!", "Reprint Complete",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Printing failed: Unknown error", "Print Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch (Win32Exception winEx)
+                {
+                    if (winEx.NativeErrorCode == 1801)
+                    {
+                        MessageBox.Show($"Printer connection error: Invalid printer name or printer not available.\n\nPlease check if printer '{printerName}' is installed and connected.",
+                            "Printer Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Printing failed: Windows error code {winEx.NativeErrorCode}\n\n{winEx.Message}",
+                            "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -888,13 +1014,87 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
+        private void CheckPrinterConfiguration()
+        {
+            string printerName = ConfigurationManager.AppSettings["ReceiptPrinter"];
+
+            if (string.IsNullOrEmpty(printerName))
+            {
+                MessageBox.Show("No receipt printer configured in app.config.", "Configuration Missing",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var installedPrinters = PrinterSettings.InstalledPrinters.Cast<string>().ToList();
+            if (!installedPrinters.Any(p => p.Equals(printerName, StringComparison.OrdinalIgnoreCase)))
+            {
+                string message = $"Configured printer '{printerName}' not found.\n\nAvailable printers:\n";
+                message += string.Join("\n", installedPrinters);
+                MessageBox.Show(message, "Printer Not Found",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                MessageBox.Show($"Printer '{printerName}' is available.", "Printer Check",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
         private DataTable GetBillHeader(int billId)
         {
             using (SqlConnection conn = DbHelper.GetConnection())
             {
-                using (SqlCommand cmd = new SqlCommand("sp_GetBillForPrinting", conn))
+                // Use the view we created for backward compatibility
+                string query = @"
+                    SELECT 
+                        b.Bill_ID,
+                        b.[date] as BillDate,
+                        b.BillStatus,
+                        b.Employee_ID,
+                        b.Discount,
+                        b.Discount_Method,
+                        b.CustomerContact,
+                        b.Token_ReturnID,
+                        b.ContactGender,
+                        b.TotalAmount as Subtotal,
+                        v.PaymentSummary,
+                        r.TotalRefund as TokenValue,
+                        e.firstName + ' ' + e.lastName as CashierName
+                    FROM Bill b
+                    INNER JOIN Employee e ON b.Employee_ID = e.Employee_ID
+                    LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
+                    LEFT JOIN vw_BillWithPayments v ON b.Bill_ID = v.Bill_ID
+                    WHERE b.Bill_ID = @BillID";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@BillID", billId);
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    return dt;
+                }
+            }
+        }
+
+        private DataTable GetBillPayments(int billId)
+        {
+            using (SqlConnection conn = DbHelper.GetConnection())
+            {
+                string query = @"
+                    SELECT 
+                        PaymentMethod,
+                        PaymentAmount,
+                        CardLast4,
+                        BankAccountLast4,
+                        PaymentOrder
+                    FROM BillPayment 
+                    WHERE Bill_ID = @BillID
+                    ORDER BY PaymentOrder";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
                     cmd.Parameters.AddWithValue("@BillID", billId);
 
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
@@ -922,53 +1122,6 @@ namespace pos_system.pos.UI.Forms.Sales
             }
         }
 
-        //private void BtnExportContacts_Click(object sender, EventArgs e)
-        //{
-        //    if (dgvBills.DataSource == null || dgvBills.Rows.Count == 0)
-        //    {
-        //        MessageBox.Show("No bills to export", "Export Error",
-        //            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        //        return;
-        //    }
-
-        //    using (SaveFileDialog sfd = new SaveFileDialog())
-        //    {
-        //        sfd.Filter = "CSV files (*.csv)|*.csv";
-        //        sfd.Title = "Export Customer Contacts";
-        //        sfd.FileName = $"CustomerContacts_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-
-        //        if (sfd.ShowDialog() == DialogResult.OK)
-        //        {
-        //            try
-        //            {
-        //                DataTable dt = (DataTable)dgvBills.DataSource;
-        //                var contacts = dt.AsEnumerable()
-        //                    .Select(row => row.Field<string>("CustomerContact"))
-        //                    .Where(contact => !string.IsNullOrWhiteSpace(contact))
-        //                    .Distinct()
-        //                    .ToList();
-
-        //                using (StreamWriter sw = new StreamWriter(sfd.FileName))
-        //                {
-        //                    sw.WriteLine("CustomerContact");
-        //                    foreach (string contact in contacts)
-        //                    {
-        //                        sw.WriteLine(contact);
-        //                    }
-        //                }
-
-        //                MessageBox.Show($"{contacts.Count} contacts exported", "Export Complete",
-        //                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                MessageBox.Show($"Export failed: {ex.Message}", "Export Error",
-        //                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-        //            }
-        //        }
-        //    }
-        //}
-
         private void BtnExportContacts_Click(object sender, EventArgs e)
         {
             if (dgvBills.DataSource == null || dgvBills.Rows.Count == 0)
@@ -990,7 +1143,7 @@ namespace pos_system.pos.UI.Forms.Sales
                     {
                         DataTable dt = (DataTable)dgvBills.DataSource;
 
-                        // FILTER CONTACTS BY GENDER - PLACE THIS CODE HERE
+                        // Filter contacts by gender
                         var maleContacts = dt.AsEnumerable()
                             .Where(row => row.Field<string>("ContactGender") == "Male")
                             .Select(row => row.Field<string>("CustomerContact"))
@@ -1011,7 +1164,6 @@ namespace pos_system.pos.UI.Forms.Sales
                             .Where(contact => !string.IsNullOrWhiteSpace(contact))
                             .Distinct()
                             .ToList();
-                        // END OF FILTERING CODE
 
                         // Create a new Excel workbook
                         using (var workbook = new XLWorkbook())
@@ -1033,7 +1185,7 @@ namespace pos_system.pos.UI.Forms.Sales
                                 worksheet.Row(1).Style.Fill.BackgroundColor = XLColor.LightGray;
                             }
 
-                            // ADD DATA TO SHEETS - PLACE THIS CODE HERE
+                            // Add data to sheets
                             for (int i = 0; i < maleContacts.Count; i++)
                             {
                                 maleSheet.Cell(i + 2, 1).Value = maleContacts[i];
@@ -1048,7 +1200,6 @@ namespace pos_system.pos.UI.Forms.Sales
                             {
                                 unknownSheet.Cell(i + 2, 1).Value = unknownContacts[i];
                             }
-                            // END OF DATA ADDITION CODE
 
                             // Auto-fit columns
                             maleSheet.Columns().AdjustToContents();

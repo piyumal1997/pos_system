@@ -14,6 +14,9 @@ namespace pos_system.pos.Models
         public decimal TodaysSales { get; set; }
         public decimal TodaysCOGS { get; set; }
         public int TodaysQuantity { get; set; }
+        public decimal TodaysProfit => TodaysSales - TodaysCOGS;
+
+        // Chart data
         public List<SalesData> DailySales { get; set; }
         public List<SalesData> MonthlySales { get; set; }
 
@@ -28,5 +31,9 @@ namespace pos_system.pos.Models
         public decimal DailyReturnAmount { get; set; }
         public int DailyReturnQuantity { get; set; }
         public decimal DailyTokenPayment { get; set; }
+
+        // NEW: Mixed payment metrics
+        public decimal DailyMixedPayments { get; set; }
+        public decimal TodaysMixedSales { get; set; }
     }
 }

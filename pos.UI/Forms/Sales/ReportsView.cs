@@ -620,6 +620,81 @@ namespace pos_system.pos.UI.Forms.Sales
             LoadCategorySalesChart(startDate, endDate);
         }
 
+        //private void LoadBillTimeChart(DateTime startDate, DateTime endDate)
+        //{
+        //    try
+        //    {
+        //        // Get data from stored procedure
+        //        DataTable data = _reportService.GetSalesTimeSeries(startDate, endDate);
+
+        //        // Prepare data for chart
+        //        var values = new ChartValues<decimal>();
+        //        var labels = new List<string>();
+
+        //        bool isSingleDay = (endDate - startDate).TotalDays <= 1;
+
+        //        foreach (DataRow row in data.Rows)
+        //        {
+        //            values.Add(Convert.ToDecimal(row["TotalSales"]));
+
+        //            if (isSingleDay)
+        //            {
+        //                // Format as time for single day
+        //                DateTime time = Convert.ToDateTime(row["Period"]);
+        //                labels.Add(time.ToString("HH:mm"));
+        //            }
+        //            else
+        //            {
+        //                // Format as date for multiple days
+        //                labels.Add(Convert.ToDateTime(row["Period"]).ToString("MMM dd"));
+        //            }
+        //        }
+
+        //        // Clear existing series
+        //        billTimeChart.Series.Clear();
+
+        //        // Create new series
+        //        var series = new LineSeries
+        //        {
+        //            Title = "Sales",
+        //            Values = values,
+        //            PointGeometry = DefaultGeometries.Circle,
+        //            PointGeometrySize = 10,
+        //            Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(PrimaryColor.R, PrimaryColor.G, PrimaryColor.B)),
+        //            Fill = System.Windows.Media.Brushes.Transparent,
+        //            StrokeThickness = 3
+        //        };
+
+        //        billTimeChart.Series.Add(series);
+
+        //        // Configure X-axis
+        //        billTimeChart.AxisX.Clear();
+        //        billTimeChart.AxisX.Add(new LiveCharts.Wpf.Axis
+        //        {
+        //            Title = isSingleDay ? "Time" : "Date",
+        //            Labels = labels.ToArray(),
+        //            Separator = new LiveCharts.Wpf.Separator { StrokeThickness = 0.5 },
+        //            LabelsRotation = 30
+        //        });
+
+        //        // Configure Y-axis
+        //        billTimeChart.AxisY.Clear();
+        //        billTimeChart.AxisY.Add(new LiveCharts.Wpf.Axis
+        //        {
+        //            MinValue = 0,
+        //            Title = "Sales Amount",
+        //            LabelFormatter = value => value.ToString("N2")
+        //        });
+
+        //        billTimeChart.LegendLocation = LegendLocation.None;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error loading bill time chart: {ex.Message}", "Error",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
+
         private void LoadBillTimeChart(DateTime startDate, DateTime endDate)
         {
             try
@@ -628,14 +703,16 @@ namespace pos_system.pos.UI.Forms.Sales
                 DataTable data = _reportService.GetSalesTimeSeries(startDate, endDate);
 
                 // Prepare data for chart
-                var values = new ChartValues<decimal>();
+                var cashInflowValues = new ChartValues<decimal>();
+                var tokenIssuedValues = new ChartValues<decimal>();
                 var labels = new List<string>();
 
                 bool isSingleDay = (endDate - startDate).TotalDays <= 1;
 
                 foreach (DataRow row in data.Rows)
                 {
-                    values.Add(Convert.ToDecimal(row["TotalSales"]));
+                    cashInflowValues.Add(Convert.ToDecimal(row["CashInflow"]));
+                    tokenIssuedValues.Add(Convert.ToDecimal(row["TokenValueIssued"]));
 
                     if (isSingleDay)
                     {
@@ -646,26 +723,40 @@ namespace pos_system.pos.UI.Forms.Sales
                     else
                     {
                         // Format as date for multiple days
-                        labels.Add(Convert.ToDateTime(row["Period"]).ToString("MMM dd"));
+                        DateTime date = Convert.ToDateTime(row["Period"]);
+                        labels.Add(date.ToString("MMM dd"));
                     }
                 }
 
                 // Clear existing series
                 billTimeChart.Series.Clear();
 
-                // Create new series
-                var series = new LineSeries
+                // Create CashInflow series
+                var cashInflowSeries = new LineSeries
                 {
-                    Title = "Sales",
-                    Values = values,
+                    Title = "Cash Inflow",
+                    Values = cashInflowValues,
                     PointGeometry = DefaultGeometries.Circle,
                     PointGeometrySize = 10,
-                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(PrimaryColor.R, PrimaryColor.G, PrimaryColor.B)),
+                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(41, 128, 185)), // Blue
                     Fill = System.Windows.Media.Brushes.Transparent,
                     StrokeThickness = 3
                 };
 
-                billTimeChart.Series.Add(series);
+                // Create TokenValueIssued series
+                var tokenIssuedSeries = new LineSeries
+                {
+                    Title = "Token Value Issued",
+                    Values = tokenIssuedValues,
+                    PointGeometry = DefaultGeometries.Circle,
+                    PointGeometrySize = 10,
+                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60)), // Red
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    StrokeThickness = 3
+                };
+
+                billTimeChart.Series.Add(cashInflowSeries);
+                billTimeChart.Series.Add(tokenIssuedSeries);
 
                 // Configure X-axis
                 billTimeChart.AxisX.Clear();
@@ -682,11 +773,11 @@ namespace pos_system.pos.UI.Forms.Sales
                 billTimeChart.AxisY.Add(new LiveCharts.Wpf.Axis
                 {
                     MinValue = 0,
-                    Title = "Sales Amount",
+                    Title = "Amount",
                     LabelFormatter = value => value.ToString("N2")
                 });
 
-                billTimeChart.LegendLocation = LegendLocation.None;
+                billTimeChart.LegendLocation = LegendLocation.Top;
             }
             catch (Exception ex)
             {

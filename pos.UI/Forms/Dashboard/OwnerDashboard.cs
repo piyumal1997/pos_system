@@ -222,22 +222,29 @@ namespace pos_system.pos.UI.Forms.Dashboard
 
         public partial class DashboardForm : Form
         {
-        // Theme colors based on EmployeeManagement
+            // Theme colors
             private static readonly Color PrimaryColor = Color.FromArgb(41, 128, 185);
             private static readonly Color BackgroundColor = Color.White;
             private static readonly Color DeleteColor = Color.FromArgb(231, 76, 60);
             private static readonly Color WarningColor = Color.FromArgb(241, 196, 15);
             private static readonly Color SuccessColor = Color.FromArgb(46, 204, 113);
+            private static readonly Color MixedPaymentColor = Color.FromArgb(155, 89, 182);
+            private static readonly Color CardBackgroundColor = Color.FromArgb(250, 250, 250);
+            private static readonly Color ShadowColor = Color.FromArgb(100, 0, 0, 0);
 
             private readonly DashboardService _dashboardService = new DashboardService();
             private DashboardMetrics _metrics;
+            private System.Windows.Forms.Timer _refreshTimer;
 
             // UI Components
-            private FlowLayoutPanel panelCards;
+            private DoubleBufferedPanel cardsSection;
+            private DoubleBufferedPanel lineChartSection;
+            private DoubleBufferedPanel pieChartSection;
+            private DoubleBufferedFlowLayoutPanel panelCards;
             private LiveCharts.WinForms.CartesianChart dailyChart;
-            private Button btnRefresh;
-            private Panel titlePanel;
-            private TableLayoutPanel mainContainer;
+            private LiveCharts.WinForms.PieChart paymentPieChart;
+            private DoubleBufferedPanel titlePanel;
+            private DoubleBufferedPanel mainPanel;
 
             // Card Labels
             private Label lblTotalItems;
@@ -251,86 +258,133 @@ namespace pos_system.pos.UI.Forms.Dashboard
             private Label lblTodaysQuantity;
             private Label lblTodaysProfit;
 
+            // Payment Method Labels
+            private Label lblCashPayments;
+            private Label lblCardPayments;
+            private Label lblBankPayments;
+            private Label lblMixedPayments;
+            private Label lblTokenPayments;
+
             public DashboardForm()
             {
-                    InitializeComponent();
-                    LoadDashboardData();
-                    this.Resize += (s, e) => AdjustLayout();
-                    AdjustLayout(); // Initial layout adjustment
+                InitializeComponent();
+                InitializeAutoRefresh();
+                LoadDashboardData();
+
+                // Disable auto-scroll and use manual layout
+                this.AutoScroll = false;
+                this.Resize += (s, e) => AdjustLayout();
+                AdjustLayout();
+            }
+
+            // Custom double-buffered panels to prevent flickering
+            public class DoubleBufferedPanel : Panel
+            {
+                public DoubleBufferedPanel()
+                {
+                    this.DoubleBuffered = true;
+                    this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                                 ControlStyles.UserPaint |
+                                 ControlStyles.ResizeRedraw |
+                                 ControlStyles.OptimizedDoubleBuffer, true);
+                    this.UpdateStyles();
                 }
+            }
+
+            public class DoubleBufferedFlowLayoutPanel : FlowLayoutPanel
+            {
+                public DoubleBufferedFlowLayoutPanel()
+                {
+                    this.DoubleBuffered = true;
+                    this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                                 ControlStyles.UserPaint |
+                                 ControlStyles.ResizeRedraw |
+                                 ControlStyles.OptimizedDoubleBuffer, true);
+                    this.UpdateStyles();
+                }
+            }
+
+            private void InitializeAutoRefresh()
+            {
+                _refreshTimer = new System.Windows.Forms.Timer();
+                _refreshTimer.Interval = 30000; // 30 seconds
+                _refreshTimer.Tick += (s, e) => LoadDashboardData();
+                _refreshTimer.Start();
+            }
 
             private void InitializeComponent()
             {
-                // Form Setup
+                // Form Setup with double buffering
+                this.DoubleBuffered = true;
+                this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                             ControlStyles.UserPaint |
+                             ControlStyles.ResizeRedraw |
+                             ControlStyles.OptimizedDoubleBuffer, true);
+
                 Text = "Retail POS Dashboard";
-                Size = new Size(950, 700);
-                BackColor = BackgroundColor;
-                AutoScroll = true;  // Fixed: Enable scrolling
+                Size = new Size(1200, 1000);
+                BackColor = Color.FromArgb(240, 240, 240);
                 Padding = new Padding(0);
                 FormBorderStyle = FormBorderStyle.None;
-                ShowIcon = false;   // Remove form icon
+                ShowIcon = false;
 
-                // Main container using TableLayoutPanel for responsive design
-                mainContainer = new TableLayoutPanel
+                // Main Panel - Manual layout without docking to prevent scroll issues
+                mainPanel = new DoubleBufferedPanel
                 {
-                    //Dock = DockStyle.Fill,
-                    ColumnCount = 1,
-                    RowCount = 3,
-                    BackColor = BackgroundColor,
-                    Padding = new Padding(16),
-                    AutoSize = true,
-                    //AutoSizeMode = AutoSizeMode.GrowAndShrink
+                    BackColor = Color.FromArgb(240, 240, 240),
+                    Location = new Point(0, 0),
+                    Size = new Size(1200, 1000)
                 };
-                mainContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 90F));
 
                 // Title Panel
-                titlePanel = new Panel
-                {
-                    Dock = DockStyle.Fill,
-                    Height = 70,
-                    BackColor = PrimaryColor,
-                    Padding = new Padding(10, 0, 10, 0)
-                };
+                titlePanel = CreateShadowCard("RETAIL POS DASHBOARD", 70, PrimaryColor, true);
+                titlePanel.Location = new Point(25, 25);
 
                 var lblTitle = new Label
                 {
                     Text = "RETAIL POS DASHBOARD",
                     Dock = DockStyle.Fill,
                     TextAlign = ContentAlignment.MiddleLeft,
-                    Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                    ForeColor = PrimaryColor,
                 };
 
-                // Refresh Button
-                btnRefresh = new Button
+                var lblAutoRefresh = new Label
                 {
-                    Text = "REFRESH",
-                    Size = new Size(120, 40),
-                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                    FlatStyle = FlatStyle.Flat,
-                    FlatAppearance = {
-                    BorderSize = 0,
-                    MouseOverBackColor = ControlPaint.Light(PrimaryColor, 0.2f)
-                },
-                    BackColor = PrimaryColor,
+                    Text = "Auto-refresh: 30s",
+                    Dock = DockStyle.Right,
+                    TextAlign = ContentAlignment.MiddleRight,
+                    Font = new Font("Segoe UI", 10, FontStyle.Italic),
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    Cursor = Cursors.Hand
+                    Size = new Size(120, 70)
                 };
-                btnRefresh.Click += btnRefresh_Click;
 
-                titlePanel.Controls.Add(btnRefresh);
+                titlePanel.Controls.Add(lblAutoRefresh);
                 titlePanel.Controls.Add(lblTitle);
 
-                // Card Panel - Responsive flow layout
-                panelCards = new FlowLayoutPanel
+                // Cards Section
+                cardsSection = CreateShadowCard("", 0, CardBackgroundColor, false);
+                cardsSection.Location = new Point(25, 110);
+                cardsSection.Padding = new Padding(20);
+
+                var cardsTitle = new Label
+                {
+                    Text = "BUSINESS OVERVIEW",
+                    Dock = DockStyle.Top,
+                    Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                    ForeColor = PrimaryColor,
+                    Height = 40,
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+
+                panelCards = new DoubleBufferedFlowLayoutPanel
                 {
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                    Padding = new Padding(0, 10, 0, 20),
+                    Padding = new Padding(0, 10, 0, 0),
                     WrapContents = true,
-                    BackColor = BackgroundColor,
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                    BackColor = Color.Transparent,
+                    Dock = DockStyle.Top
                 };
 
                 // Create Enhanced Cards with Icons
@@ -342,98 +396,216 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 CreateModernCard("Brands", "0", IconChar.Tags, PrimaryColor, out lblTotalBrands);
                 CreateModernCard("Today's Sales", "0.00", IconChar.DollarSign, SuccessColor, out lblTodaysSales);
                 CreateModernCard("Today's COS", "0.00", IconChar.MoneyBillWave, WarningColor, out lblTodaysCOGS);
-                CreateModernCard("Today's Profit", "0.00", IconChar.DollarSign, WarningColor, out lblTodaysProfit);
+                CreateModernCard("Today's Profit", "0.00", IconChar.ChartLine, SuccessColor, out lblTodaysProfit);
                 CreateModernCard("Today's Quantity", "0", IconChar.ShoppingCart, PrimaryColor, out lblTodaysQuantity);
 
-                // LiveCharts CartesianChart
+                // Payment Method Breakdown Card
+                CreatePaymentMethodCard();
+
+                cardsSection.Controls.Add(panelCards);
+                cardsSection.Controls.Add(cardsTitle);
+
+                // Line Chart Section
+                lineChartSection = CreateShadowCard("DAILY SALES TREND", 360, CardBackgroundColor, false);
+                lineChartSection.Location = new Point(25, 0); // Will be positioned in AdjustLayout
+                lineChartSection.Padding = new Padding(25);
+
                 dailyChart = new LiveCharts.WinForms.CartesianChart
                 {
+                    Height = 300,
                     Dock = DockStyle.Fill,
-                    BackColor = BackgroundColor,
-                    Margin = new Padding(0, 20, 0, 0),
-                    MinimumSize = new Size(950, 300),
-                    MaximumSize = new Size(950, 500),
-                    Location = new Point(0, 0),
+                    BackColor = Color.Transparent,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     LegendLocation = LegendLocation.None,
                 };
-                    dailyChart.Update(true, true);
-                    // Configure chart appearance
-                    dailyChart.AxisX.Add(new LiveCharts.Wpf.Axis
+
+                lineChartSection.Controls.Add(dailyChart);
+
+                // Pie Chart Section
+                pieChartSection = CreateShadowCard("PAYMENT METHOD DISTRIBUTION", 360, CardBackgroundColor, false);
+                pieChartSection.Location = new Point(25, 0); // Will be positioned in AdjustLayout
+                pieChartSection.Padding = new Padding(25);
+
+                paymentPieChart = new LiveCharts.WinForms.PieChart
                 {
-                    Labels = new string[0],
-                    Separator = new Separator { StrokeThickness = 0 },
+                    Height = 300,
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    LegendLocation = LegendLocation.Right
+                };
+
+                pieChartSection.Controls.Add(paymentPieChart);
+
+                // Configure charts appearance
+                ConfigureCharts();
+
+                // Add controls to main panel
+                mainPanel.Controls.Add(pieChartSection);
+                mainPanel.Controls.Add(lineChartSection);
+                mainPanel.Controls.Add(cardsSection);
+                mainPanel.Controls.Add(titlePanel);
+
+                // Add main panel to form
+                Controls.Add(mainPanel);
+
+                // Enable manual scrolling
+                mainPanel.MouseWheel += MainPanel_MouseWheel;
+                mainPanel.Focus();
+            }
+
+            private void MainPanel_MouseWheel(object sender, MouseEventArgs e)
+            {
+                // Manual scrolling implementation
+                int scrollAmount = e.Delta > 0 ? 40 : -40;
+                int newTop = mainPanel.Top + scrollAmount;
+
+                // Limit scrolling bounds
+                int maxScroll = Math.Max(0, mainPanel.Height - this.ClientSize.Height);
+                newTop = Math.Min(0, Math.Max(-maxScroll, newTop));
+
+                mainPanel.Top = newTop;
+            }
+
+            private DoubleBufferedPanel CreateShadowCard(string title, int height, Color backgroundColor, bool isTitleCard)
+            {
+                var card = new DoubleBufferedPanel
+                {
+                    BackColor = Color.Transparent,
+                    Height = height
+                };
+
+                if (!isTitleCard)
+                {
+                    card.Paint += (sender, e) =>
+                    {
+                        // Use a single buffered graphics to prevent flickering
+                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                        e.Graphics.CompositingQuality = CompositingQuality.HighSpeed;
+                        e.Graphics.InterpolationMode = InterpolationMode.Low;
+
+                        // Single shadow layer (simplified to reduce flickering)
+                        var shadowRect = new Rectangle(2, 3, card.Width - 4, card.Height - 4);
+                        using (var shadowPath = GetRoundedRect(shadowRect, 10))
+                        using (var shadowBrush = new SolidBrush(Color.FromArgb(15, 0, 0, 0)))
+                        {
+                            e.Graphics.FillPath(shadowBrush, shadowPath);
+                        }
+
+                        // Main card
+                        var mainRect = new Rectangle(0, 0, card.Width - 2, card.Height - 2);
+                        using (var mainPath = GetRoundedRect(mainRect, 8))
+                        using (var mainBrush = new SolidBrush(backgroundColor))
+                        using (var borderPen = new Pen(Color.FromArgb(220, 220, 220), 1))
+                        {
+                            e.Graphics.FillPath(mainBrush, mainPath);
+                            e.Graphics.DrawPath(borderPen, mainPath);
+                        }
+
+                        // Title bar for sections
+                        if (!string.IsNullOrEmpty(title) && !isTitleCard)
+                        {
+                            var titleRect = new Rectangle(0, 0, card.Width, 40);
+                            using (var titleBrush = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                            using (var titlePen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                            using (var titleFont = new Font("Segoe UI", 12, FontStyle.Bold))
+                            using (var titleFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center })
+                            {
+                                e.Graphics.FillRectangle(titleBrush, titleRect);
+                                e.Graphics.DrawLine(titlePen, 0, 40, card.Width, 40);
+                                e.Graphics.DrawString(title, titleFont, new SolidBrush(PrimaryColor),
+                                    new Rectangle(20, 0, card.Width - 40, 40), titleFormat);
+                            }
+                        }
+                    };
+                }
+
+                return card;
+            }
+
+            private void ConfigureCharts()
+            {
+                // Daily Chart Configuration
+                dailyChart.AxisX.Add(new LiveCharts.Wpf.Axis
+                {
+                    Separator = new LiveCharts.Wpf.Separator { StrokeThickness = 0.5 },
                     LabelsRotation = 30,
-                    FontSize = 11
+                    FontSize = 12,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(100, 100, 100))
                 });
 
                 dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
                 {
                     MinValue = 0,
                     LabelFormatter = value => value.ToString("N2"),
-                    Separator = new Separator
+                    FontSize = 12,
+                    Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(100, 100, 100)),
+                    Separator = new LiveCharts.Wpf.Separator
                     {
-                        Stroke = new System.Windows.Media.SolidColorBrush(
-                            System.Windows.Media.Color.FromRgb(200, 200, 200))
+                        Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 220, 220)),
+                        StrokeThickness = 1
                     }
                 });
 
-                // Add rows to main container
-                mainContainer.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F)); // Title
-                mainContainer.RowStyles.Add(new RowStyle(SizeType.AutoSize));       // Cards
-                mainContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));  // Chart
-
-                // Add controls to container
-                mainContainer.Controls.Add(titlePanel, 0, 0);
-                mainContainer.Controls.Add(panelCards, 0, 1);
-                mainContainer.Controls.Add(dailyChart, 0, 2);
-
-                // Add main container to form
-                AutoScroll = true;
-                Controls.Add(mainContainer);
-             }
+                // Pie Chart Configuration
+                paymentPieChart.LegendLocation = LiveCharts.LegendLocation.Right;
+            }
 
             private void AdjustLayout()
             {
-                mainContainer.Width = 1000;
+                // Calculate positions manually to avoid docking issues
+                int currentY = 25;
+                int sectionWidth = this.ClientSize.Width - 50;
 
-                    // Position refresh button dynamically
-                btnRefresh.Location = new Point(
-                    titlePanel.Width - btnRefresh.Width - 20,
-                    (titlePanel.Height - btnRefresh.Height) / 2
-                );
+                // Title Panel
+                titlePanel.Location = new Point(25, currentY);
+                titlePanel.Width = sectionWidth;
+                currentY += titlePanel.Height + 25;
 
-                    // Adjust card sizes based on available width
+                // Cards Section
+                cardsSection.Location = new Point(25, currentY);
+                cardsSection.Width = sectionWidth;
+                cardsSection.Height = panelCards.Height + 80;
+                currentY += cardsSection.Height + 25;
+
+                // Line Chart Section
+                lineChartSection.Location = new Point(25, currentY + 20);
+                lineChartSection.Width = sectionWidth;
+                currentY += lineChartSection.Height + 25;
+
+                // Pie Chart Section
+                pieChartSection.Location = new Point(25, currentY + 20);
+                pieChartSection.Width = sectionWidth;
+
+                // Adjust main panel size for scrolling
+                int totalHeight = currentY + pieChartSection.Height + 25;
+                mainPanel.Size = new Size(this.ClientSize.Width, Math.Max(this.ClientSize.Height, totalHeight));
+
+                // Adjust card sizes based on available width
                 int cardWidth = CalculateCardWidth();
                 foreach (Control card in panelCards.Controls)
                 {
-                    card.Width = cardWidth;
+                    if (card.Tag?.ToString() != "PaymentMethodCard")
+                        card.Width = cardWidth;
                 }
-                //UpdateChart();
             }
 
             private int CalculateCardWidth()
             {
-                const int minCardWidth = 200;
-                const int maxCardWidth = 210;
+                const int minCardWidth = 270;
+                const int maxCardWidth = 280;
                 const int margin = 15;
-                const int minCardsPerRow = 3;
 
                 int containerWidth = panelCards.ClientSize.Width - margin;
 
-                if (containerWidth < minCardWidth * minCardsPerRow + margin * minCardsPerRow)
+                if (containerWidth < minCardWidth * 2 + margin * 2)
                 {
-                    // For narrow screens, use 2 columns
                     return Math.Min(maxCardWidth, (containerWidth / 2) - margin * 2);
                 }
 
-                // Calculate optimal cards per row
-                int cardsPerRow = Math.Max(minCardsPerRow, containerWidth / minCardWidth);
-
-                // Calculate card width
+                int cardsPerRow = Math.Max(3, containerWidth / minCardWidth);
                 int calculatedWidth = (containerWidth / cardsPerRow) - margin * 2;
 
-                // Apply constraints
                 return Math.Min(maxCardWidth, Math.Max(minCardWidth, calculatedWidth));
             }
 
@@ -441,72 +613,82 @@ namespace pos_system.pos.UI.Forms.Dashboard
             {
                 int cardWidth = CalculateCardWidth();
 
-                var card = new Panel
+                var card = new DoubleBufferedPanel
                 {
-                    Size = new Size(cardWidth, 110),
+                    Size = new Size(cardWidth, 120),
                     Margin = new Padding(10),
                     BackColor = Color.White,
                     BorderStyle = BorderStyle.None,
-                    Padding = new Padding(0),
-                    Anchor = AnchorStyles.Top | AnchorStyles.Left
+                    Padding = new Padding(0)
                 };
 
-                // Add rounded corners and shadow
+                // Simplified painting to reduce flickering
                 card.Paint += (sender, e) =>
                 {
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                     var rect = new Rectangle(0, 0, card.Width - 1, card.Height - 1);
-                    using (var path = GetRoundedRect(rect, 8))
+
+                    // Single shadow layer
+                    var shadowRect = new Rectangle(1, 2, card.Width - 2, card.Height - 2);
+                    using (var shadowPath = GetRoundedRect(shadowRect, 8))
+                    using (var shadowBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0)))
                     {
-                        // Shadow
-                        using (var shadow = new SolidBrush(Color.FromArgb(20, 0, 0, 0)))
-                        {
-                            for (int i = 0; i < 3; i++)
-                            {
-                                var shadowRect = new Rectangle(i, i + 2, card.Width - 1, card.Height - 1);
-                                using (var shadowPath = GetRoundedRect(shadowRect, 8))
-                                {
-                                    e.Graphics.FillPath(shadow, shadowPath);
-                                }
-                            }
-                        }
+                        e.Graphics.FillPath(shadowBrush, shadowPath);
+                    }
 
-                        // Card background
-                        using (var brush = new SolidBrush(Color.White))
-                        {
-                            e.Graphics.FillPath(brush, path);
-                        }
+                    // Main card
+                    using (var path = GetRoundedRect(rect, 6))
+                    using (var brush = new SolidBrush(Color.White))
+                    using (var borderPen = new Pen(Color.FromArgb(240, 240, 240), 1))
+                    {
+                        e.Graphics.FillPath(brush, path);
+                        e.Graphics.DrawPath(borderPen, path);
+                    }
 
-                        // Accent bar
-                        using (var accentBrush = new SolidBrush(accentColor))
-                        {
-                            e.Graphics.FillRectangle(accentBrush, 0, 0, card.Width, 4);
-                        }
-
-                        // Border
-                        using (var pen = new Pen(Color.FromArgb(230, 230, 230), 1))
-                        {
-                            e.Graphics.DrawPath(pen, path);
-                        }
+                    // Accent bar
+                    using (var accentBrush = new SolidBrush(accentColor))
+                    {
+                        e.Graphics.FillRectangle(accentBrush, 0, 0, card.Width, 4);
                     }
                 };
 
-                // Icon
+                // Icon with background
+                var iconContainer = new DoubleBufferedPanel
+                {
+                    Size = new Size(50, 50),
+                    Location = new Point(15, 25),
+                    BackColor = Color.FromArgb(245, 245, 245)
+                };
+
+                iconContainer.Paint += (s, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var path = GetRoundedRect(new Rectangle(0, 0, iconContainer.Width - 1, iconContainer.Height - 1), 8))
+                    using (var brush = new SolidBrush(Color.FromArgb(245, 245, 245)))
+                    using (var borderPen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                    {
+                        e.Graphics.FillPath(brush, path);
+                        e.Graphics.DrawPath(borderPen, path);
+                    }
+                };
+
                 var iconControl = new IconPictureBox
                 {
                     IconChar = icon,
                     IconColor = accentColor,
-                    IconSize = 32,
-                    Location = new Point(15, 20),
-                    Size = new Size(32, 32),
+                    IconSize = 24,
+                    Location = new Point(13, 13),
+                    Size = new Size(24, 24),
                     BackColor = Color.Transparent
                 };
+
+                iconContainer.Controls.Add(iconControl);
 
                 // Title label
                 var titleLabel = new Label
                 {
                     Text = title,
-                    Location = new Point(55, 20),
+                    Location = new Point(75, 25),
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(120, 120, 120),
                     TextAlign = ContentAlignment.MiddleLeft,
@@ -517,17 +699,131 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 valueLabel = new Label
                 {
                     Text = initialValue,
-                    Location = new Point(55, 45),
-                    Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                    Location = new Point(75, 50),
+                    Font = new Font("Segoe UI", 22, FontStyle.Bold),
                     ForeColor = Color.FromArgb(60, 60, 60),
                     TextAlign = ContentAlignment.MiddleLeft,
                     AutoSize = true
                 };
 
-                card.Controls.Add(iconControl);
+                card.Controls.Add(iconContainer);
                 card.Controls.Add(titleLabel);
                 card.Controls.Add(valueLabel);
                 panelCards.Controls.Add(card);
+            }
+
+            private void CreatePaymentMethodCard()
+            {
+                var card = new DoubleBufferedPanel
+                {
+                    Size = new Size(280, 180),
+                    Margin = new Padding(10),
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.None,
+                    Padding = new Padding(0),
+                    Tag = "PaymentMethodCard"
+                };
+
+                // Simplified card styling
+                card.Paint += (sender, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    var rect = new Rectangle(0, 0, card.Width - 1, card.Height - 1);
+
+                    // Single shadow
+                    var shadowRect = new Rectangle(1, 2, card.Width - 2, card.Height - 2);
+                    using (var shadowPath = GetRoundedRect(shadowRect, 8))
+                    using (var shadowBrush = new SolidBrush(Color.FromArgb(10, 0, 0, 0)))
+                    {
+                        e.Graphics.FillPath(shadowBrush, shadowPath);
+                    }
+
+                    // Main card
+                    using (var path = GetRoundedRect(rect, 6))
+                    using (var brush = new SolidBrush(Color.White))
+                    using (var borderPen = new Pen(Color.FromArgb(240, 240, 240), 1))
+                    {
+                        e.Graphics.FillPath(brush, path);
+                        e.Graphics.DrawPath(borderPen, path);
+                    }
+
+                    // Accent bar
+                    using (var accentBrush = new SolidBrush(MixedPaymentColor))
+                    {
+                        e.Graphics.FillRectangle(accentBrush, 0, 0, card.Width, 4);
+                    }
+                };
+
+                // Title
+                var titleLabel = new Label
+                {
+                    Text = "Payment Methods",
+                    Location = new Point(15, 15),
+                    Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(60, 60, 60),
+                    AutoSize = true
+                };
+
+                // Payment method labels and values
+                int startY = 50;
+                int labelWidth = 120;
+                int valueWidth = 100;
+
+                // Cash
+                CreatePaymentMethodRow("Cash", SuccessColor, startY, labelWidth, valueWidth, out lblCashPayments);
+                CreatePaymentMethodRow("Card", PrimaryColor, startY + 30, labelWidth, valueWidth, out lblCardPayments);
+                CreatePaymentMethodRow("Bank", PrimaryColor, startY + 60, labelWidth, valueWidth, out lblBankPayments);
+                CreatePaymentMethodRow("Mixed", MixedPaymentColor, startY + 90, labelWidth, valueWidth, out lblMixedPayments);
+
+                void CreatePaymentMethodRow(string method, Color color, int y, int lblWidth, int valWidth, out Label valueLabel)
+                {
+                    var icon = new IconPictureBox
+                    {
+                        IconChar = GetPaymentIcon(method),
+                        IconColor = color,
+                        IconSize = 16,
+                        Location = new Point(20, y + 2),
+                        Size = new Size(16, 16)
+                    };
+
+                    var label = new Label
+                    {
+                        Text = method + ":",
+                        Location = new Point(45, y),
+                        Size = new Size(lblWidth, 20),
+                        Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(100, 100, 100)
+                    };
+
+                    valueLabel = new Label
+                    {
+                        Text = "0.00",
+                        Location = new Point(150, y),
+                        Size = new Size(valWidth, 20),
+                        Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(60, 60, 60),
+                        TextAlign = ContentAlignment.MiddleRight
+                    };
+
+                    card.Controls.Add(icon);
+                    card.Controls.Add(label);
+                    card.Controls.Add(valueLabel);
+                }
+
+                card.Controls.Add(titleLabel);
+                panelCards.Controls.Add(card);
+            }
+
+            private IconChar GetPaymentIcon(string method)
+            {
+                return method switch
+                {
+                    "Cash" => IconChar.MoneyBillWave,
+                    "Card" => IconChar.CreditCard,
+                    "Bank" => IconChar.University,
+                    "Mixed" => IconChar.Random,
+                    _ => IconChar.MoneyBillWave
+                };
             }
 
             private GraphicsPath GetRoundedRect(Rectangle bounds, int radius)
@@ -541,9 +837,14 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 return path;
             }
 
-            private void UpdateChart()
+            private void UpdateCharts()
             {
-                // Clear existing axes and series
+                UpdateDailyChart();
+                UpdatePaymentPieChart();
+            }
+
+            private void UpdateDailyChart()
+            {
                 dailyChart.AxisX.Clear();
                 dailyChart.AxisY.Clear();
                 dailyChart.Series.Clear();
@@ -551,13 +852,12 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 if (_metrics?.DailySales == null || _metrics.DailySales.Count == 0)
                     return;
 
-                // Create series with data binding
-                var series = new LineSeries
+                var series = new LiveCharts.Wpf.LineSeries
                 {
                     Title = "Daily Sales",
-                    Values = new ChartValues<decimal>(_metrics.DailySales.Select(d => d.TotalSales)),
+                    Values = new LiveCharts.ChartValues<decimal>(_metrics.DailySales.Select(d => d.TotalSales)),
                     PointGeometry = DefaultGeometries.Circle,
-                    PointGeometrySize = 10,
+                    PointGeometrySize = 8,
                     Stroke = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(PrimaryColor.R, PrimaryColor.G, PrimaryColor.B)),
                     Fill = System.Windows.Media.Brushes.Transparent,
@@ -565,37 +865,102 @@ namespace pos_system.pos.UI.Forms.Dashboard
                 };
                 dailyChart.Series.Add(series);
 
-                // X-Axis Configuration
                 dailyChart.AxisX.Add(new LiveCharts.Wpf.Axis
                 {
                     Labels = _metrics.DailySales.Select(d => d.Period).ToArray(),
-                    Separator = new Separator { StrokeThickness = 0 },
+                    Separator = new LiveCharts.Wpf.Separator { StrokeThickness = 0.5 },
                     LabelsRotation = 30,
                     FontSize = 11
                 });
 
-                // Y-Axis Configuration (Fixed)
                 dailyChart.AxisY.Add(new LiveCharts.Wpf.Axis
                 {
                     MinValue = 0,
-                    // Remove hardcoded min/max to auto-scale
                     LabelFormatter = value => value.ToString("N2"),
-                    Separator = new Separator
+                    Separator = new LiveCharts.Wpf.Separator
                     {
                         Stroke = new System.Windows.Media.SolidColorBrush(
-                            System.Windows.Media.Color.FromRgb(200, 200, 200))
+                            System.Windows.Media.Color.FromRgb(220, 220, 220))
                     }
                 });
+            }
+
+            private void UpdatePaymentPieChart()
+            {
+                paymentPieChart.Series.Clear();
+
+                if (_metrics == null) return;
+
+                var seriesCollection = new LiveCharts.SeriesCollection();
+
+                if (_metrics.DailyCashPayments > 0)
+                {
+                    seriesCollection.Add(new LiveCharts.Wpf.PieSeries
+                    {
+                        Title = "Cash",
+                        Values = new LiveCharts.ChartValues<decimal> { _metrics.DailyCashPayments },
+                        DataLabels = true,
+                        LabelPoint = point => $"{point.Y:N2}",
+                        Fill = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(SuccessColor.R, SuccessColor.G, SuccessColor.B))
+                    });
+                }
+
+                if (_metrics.DailyCardPayments > 0)
+                {
+                    seriesCollection.Add(new LiveCharts.Wpf.PieSeries
+                    {
+                        Title = "Card",
+                        Values = new LiveCharts.ChartValues<decimal> { _metrics.DailyCardPayments },
+                        DataLabels = true,
+                        LabelPoint = point => $"{point.Y:N2}",
+                        Fill = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(PrimaryColor.R, PrimaryColor.G, PrimaryColor.B))
+                    });
+                }
+
+                if (_metrics.DailyBankPayments > 0)
+                {
+                    seriesCollection.Add(new LiveCharts.Wpf.PieSeries
+                    {
+                        Title = "Bank Transfer",
+                        Values = new LiveCharts.ChartValues<decimal> { _metrics.DailyBankPayments },
+                        DataLabels = true,
+                        LabelPoint = point => $"{point.Y:N2}",
+                        Fill = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(70, 130, 180))
+                    });
+                }
+
+                if (_metrics.DailyMixedPayments > 0)
+                {
+                    seriesCollection.Add(new LiveCharts.Wpf.PieSeries
+                    {
+                        Title = "Mixed",
+                        Values = new LiveCharts.ChartValues<decimal> { _metrics.DailyMixedPayments },
+                        DataLabels = true,
+                        LabelPoint = point => $"{point.Y:N2}",
+                        Fill = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(MixedPaymentColor.R, MixedPaymentColor.G, MixedPaymentColor.B))
+                    });
+                }
+
+                paymentPieChart.Series = seriesCollection;
             }
 
             private void LoadDashboardData()
             {
                 try
                 {
-                    Cursor = Cursors.WaitCursor;
+                    if (this.InvokeRequired)
+                    {
+                        this.BeginInvoke(new Action(LoadDashboardData));
+                        return;
+                    }
+
                     _metrics = _dashboardService.GetDashboardMetrics();
 
-                    // Update cards - fixed to ensure values are set
+                    // Update main cards
                     lblTotalItems.Text = _metrics.TotalItems.ToString("N0");
                     lblActiveEmployees.Text = _metrics.ActiveEmployees.ToString("N0");
                     lblTotalBills.Text = _metrics.TotalBills.ToString("N0");
@@ -607,23 +972,32 @@ namespace pos_system.pos.UI.Forms.Dashboard
                     lblTodaysProfit.Text = (_metrics.TodaysSales - _metrics.TodaysCOGS).ToString("N2");
                     lblTodaysQuantity.Text = _metrics.TodaysQuantity.ToString("N0");
 
-                    // Update chart with LiveCharts
-                    UpdateChart();
+                    // Update payment method labels
+                    lblCashPayments.Text = _metrics.DailyCashPayments.ToString("N2");
+                    lblCardPayments.Text = _metrics.DailyCardPayments.ToString("N2");
+                    lblBankPayments.Text = _metrics.DailyBankPayments.ToString("N2");
+                    lblMixedPayments.Text = _metrics.DailyMixedPayments.ToString("N2");
+
+                    // Update charts
+                    UpdateCharts();
+
+                    // Refresh layout
+                    AdjustLayout();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error loading dashboard data: {ex.Message}", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                finally
-                {
-                    Cursor = Cursors.Default;
+                    System.Diagnostics.Debug.WriteLine($"Error loading dashboard data: {ex.Message}");
                 }
             }
 
-            private void btnRefresh_Click(object sender, EventArgs e)
+            protected override void Dispose(bool disposing)
             {
-                LoadDashboardData();
+                if (disposing)
+                {
+                    _refreshTimer?.Stop();
+                    _refreshTimer?.Dispose();
+                }
+                base.Dispose(disposing);
             }
         }
     }

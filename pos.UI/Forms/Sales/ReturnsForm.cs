@@ -61,8 +61,8 @@ namespace pos_system.pos.UI.Forms.Sales
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading return reasons: {ex.Message}", "Database Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+               ThemedMessageBox.Show($"Error loading return reasons: {ex.Message}", "Database Error",
+                    ThemedMessageBoxIcon.Error);
             }
         }
 
@@ -177,8 +177,8 @@ namespace pos_system.pos.UI.Forms.Sales
             }
             else
             {
-                MessageBox.Show("Please select a row first.", "Information",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ThemedMessageBox.Show("Please select a row first.", "Information",
+                    ThemedMessageBoxIcon.Information);
             }
         }
 
@@ -301,10 +301,10 @@ namespace pos_system.pos.UI.Forms.Sales
             try
             {
                 string query = @"
-            SELECT p.ItemImage, p.Product_ID, p.description, p.barcode
-            FROM Product p
-            INNER JOIN ProductSize ps ON p.Product_ID = ps.Product_ID
-            WHERE ps.ProductSize_ID = @ProductSizeId";
+                    SELECT p.ItemImage, p.Product_ID, p.description, p.barcode
+                    FROM Product p
+                    INNER JOIN ProductSize ps ON p.Product_ID = ps.Product_ID
+                    WHERE ps.ProductSize_ID = @ProductSizeId";
 
                 SqlParameter[] parameters = { new SqlParameter("@ProductSizeId", productSizeId) };
                 DataTable dt = DbHelper.GetDataTable(query, CommandType.Text, parameters);
@@ -701,37 +701,43 @@ namespace pos_system.pos.UI.Forms.Sales
 
                 if (!allValid)
                 {
-                    MessageBox.Show(validationErrors.ToString(), "Validation Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ThemedMessageBox.Show(validationErrors.ToString(), "Validation Error",
+                        ThemedMessageBoxIcon.Warning);
                     return;
                 }
 
                 if (returnItems.Count == 0)
                 {
-                    MessageBox.Show("No items selected for return", "Information",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    ThemedMessageBox.Show("No items selected for return", "Information",
+                        ThemedMessageBoxIcon.Information);
                     return;
                 }
 
-                ReturnService returnService = new ReturnService();
-                var result = returnService.ProcessReturn(
-                    _currentUser.Employee_ID,
-                    billId,
-                    returnItems
-                );
+                DialogResult results = ThemedMessageBoxYesNo.Show("Are you sure you want to return this item(s)?", "Warning", MessageBoxIcon.Warning);
 
-                var receiptData = returnService.GetReturnReceiptData(result.ReturnId);
+                if (results == DialogResult.Yes)
+                {
+                    ReturnService returnService = new ReturnService();
+                    var result = returnService.ProcessReturn(
+                        _currentUser.Employee_ID,
+                        billId,
+                        returnItems
+                    );
 
-                PrintReturnReceipt(receiptData);
-                ResetForm();
+                    var receiptData = returnService.GetReturnReceiptData(result.ReturnId);
 
-                MessageBox.Show($"Return processed successfully!\nReturn ID: {receiptData.ReturnId}",
-                    "Return Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    PrintReturnReceipt(receiptData);
+                    ResetForm();
+
+                    ThemedMessageBox.Show($"Return processed successfully!\nReturn ID: {receiptData.ReturnId}",
+                        "Return Complete", ThemedMessageBoxIcon.Success);
+                }
+
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error processing return: {ex}", "Processing Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ThemedMessageBox.Show($"Error processing return: {ex}", "Processing Error",
+                    ThemedMessageBoxIcon.Error);
             }
         }
 
@@ -742,8 +748,8 @@ namespace pos_system.pos.UI.Forms.Sales
                 //string printerName = GetPrinterName();
                 if (string.IsNullOrEmpty(PRINTER_NAME))
                 {
-                    MessageBox.Show("No receipt printer found. Please configure a printer.", "Print Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ThemedMessageBox.Show("No receipt printer found. Please configure a printer.", "Print Error",
+                        ThemedMessageBoxIcon.Warning);
                     return;
                 }
 
@@ -801,8 +807,8 @@ namespace pos_system.pos.UI.Forms.Sales
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error printing receipt: {ex.Message}", "Print Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ThemedMessageBox.Show($"Error printing receipt: {ex.Message}", "Print Error",
+                    ThemedMessageBoxIcon.Error);
             }
         }
 
