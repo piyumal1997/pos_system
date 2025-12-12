@@ -20,6 +20,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
         private Label lblWelcome;
         private Button btnClose;
         private Button btnMinimize;
+        private Button _itemManagement;
 
         private Color primaryColor;
         private Color secondaryColor;

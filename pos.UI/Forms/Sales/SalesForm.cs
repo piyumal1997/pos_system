@@ -926,7 +926,7 @@ namespace pos_system.pos.UI.Forms.Sales
             AddSheetRow(sheet, ref row, "Cash Sales", summary.CashSales);
             AddSheetRow(sheet, ref row, "Card Sales", summary.CardSales);
             AddSheetRow(sheet, ref row, "Bank Sales", summary.BankSales);
-            AddSheetRow(sheet, ref row, "Mixed Sales", summary.MixedSales); // NEW
+            //AddSheetRow(sheet, ref row, "Mixed Sales", summary.MixedSales); // NEW
             AddSheetRow(sheet, ref row, "Token Redemptions", summary.TokenRedemptions);
         }
 

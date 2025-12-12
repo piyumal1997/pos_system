@@ -362,59 +362,83 @@ namespace pos_system.pos.DAL.Repositories
                         SELECT COUNT(*) FROM Brand;
 
                         -- Today's Sales Income (CashInflow from sp_GetSalesReports logic)
-                        ;WITH CashInflows AS (
-                            SELECT
-                                CashInflow = ISNULL(SUM(bp.PaymentAmount), 0),
-                                CashSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Cash' THEN bp.PaymentAmount ELSE 0 END), 0),
-                                CardSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Card' THEN bp.PaymentAmount ELSE 0 END), 0),
-                                BankSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Bank Transfer' THEN bp.PaymentAmount ELSE 0 END), 0),
-                                MixedSales = ISNULL(SUM(CASE WHEN bp.PaymentMethod = 'Mixed' THEN bp.PaymentAmount ELSE 0 END), 0)
-                            FROM BillPayment bp
-                            INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID
+                        ;WITH EligibleBills AS (
+                            SELECT DISTINCT b.Bill_ID
+                            FROM Bill b
+                            INNER JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+                            INNER JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                            INNER JOIN Product p ON ps.Product_ID = p.Product_ID
                             WHERE b.BillStatus = 'Completed'
-                              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
+                              AND b.[date] >= CAST(GETDATE() AS DATE)
+                              AND b.[date] < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+                        ),
+                        PaymentBreakdown AS (
+                            SELECT
+                                TotalCashReceived = ISNULL(SUM(bp.PaymentAmount), 0)
+                            FROM BillPayment bp
+                            INNER JOIN EligibleBills eb ON bp.Bill_ID = eb.Bill_ID
+                            INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID AND b.BillStatus = 'Completed'
                         )
-                        SELECT COALESCE(CashInflow, 0) AS TodaySales
-                        FROM CashInflows;
+                        SELECT COALESCE(TotalCashReceived, 0) AS TodaySales
+                        FROM PaymentBreakdown;
 
-                        -- Today's COGS (Updated calculation using BillPayment)
-                        ;WITH SalesData AS (
+                        -- Today's COGS (ActualCost from sp_GetSalesReports logic)
+                        ;WITH EligibleBills AS (
+                            SELECT DISTINCT b.Bill_ID
+                            FROM Bill b
+                            INNER JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
+                            INNER JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
+                            INNER JOIN Product p ON ps.Product_ID = p.Product_ID
+                            WHERE b.BillStatus = 'Completed'
+                              AND b.[date] >= CAST(GETDATE() AS DATE)
+                              AND b.[date] < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+                        ),
+                        BillSales AS (
                             SELECT 
                                 b.Bill_ID,
                                 b.Token_ReturnID,
-                                NetAmount = b.TotalAmount,
+                                CalculatedNetAmount = 
+                                    CASE 
+                                        WHEN b.Discount_Method = 'PerItem' 
+                                        THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                        WHEN b.Discount_Method = 'TotalBill' 
+                                        THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                        ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                                    END,
                                 Cost = SUM(ps.unitCost * bi.quantity),
                                 AdditionalPayment = 
                                     CASE 
-                                        WHEN b.Token_ReturnID IS NOT NULL THEN
-                                            b.TotalAmount - ISNULL(r.TotalRefund, 0)
+                                        WHEN b.Token_ReturnID IS NOT NULL THEN 
+                                            (CASE 
+                                                WHEN b.Discount_Method = 'PerItem' 
+                                                THEN SUM((bi.ItemSellingPrice - bi.Per_item_Discount) * bi.quantity)
+                                                WHEN b.Discount_Method = 'TotalBill' 
+                                                THEN SUM(bi.ItemSellingPrice * bi.quantity) - b.Discount
+                                                ELSE SUM(bi.ItemSellingPrice * bi.quantity)
+                                            END) - ISNULL(r.TotalRefund, 0)
                                         ELSE 0
                                     END
                             FROM Bill b
+                            INNER JOIN EligibleBills eb ON b.Bill_ID = eb.Bill_ID
                             JOIN Bill_Item bi ON b.Bill_ID = bi.Bill_ID
                             JOIN ProductSize ps ON bi.ProductSize_ID = ps.ProductSize_ID
                             LEFT JOIN [Return] r ON b.Token_ReturnID = r.Return_ID
-                            WHERE b.BillStatus = 'Completed'
-                              AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
-                            GROUP BY b.Bill_ID, b.Token_ReturnID, b.TotalAmount, r.TotalRefund
+                            GROUP BY b.Bill_ID, b.Token_ReturnID, b.Discount_Method, b.Discount, r.TotalRefund
                         ),
-                        BillCostAnalysis AS (
+                        SalesAnalysis AS (
                             SELECT
                                 RegularBillCost = SUM(CASE WHEN Token_ReturnID IS NULL THEN Cost ELSE 0 END),
-                                TokenBillAdditionalPayment = SUM(AdditionalPayment),
-                                TokenBillFullCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
-                                TokenBillFullSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END),
-                                TokenBillCostRatio = 
-                                    CASE 
-                                        WHEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END) > 0
-                                        THEN SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END) / 
-                                             SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN NetAmount ELSE 0 END)
-                                        ELSE 0
-                                    END
-                            FROM SalesData
+                                TokenBillCost = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN Cost ELSE 0 END),
+                                TokenBillSales = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN CalculatedNetAmount ELSE 0 END),
+                                TokenAdditionalPayments = SUM(CASE WHEN Token_ReturnID IS NOT NULL THEN AdditionalPayment ELSE 0 END)
+                            FROM BillSales
                         )
-                        SELECT COALESCE(RegularBillCost + (TokenBillAdditionalPayment * TokenBillCostRatio), 0) AS TodayCOGS
-                        FROM BillCostAnalysis;
+                        SELECT COALESCE(
+                            RegularBillCost + 
+                            (TokenBillCost * CASE WHEN TokenBillSales > 0 THEN TokenAdditionalPayments / NULLIF(TokenBillSales, 0) ELSE 0 END), 
+                            0
+                        ) AS TodayCOGS
+                        FROM SalesAnalysis;
 
                         -- Today's Sales Quantity
                         SELECT COALESCE(SUM(BI.quantity), 0)
@@ -429,7 +453,12 @@ namespace pos_system.pos.DAL.Repositories
                         INNER JOIN Bill b ON bp.Bill_ID = b.Bill_ID
                         WHERE b.BillStatus = 'Completed'
                           AND CAST(b.[date] AS DATE) = CAST(GETDATE() AS DATE)
-                          AND bp.PaymentMethod = 'Mixed';";
+                          AND EXISTS (
+                              SELECT 1 
+                              FROM BillPayment bp2 
+                              WHERE bp2.Bill_ID = bp.Bill_ID 
+                              AND bp2.PaymentOrder = 2
+                          );";
 
                 using (var cmd = new SqlCommand(query, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -466,24 +495,37 @@ namespace pos_system.pos.DAL.Repositories
 
                 // Get sales data for charts using new BillPayment table
                 metrics.DailySales = GetSalesData(
-                        @"SELECT CONVERT(VARCHAR(10), CAST(B.[date] AS DATE), 120) AS SaleDate, 
-                             SUM(BP.PaymentAmount) AS TotalSales
-                      FROM Bill B
-                      INNER JOIN BillPayment BP ON B.Bill_ID = BP.Bill_ID
-                      WHERE B.BillStatus = 'Completed' 
-                        AND B.[date] >= DATEADD(DAY, -30, GETDATE())
-                      GROUP BY CAST(B.[date] AS DATE)
-                      ORDER BY CAST(B.[date] AS DATE)");
+                        @";WITH EligibleBills AS (
+                            SELECT DISTINCT B.Bill_ID
+                            FROM Bill B
+                            WHERE B.BillStatus = 'Completed'
+                              AND B.[date] >= DATEADD(DAY, -30, GETDATE())
+                        )
+                        SELECT 
+                            CONVERT(VARCHAR(10), CAST(B.[date] AS DATE), 120) AS SaleDate, 
+                            SUM(BP.PaymentAmount) AS TotalSales
+                        FROM EligibleBills EB
+                        INNER JOIN Bill B ON EB.Bill_ID = B.Bill_ID
+                        INNER JOIN BillPayment BP ON EB.Bill_ID = BP.Bill_ID
+                        GROUP BY CAST(B.[date] AS DATE)
+                        ORDER BY CAST(B.[date] AS DATE)");
 
                 metrics.MonthlySales = GetSalesData(
-                        @"SELECT FORMAT(B.[date], 'yyyy-MM') AS SaleMonth, 
-                             SUM(BP.PaymentAmount) AS TotalSales
-                      FROM Bill B
-                      INNER JOIN BillPayment BP ON B.Bill_ID = BP.Bill_ID
-                      WHERE B.BillStatus = 'Completed' 
-                        AND B.[date] >= DATEADD(MONTH, -12, GETDATE())
-                      GROUP BY FORMAT(B.[date], 'yyyy-MM')
-                      ORDER BY FORMAT(B.[date], 'yyyy-MM')");
+                        @"DECLARE @StartDate DATE = DATEFROMPARTS(YEAR(DATEADD(MONTH, -12, GETDATE())), 
+                                       MONTH(DATEADD(MONTH, -12, GETDATE())), 
+                                       1)
+                        DECLARE @EndDate DATE = EOMONTH(GETDATE())
+
+                        SELECT 
+                            FORMAT(DATEFROMPARTS(YEAR(B.[date]), MONTH(B.[date]), 1), 'yyyy-MM') AS SaleMonth,
+                            SUM(BP.PaymentAmount) AS TotalSales
+                        FROM Bill B
+                        INNER JOIN BillPayment BP ON B.Bill_ID = BP.Bill_ID
+                        WHERE B.BillStatus = 'Completed' 
+                          AND B.[date] >= @StartDate
+                          AND B.[date] <= @EndDate
+                        GROUP BY YEAR(B.[date]), MONTH(B.[date])
+                        ORDER BY YEAR(B.[date]), MONTH(B.[date])");
 
                 // Get payment method breakdown for today
                 GetPaymentMethodBreakdown(metrics);

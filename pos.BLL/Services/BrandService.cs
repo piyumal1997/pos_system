@@ -25,7 +25,16 @@ namespace pos_system.pos.BLL.Services
         public bool UpdateBrand(int id, string name) =>
             id > 0 && !string.IsNullOrWhiteSpace(name) && _repository.Update(id, name);
 
-        public bool DeleteBrand(int id) => id > 0 && _repository.Delete(id);
+        public bool DeleteBrand(int id)
+        {
+            if (id <= 0) return false;
+
+            // Check if brand exists and is not being used
+            if (!_repository.BrandExists(id))
+                return false;
+
+            return _repository.Delete(id);
+        }
 
         public bool CheckBrandExists(string name, int? id = null) =>
             _repository.Exists(name, id);
@@ -33,6 +42,11 @@ namespace pos_system.pos.BLL.Services
         public bool BrandExists(int brandId)
         {
             return _repository.BrandExists(brandId);
+        }
+
+        public bool CanDeleteBrand(int brandId)
+        {
+            return !_repository.IsBrandUsedInProducts(brandId);
         }
     }
 }

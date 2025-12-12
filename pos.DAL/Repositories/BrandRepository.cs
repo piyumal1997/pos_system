@@ -60,7 +60,14 @@ namespace pos_system.pos.DAL.Repositories
 
         public bool Delete(int id)
         {
-            string query = "UPDATE Brand SET IsDeleted = 1 WHERE Brand_ID = @id";
+            // First check if brand is used in any products
+            if (IsBrandUsedInProducts(id))
+            {
+                return false; // Brand is being used, cannot delete
+            }
+
+            // If not used, proceed with deletion
+            string query = "DELETE FROM Brand WHERE Brand_ID = @id";
             var parameters = new SqlParameter[]
             {
                 new SqlParameter("@id", id)
@@ -95,6 +102,19 @@ namespace pos_system.pos.DAL.Repositories
                 cmd.Parameters.AddWithValue("@brandId", brandId);
                 conn.Open();
                 return (int)cmd.ExecuteScalar() > 0;
+            }
+        }
+
+        public bool IsBrandUsedInProducts(int brandId)
+        {
+            string query = "SELECT COUNT(*) FROM Product WHERE Brand_ID = @brandId";
+            using (var conn = DbHelper.GetConnection())
+            using (var cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@brandId", brandId);
+                conn.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
             }
         }
     }

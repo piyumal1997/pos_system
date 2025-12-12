@@ -14,7 +14,7 @@ namespace pos_system.pos.DAL.Repositories
             var report = new SalesReport();
 
             using (var conn = DbHelper.GetConnection())
-            using (var cmd = new SqlCommand("sp_GetSalesReport", conn))
+            using (var cmd = new SqlCommand("sp_GetSalesReports", conn))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.CommandTimeout = 120;
@@ -52,7 +52,7 @@ namespace pos_system.pos.DAL.Repositories
                             CashSales = GetSafeDecimal(reader, "CashSales"),
                             CardSales = GetSafeDecimal(reader, "CardSales"),
                             BankSales = GetSafeDecimal(reader, "BankSales"),
-                            MixedSales = GetSafeDecimal(reader, "MixedSales")
+                            //MixedSales = GetSafeDecimal(reader, "MixedSales")
                         };
                     }
 
@@ -67,7 +67,7 @@ namespace pos_system.pos.DAL.Repositories
                             CashSales = GetSafeDecimal(reader, "CashSales"),
                             CardSales = GetSafeDecimal(reader, "CardSales"),
                             BankSales = GetSafeDecimal(reader, "BankSales"),
-                            MixedSales = GetSafeDecimal(reader, "MixedSales"), // NEW
+                            //MixedSales = GetSafeDecimal(reader, "MixedSales"), // NEW
                             TokenRedemptions = GetSafeDecimal(reader, "TokenRedemptions")
                         };
                     }
@@ -101,9 +101,9 @@ namespace pos_system.pos.DAL.Repositories
                                 UnitCost = GetSafeDecimal(reader, "UnitCost"),
                                 Quantity = GetSafeInt(reader, "Quantity"),
                                 UnitPrice = GetSafeDecimal(reader, "UnitPrice"),
-                                MaxAllowedDiscount = GetSafeDecimal(reader, "MaxAllowedDiscount"),
-                                AppliedDiscount = GetSafeDecimal(reader, "AppliedDiscount"),
-                                GrossAmount = GetSafeDecimal(reader, "GrossAmount"),
+                                //MaxAllowedDiscount = GetSafeDecimal(reader, "MaxAllowedDiscount"),
+                                //AppliedDiscount = GetSafeDecimal(reader, "AppliedDiscount"),
+                                //GrossAmount = GetSafeDecimal(reader, "GrossAmount"),
                                 DiscountAmount = GetSafeDecimal(reader, "DiscountAmount"),
                                 NetAmount = GetSafeDecimal(reader, "NetAmount")
                             });

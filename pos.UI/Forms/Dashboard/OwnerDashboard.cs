@@ -86,7 +86,8 @@ namespace pos_system.pos.UI.Forms.Dashboard
             CreateSidebarButton("Return Checking", "🔄", 520);
             CreateSidebarButton("Logout", "🔒", 580);
 
-            OpenChildForm(new DashboardForm(), _dashboardButton);
+            //OpenChildForm(new DashboardForm(), _dashboardButton);
+            OpenChildForm(new ItemsManagement(), _itemManagement);
         }
 
         private void headerPanel_MouseMove(object sender, MouseEventArgs e)
@@ -124,7 +125,7 @@ namespace pos_system.pos.UI.Forms.Dashboard
             btn.Padding = new Padding(20, 0, 0, 0);
             btn.Cursor = Cursors.Hand;
 
-            if (text == "Dashboard") _dashboardButton = btn;
+            if (text == "Items") _itemManagement = btn;
 
             btn.MouseEnter += (s, e) =>
             {

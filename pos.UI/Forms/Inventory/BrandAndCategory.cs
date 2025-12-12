@@ -568,17 +568,33 @@ namespace pos_system.pos.UI.Forms.Inventory
 
         private void DeleteBrand()
         {
-            if (dgvBrands.SelectedRows.Count == 0) return;
+            if (dgvBrands.SelectedRows.Count == 0)
+            {
+                ShowMessage("Please select a brand to delete");
+                return;
+            }
 
             var brand = dgvBrands.SelectedRows[0].DataBoundItem as Brand;
             if (brand == null) return;
 
+            // Check if brand can be deleted
+            if (!_brandService.CanDeleteBrand(brand.Brand_ID))
+            {
+                ShowMessage("Cannot delete brand. It is being used by one or more products.");
+                return;
+            }
+
             if (ConfirmAction($"Delete brand '{brand.brandName}'?"))
             {
                 if (_brandService.DeleteBrand(brand.Brand_ID))
+                {
+                    ShowMessage("Brand deleted successfully!");
                     LoadBrands();
+                }
                 else
-                    ShowMessage("Error deleting brand");
+                {
+                    ShowMessage("Error deleting brand. Please try again.");
+                }
             }
         }
 
