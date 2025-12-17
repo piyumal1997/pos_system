@@ -72,7 +72,7 @@
               "RelativeDocumentMoniker": "pos.UI\\app.config",
               "ToolTip": "D:\\Projects\\pos-system\\pos.UI\\app.config",
               "RelativeToolTip": "pos.UI\\app.config",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAACQAAAAAAAAAA==",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAAAkAAACFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
               "WhenOpened": "2025-10-16T06:20:31.691Z",
               "IsPinned": true,
@@ -222,8 +222,7 @@
               "RelativeToolTip": "pos.UI\\Forms\\Dashboard\\OwnerDashboard.cs",
               "ViewState": "AgIAAKoCAAAAAAAAAAAkwFoDAABUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-24T05:24:31.226Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-24T05:24:31.226Z"
             }
           ]
         }
